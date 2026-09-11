@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from mvgeos_provider.openrouter import OpenRouterRealm
+from openrouter import OpenRouterRealm
 from mvgeos_runes.rune_api import RuneAPI
 from mvgeos_runes.types import SigilHook
 from rune import (
