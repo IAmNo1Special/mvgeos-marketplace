@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "name": "mvgeos-marketplace",
+  "description": "Official extension marketplace for MvgeOS runes",
+  "runes": {
+    "openrouter-realm": {
+      "name": "openrouter-realm",
+      "version": "0.1.0",
+      "description": "Official OpenRouter provider realm for MvgeOS",
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "runes/openrouter-realm"
+    }
+  }
+}
