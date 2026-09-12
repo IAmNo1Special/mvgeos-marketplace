@@ -73,15 +73,26 @@
       "description": "Official coding agent for MvgeOS with built-in development spells",
       "runtime": "python",
       "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
-      "path": "mvges/coding_mvge"
-    },
-    "coding-mvge": {
-      "name": "coding-mvge",
-      "version": "0.2.6",
-      "description": "Official coding agent for MvgeOS with built-in development spells",
-      "runtime": "python",
-      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
-      "path": "mvges/coding_mvge"
+      "path": "mvges/coding_mvge",
+      "created_at": "2026-09-12T00:00:00Z",
+      "updated_at": "2026-09-12T00:00:00Z",
+      "spells": [
+        "bash",
+        "read",
+        "write",
+        "edit",
+        "find",
+        "list_files",
+        "grep",
+        "read_url",
+        "search_web"
+      ],
+      "python_deps": [
+        "mvgeos-agent",
+        "mvgeos-core",
+        "mvgeos-provider",
+        "mvgeos-runes"
+      ]
     }
   }
 }
