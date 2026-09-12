@@ -1,0 +1,25 @@
+{
+  "name": "coding_mvge",
+  "version": "0.2.6",
+  "description": "Official coding agent for MvgeOS with built-in development spells",
+  "entry_point": "mvge.py",
+  "runtime": "python",
+  "spells": [
+    "bash",
+    "read",
+    "write",
+    "edit",
+    "find",
+    "list_files",
+    "grep",
+    "read_url",
+    "search_web"
+  ],
+  "python_deps": [
+    "mvgeos-agent",
+    "mvgeos-core",
+    "mvgeos-provider",
+    "mvgeos-runes"
+  ],
+  "enabled": true
+}

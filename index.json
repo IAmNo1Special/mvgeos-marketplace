@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "name": "mvgeos-marketplace",
-  "description": "Official extension marketplace for MvgeOS runes",
+  "description": "Official extension marketplace for MvgeOS runes and mvges",
   "runes": {
     "openrouter-realm": {
       "name": "openrouter-realm",
@@ -64,6 +64,24 @@
       "python_deps": [
         "aiohttp"
       ]
+    }
+  },
+  "mvges": {
+    "coding_mvge": {
+      "name": "coding_mvge",
+      "version": "0.2.6",
+      "description": "Official coding agent for MvgeOS with built-in development spells",
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "mvges/coding_mvge"
+    },
+    "coding-mvge": {
+      "name": "coding-mvge",
+      "version": "0.2.6",
+      "description": "Official coding agent for MvgeOS with built-in development spells",
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "mvges/coding_mvge"
     }
   }
 }

@@ -1,29 +1,33 @@
-# MvgeOS Rune Marketplace
+# MvgeOS Marketplace
 
-Official extension marketplace catalog for MvgeOS runes.
+Official marketplace catalog for MvgeOS Runes (extensions) and Mvges (agents).
 
 ## Overview
 
-The MvgeOS Rune Marketplace hosts official and community-contributed extensions (runes) for the MvgeOS agent framework. Runes extend agent capabilities by registering custom realm factories, providers, spells, commands, shortcuts, and sigil lifecycle hooks.
+The MvgeOS Marketplace hosts official and community-contributed extensions (runes) and concrete agent packages (mvges) for MvgeOS.
 
-## Available Runes
+## Available Mvges (Agents)
+
+| Mvge | Version | Description | Path |
+| --- | --- | --- | --- |
+| `coding_mvge` | `0.2.6` | Official coding agent with built-in development spells | `mvges/coding_mvge` |
+
+Install via MvgeOS CLI:
+```powershell
+mvgeos mvge install coding_mvge
+```
+
+## Available Runes (Extensions)
 
 | Rune | Version | Description | Path |
 | --- | --- | --- | --- |
 | `openrouter-realm` | `0.1.0` | Official OpenRouter provider realm for MvgeOS | `runes/openrouter-realm` |
+| `heal-my-goap` | `0.1.0` | Zero-token GOAP planning & LLM self-healing Rune | `runes/heal-my-goap` |
+| `seeker` | `0.1.0` | Seeker Protocol - DCI-based discovery | `runes/seeker` |
 
-## Installation
-
-Install runes directly using the MvgeOS CLI:
-
+Install via MvgeOS CLI:
 ```powershell
 mvgeos rune install openrouter-realm
-```
-
-Or install from a local path:
-
-```powershell
-mvgeos rune install ./runes/openrouter-realm
 ```
 
 ## Structure
@@ -32,19 +36,16 @@ mvgeos rune install ./runes/openrouter-realm
 mvgeos-marketplace/
 |-- index.json
 |-- README.md
+|-- mvges/
+|   `-- coding_mvge/
+|       |-- manifest.json
+|       |-- agent.md
+|       |-- mvge.py
+|       |-- spells/
+|       |-- system_prompt/
+|       `-- runes/
 `-- runes/
-    `-- openrouter-realm/
-        |-- manifest.json
-        |-- rune.py
-        |-- pyproject.toml
-        |-- README.md
-        `-- tests/
-            `-- test_rune.py
+    |-- openrouter-realm/
+    |-- heal-my-goap/
+    `-- seeker/
 ```
-
-## Contributing
-
-1. Place your rune in `runes/<rune-name>/`.
-2. Include a valid `manifest.json`, entry point, `pyproject.toml`, and unit tests.
-3. Register your rune in `index.json`.
-4. Submit a pull request.
