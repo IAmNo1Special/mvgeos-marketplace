@@ -1,0 +1,14 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mvgeos-runes-heal-my-goap"
+version = "0.1.0"
+description = "Zero-token GOAP planning & LLM-powered self-healing Rune for MvgeOS"
+dependencies = [
+    "mvgeos-core",
+    "mvgeos-agent",
+    "mvgeos-runes",
+    "heal_my_goap",
+]

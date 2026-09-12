@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mvgeos-runes-seeker"
+version = "0.1.0"
+description = "Seeker Protocol rune for MvgeOS - DCI-based discovery for spells, skills, and MCP servers"
+dependencies = [
+    "mvgeos-agent",
+    "mvgeos-core",
+    "mvgeos-provider",
+    "mvgeos-runes",
+    "aiohttp",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["mvgeos_runes_seeker"]

@@ -10,6 +10,22 @@
       "runtime": "python",
       "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
       "path": "runes/openrouter-realm"
+    },
+    "heal-my-goap": {
+      "name": "heal-my-goap",
+      "version": "0.1.0",
+      "description": "Zero-token GOAP planning & LLM-powered self-healing Rune for MvgeOS",
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "runes/heal-my-goap"
+    },
+    "seeker": {
+      "name": "seeker",
+      "version": "0.1.0",
+      "description": "Seeker Protocol - DCI-based discovery for spells, skills, and MCP servers",
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "runes/seeker"
     }
   }
 }

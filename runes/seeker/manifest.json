@@ -1,0 +1,18 @@
+{
+  "name": "seeker",
+  "version": "0.1.0",
+  "description": "Seeker Protocol - DCI-based discovery for spells, skills, and MCP servers",
+  "entry_point": "rune.py",
+  "hooks": [
+    "before_mvge_start",
+    "session_shutdown"
+  ],
+  "shortcuts": [],
+  "system_deps": [
+    "ripgrep"
+  ],
+  "enabled": true,
+  "python_deps": [
+    "aiohttp"
+  ]
+}
