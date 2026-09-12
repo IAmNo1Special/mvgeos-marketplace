@@ -2,6 +2,7 @@
   "name": "seeker",
   "version": "0.1.0",
   "description": "Seeker Protocol - DCI-based discovery for spells, skills, and MCP servers",
+  "type": "protocol",
   "entry_point": "rune.py",
   "hooks": [
     "before_mvge_start",
