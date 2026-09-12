@@ -8,19 +8,14 @@ from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
-from mvgeos_runes.types import SigilHook
 
+pytest.importorskip("mvgeos_agent")
+pytest.importorskip("heal_my_goap")
+
+from mvgeos_runes.types import SigilHook
 from mvgeos_agent.mvge import Mvge
 
-HAS_HEAL_MY_GOAP = importlib.util.find_spec("heal_my_goap") is not None
 
-
-skip_if_no_heal_my_goap = pytest.mark.skipif(
-    not HAS_HEAL_MY_GOAP, reason="heal-my-goap not installed"
-)
-
-
-@skip_if_no_heal_my_goap
 @pytest.mark.asyncio
 async def test_missing_read_tool_self_healing_execution(tmp_path: Path) -> None:
     """Verifies heal_my_goap synthesizes and executes code when tool missing."""

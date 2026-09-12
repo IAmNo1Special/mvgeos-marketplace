@@ -1,0 +1,18 @@
+[project]
+name = "mvgeos-marketplace"
+version = "0.1.0"
+description = "Official MvgeOS extension marketplace"
+requires-python = ">=3.13"
+dependencies = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "aiohttp>=3.9",
+    "httpx>=0.27",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [
+    "runes/openrouter-realm",
+    "runes/seeker",
+    "runes/heal-my-goap",
+]
