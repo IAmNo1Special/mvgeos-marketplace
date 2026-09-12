@@ -2,7 +2,10 @@
   "name": "heal-my-goap",
   "version": "0.1.0",
   "description": "Zero-token GOAP planning & LLM-powered self-healing Rune for MvgeOS",
-  "type": "planner",
+  "types": [
+    "Planner",
+    "Spell Modifier"
+  ],
   "entry_point": "rune.py",
   "hooks": [
     "session_start",

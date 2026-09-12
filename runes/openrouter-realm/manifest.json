@@ -2,7 +2,9 @@
   "name": "openrouter-realm",
   "version": "0.1.0",
   "description": "Official OpenRouter provider realm for MvgeOS",
-  "type": "realm",
+  "types": [
+    "RealmProvider"
+  ],
   "entry_point": "rune.py",
   "runtime": "python",
   "python_deps": [
