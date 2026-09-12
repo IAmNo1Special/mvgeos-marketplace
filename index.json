@@ -13,6 +13,8 @@
       "runtime": "python",
       "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
       "path": "runes/openrouter-realm",
+      "created_at": "2026-08-01T00:00:00Z",
+      "updated_at": "2026-09-01T00:00:00Z",
       "hooks": [
         "before_provider_request",
         "after_provider_response"
@@ -32,6 +34,8 @@
       "runtime": "python",
       "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
       "path": "runes/heal-my-goap",
+      "created_at": "2026-08-15T00:00:00Z",
+      "updated_at": "2026-09-10T00:00:00Z",
       "hooks": [
         "session_start",
         "after_spell_result"
@@ -51,6 +55,8 @@
       "runtime": "python",
       "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
       "path": "runes/seeker",
+      "created_at": "2026-09-05T00:00:00Z",
+      "updated_at": "2026-09-11T00:00:00Z",
       "hooks": [
         "before_mvge_start",
         "session_shutdown"
