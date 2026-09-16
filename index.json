@@ -64,6 +64,27 @@
       "python_deps": [
         "aiohttp"
       ]
+    },
+    "session-title": {
+      "name": "session-title",
+      "version": "0.1.0",
+      "description": "Auto-generates session titles from conversation content with instant fallback and optional LLM upgrade",
+      "types": [
+        "SessionTitleGenerator"
+      ],
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "runes/session-title",
+      "created_at": "2026-09-13T00:00:00Z",
+      "updated_at": "2026-09-13T00:00:00Z",
+      "hooks": [
+        "session_start",
+        "input",
+        "turn_end",
+        "agent_end",
+        "session_shutdown"
+      ],
+      "python_deps": []
     }
   },
   "mvges": {
