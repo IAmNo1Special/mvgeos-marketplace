@@ -1,0 +1,19 @@
+{
+  "name": "session-title",
+  "version": "0.1.0",
+  "description": "Auto-generates session titles from conversation content with instant fallback and optional LLM upgrade",
+  "types": [
+    "SessionTitleGenerator"
+  ],
+  "entry_point": "rune.py",
+  "hooks": [
+    "session_start",
+    "input",
+    "turn_end",
+    "agent_end",
+    "session_shutdown"
+  ],
+  "python_deps": [],
+  "enabled": true,
+  "execution_mode": "parallel"
+}
