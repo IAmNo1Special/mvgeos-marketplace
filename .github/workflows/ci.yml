@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      # The rune tests import the MvgeOS engine packages, which live in the
+      # main mvgeos repo (not on PyPI). Check it out and put its src dirs
+      # on PYTHONPATH; the rune dirs themselves come from pytest's
+      # [tool.pytest.ini_options] pythonpath setting.
+      - name: Check out MvgeOS engine
+        uses: actions/checkout@v5
+        with:
+          repository: IAmNo1Special/mvgeos
+          path: mvgeos
+
+      - uses: astral-sh/setup-uv@v7
+
+      - name: Install test dependencies
+        run: uv sync
+
+      - name: Run rune test suite
+        run: uv run python -m pytest runes/ -q
+        env:
+          PYTHONPATH: >-
+            mvgeos/mvgeos-core/src:mvgeos/mvgeos-agent/src:mvgeos/mvgeos-runes/src:mvgeos/mvgeos-tome/src:mvgeos/mvgeos-provider/src

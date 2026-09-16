@@ -45,6 +45,8 @@ async def test_seeker_declares_spell_gateway() -> None:
     rune_dir = Path(__file__).resolve().parent.parent
     manifest = load_manifest(rune_dir)
     assert manifest is not None
+    if not hasattr(manifest, "spell_gateway"):
+        pytest.skip("engine predates spell_gateway support")
     assert manifest.spell_gateway is True
 
     diags: list[Any] = []
