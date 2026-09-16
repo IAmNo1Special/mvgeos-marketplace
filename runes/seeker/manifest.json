@@ -18,5 +18,6 @@
   "enabled": true,
   "python_deps": [
     "aiohttp"
-  ]
+  ],
+  "spell_gateway": true
 }

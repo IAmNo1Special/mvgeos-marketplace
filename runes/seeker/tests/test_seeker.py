@@ -3,10 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
-import pytest
 
-from mvgeos_runes.manifest import load_manifest
+import pytest
 from mvgeos_runes.loader import load_factory_from_manifest
+from mvgeos_runes.manifest import load_manifest
 from mvgeos_runes.rune_runner import RuneRunner
 from mvgeos_runes.types import RuneLoad, SigilHook
 
@@ -32,11 +32,40 @@ async def test_seeker_rune_load() -> None:
     assert "skill_search" in spells
     assert "skill_execute" in spells
     assert "mcp_search" in spells
-    assert runner.get_active_spells() == ["mcp_search", "skill_execute", "skill_search", "tool_search"]
+    assert runner.get_active_spells() == [
+        "mcp_search",
+        "skill_execute",
+        "skill_search",
+        "tool_search",
+    ]
 
 
 @pytest.mark.asyncio
-async def test_seeker_enables_global_allowlist_on_session_start() -> None:
+async def test_seeker_declares_spell_gateway() -> None:
+    rune_dir = Path(__file__).resolve().parent.parent
+    manifest = load_manifest(rune_dir)
+    assert manifest is not None
+    assert manifest.spell_gateway is True
+
+    diags: list[Any] = []
+    factory = load_factory_from_manifest(manifest, rune_dir, diagnostics=diags)
+    assert factory is not None
+
+    runner = RuneRunner()
+    await runner.load_rune_loads([RuneLoad(manifest=manifest, factory=factory)])
+    assert runner.gateway_rune_name == "seeker"
+    assert runner.gateway_spell_names() == [
+        "mcp_search",
+        "skill_execute",
+        "skill_search",
+        "tool_search",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_seeker_session_start_does_not_touch_global_allowlist() -> None:
+    """The engine owns the global filter (narrows it at load from the
+    manifest flag); the rune must not set, replace, or drop it."""
     rune_dir = Path(__file__).resolve().parent.parent
     manifest = load_manifest(rune_dir)
     assert manifest is not None
@@ -46,15 +75,9 @@ async def test_seeker_enables_global_allowlist_on_session_start() -> None:
 
     runner = RuneRunner()
     await runner.load_rune_loads([RuneLoad(manifest=manifest, factory=factory)])
-    assert runner.get_global_spell_allowlist() is None
 
     await runner.emit_async(SigilHook.SESSION_START, {"session_name": "s"})
-    assert runner.get_global_spell_allowlist() == [
-        "mcp_search",
-        "skill_execute",
-        "skill_search",
-        "tool_search",
-    ]
+    assert runner.get_global_spell_allowlist() is None
 
 
 @pytest.mark.asyncio
@@ -72,8 +95,12 @@ async def test_tool_search_widens_global_allowlist() -> None:
         rune_api=rune_api,
     )
     matches = [
-        SpellFileMatch(source_path=Path("g/tool_a.py"), grimoire="g", matched_context="c"),
-        SpellFileMatch(source_path=Path("g/tool_b.py"), grimoire="g", matched_context="c"),
+        SpellFileMatch(
+            source_path=Path("g/tool_a.py"), grimoire="g", matched_context="c"
+        ),
+        SpellFileMatch(
+            source_path=Path("g/tool_b.py"), grimoire="g", matched_context="c"
+        ),
     ]
     with (
         patch("mvgeos_runes_seeker.spell.DCIRouter") as mock_router_cls,

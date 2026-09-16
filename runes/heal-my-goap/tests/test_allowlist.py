@@ -1,15 +1,51 @@
 from __future__ import annotations
 
 import inspect
+import sys
+import types
+from importlib.machinery import ModuleSpec
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-
 from mvgeos_runes.loader import load_factory_from_manifest
 from mvgeos_runes.manifest import load_manifest
 from mvgeos_runes.types import SigilHook
+
+# The heal_my_goap engine package is not published; stub it so the loader's
+# python_deps preflight passes and the factory imports. The test only
+# exercises hook registration and spell pinning/widening, never the engine.
+_HEAL_STUBS: dict[str, list[str]] = {
+    "heal_my_goap": [],
+    "heal_my_goap.engine": ["GoapEngine"],
+    "heal_my_goap.models": [
+        "Action",
+        "Gap",
+        "Goal",
+        "WorldState",
+        "goal",
+        "world_state_from_sensors",
+    ],
+    "heal_my_goap.sensors": ["SystemSensors"],
+}
+
+
+@pytest.fixture(autouse=True)
+def _stub_heal_my_goap(monkeypatch: pytest.MonkeyPatch) -> None:
+    pkg = types.ModuleType("heal_my_goap")
+    pkg.__path__ = []  # type: ignore[attr-defined]
+    pkg.__spec__ = ModuleSpec("heal_my_goap", loader=None, is_package=True)
+    monkeypatch.setitem(sys.modules, "heal_my_goap", pkg)
+    for mod_name, attrs in _HEAL_STUBS.items():
+        if mod_name == "heal_my_goap":
+            continue
+        mod = types.ModuleType(mod_name)
+        mod.__spec__ = ModuleSpec(mod_name, loader=None)
+        for attr in attrs:
+            setattr(mod, attr, MagicMock(name=attr))
+        monkeypatch.setitem(sys.modules, mod_name, mod)
+        setattr(pkg, mod_name.split(".")[-1], mod)
 
 
 def _load_factory() -> Any:
@@ -30,9 +66,7 @@ async def test_heal_pins_own_spells_and_widens_allowlist() -> None:
     api.get_global_spell_allowlist.return_value = ["tool_search"]
     factory(api)
 
-    handlers = {
-        call.args[0]: call.args[1] for call in api.on.call_args_list
-    }
+    handlers = {call.args[0]: call.args[1] for call in api.on.call_args_list}
     assert SigilHook.SESSION_START in handlers
     assert SigilHook.BEFORE_INVOCATION in handlers
 

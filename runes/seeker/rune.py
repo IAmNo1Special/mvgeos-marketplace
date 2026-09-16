@@ -77,17 +77,18 @@ def rune_factory(api: RuneAPI) -> None:
 
     # Seeker hides-all mode. The engine seeds the per-rune active set with
     # every registered rune spell by default; we narrow our own entry here
-    # so only the meta-tools appear initially. We additionally enable the
-    # engine-owned global allowlist (checked by Mvge._build_spells for
-    # builtins + all runes) so the model is only aware of Seeker meta-tools
-    # and surfaces everything else through discovery. Enable once (replace
-    # would wipe widening contributed by other runes such as heal-my-goap).
+    # so only the meta-tools appear initially. The engine additionally
+    # narrows the engine-owned global allowlist (checked by
+    # Mvge._build_spells for builtins + all runes) to this rune's spells
+    # because the manifest declares "spell_gateway": true -- so the model is
+    # only aware of Seeker meta-tools and surfaces everything else through
+    # discovery. Discovered tools widen the allowlist again via
+    # RuneAPI.widen_global_allowlist (additive-only; runes can never replace
+    # or drop the engine's filter).
     # Mirrors upstream Pi's setActiveTools called from a session_start hook.
     meta_spells = ["tool_search", "skill_search", "skill_execute", "mcp_search"]
 
     def activate_seeker_meta_tools(_data: dict[str, Any]) -> None:
         api.set_active_spells(meta_spells)
-        if api.get_global_spell_allowlist() is None:
-            api.set_global_spell_allowlist(meta_spells)
 
     api.on(SigilHook.SESSION_START, activate_seeker_meta_tools)

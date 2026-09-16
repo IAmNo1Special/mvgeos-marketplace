@@ -5,9 +5,9 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from openrouter import OpenRouterRealm
 from mvgeos_runes.rune_api import RuneAPI
 from mvgeos_runes.types import SigilHook
+from openrouter import OpenRouterRealm
 from rune import (
     after_provider_response,
     before_provider_request,
@@ -33,7 +33,21 @@ def test_manifest_structure() -> None:
     assert manifest["enabled"] is True
 
 
-def test_openrouter_realm_factory() -> None:
+def test_openrouter_realm_factory(monkeypatch: pytest.MonkeyPatch) -> None:
+    # httpx honors ambient proxy env when constructing its client; a
+    # malformed NO_PROXY entry (e.g. bracketed IPv6) breaks construction.
+    # This test only checks factory wiring, so isolate it from the env.
+    for var in (
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "ALL_PROXY",
+        "NO_PROXY",
+        "http_proxy",
+        "https_proxy",
+        "all_proxy",
+        "no_proxy",
+    ):
+        monkeypatch.delenv(var, raising=False)
     realm = openrouter_realm_factory(
         api_key="test-key", base_url="https://openrouter.ai/api/v1"
     )
