@@ -9,13 +9,14 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
 
       # The rune tests import the MvgeOS engine packages, which live in the
-      # main mvgeos repo (not on PyPI). Check it out and put its src dirs
-      # on PYTHONPATH; the rune dirs themselves come from pytest's
+      # main mvgeos repo (not on PyPI). Check it out and sync its workspace
+      # so every engine dependency (pydantic, httpx, ...) is installed; the
+      # rune dirs themselves come from pytest's
       # [tool.pytest.ini_options] pythonpath setting.
       - name: Check out MvgeOS engine
         uses: actions/checkout@v5
@@ -25,11 +26,11 @@ jobs:
 
       - uses: astral-sh/setup-uv@v7
 
-      - name: Install test dependencies
-        run: uv sync
+      - name: Sync engine workspace
+        run: uv sync --all-packages
+        working-directory: mvgeos
 
+      # --with aiohttp: the seeker rune's only third-party dep, not part of
+      # the engine workspace. pytest/pytest-asyncio/httpx come from it.
       - name: Run rune test suite
-        run: uv run python -m pytest runes/ -q
-        env:
-          PYTHONPATH: >-
-            mvgeos/mvgeos-core/src:mvgeos/mvgeos-agent/src:mvgeos/mvgeos-runes/src:mvgeos/mvgeos-tome/src:mvgeos/mvgeos-provider/src
+        run: uv run --project mvgeos --with aiohttp python -m pytest runes/ -q
