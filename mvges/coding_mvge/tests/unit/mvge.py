@@ -178,7 +178,7 @@ class TestMvgeInit:
     def test_default_tome_dir(self) -> None:
         agent = Mvge(api_key="k")
         assert agent._tome_dir == Path.home() / ".agents" / "sessions"
-        assert agent.session_dir == Path.home() / ".agents" / "sessions"
+        assert agent.tome_dir == Path.home() / ".agents" / "sessions"
 
 
 class TestMvgeBuildSpells:
@@ -377,8 +377,8 @@ class TestMvgeRun:
             result2 = await agent.run("Second prompt")
             assert result2 is not None
 
-            assert agent._state is not None
-            assert len(agent._state.invocations) >= 3
+            assert agent.harness is not None
+            assert len(agent.harness.state.invocations) >= 3
             await agent.close()
 
     @pytest.mark.asyncio
@@ -392,11 +392,11 @@ class TestMvgeRun:
             _install_mock(agent)
 
             await agent.run("One")
-            assert agent._state is not None
-            count_after_first = len(agent._state.invocations)
+            assert agent.harness is not None
+            count_after_first = len(agent.harness.state.invocations)
 
             await agent.run("Two")
-            count_after_second = len(agent._state.invocations)
+            count_after_second = len(agent.harness.state.invocations)
 
             assert count_after_second > count_after_first
             await agent.close()
@@ -429,9 +429,8 @@ class TestMvgeSwitchModel:
             assert agent._model_id == target
             assert agent._model is not None
             assert agent._model.id == target
-            assert agent._state is not None
-            assert agent._state.model is not None
-            assert agent._state.model["id"] == target
+            assert agent.harness is not None
+            assert agent.harness.snapshot.configured_model == target
             await agent.close()
 
     @pytest.mark.asyncio
@@ -491,8 +490,8 @@ class TestMvgeToolCalls:
                 spells=[bash],
             )
             _install_mock(agent)
-            assert agent._state is not None
-            agent._state.spells = [FunctionSpell(bash)]
+            assert agent.harness is not None
+            agent.harness.state.spells = [FunctionSpell(bash)]
 
             class FakeRealm:
                 def __init__(self) -> None:
@@ -543,9 +542,9 @@ class TestMvgeToolCalls:
 
             assert isinstance(result, MvgeResponse)
             assert result.content == [{"type": "text", "text": "done"}]
-            assert agent._state is not None
+            assert agent.harness is not None
             assert any(
-                isinstance(inv, SpellResultMessage) for inv in agent._state.invocations
+                isinstance(inv, SpellResultMessage) for inv in agent.harness.state.invocations
             )
             await agent.close()
 
@@ -560,8 +559,8 @@ class TestMvgeToolCalls:
                 spells=[bash, read],
             )
             _install_mock(agent)
-            assert agent._state is not None
-            agent._state.spells = [FunctionSpell(bash), FunctionSpell(read)]
+            assert agent.harness is not None
+            agent.harness.state.spells = [FunctionSpell(bash), FunctionSpell(read)]
 
             captured: dict[str, Any] = {}
 
@@ -584,12 +583,12 @@ class TestMvgeToolCalls:
             stream_fn = agent._make_stream_fn(
                 agent._model,  # type: ignore[arg-type]
                 agent._realm,  # type: ignore[arg-type]
-                agent._state,
+                agent.harness.state,
                 0.7,
                 4096,
             )
 
-            async for _ in stream_fn(agent._state.invocations):
+            async for _ in stream_fn(agent.harness.state.invocations):
                 pass
 
             assert captured.get("tools")

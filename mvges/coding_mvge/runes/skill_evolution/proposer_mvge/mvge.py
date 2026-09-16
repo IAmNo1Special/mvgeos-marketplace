@@ -130,8 +130,7 @@ async def run_proposer(
 
     # Bind spells to engine on the agent instance
     agent._spells = [make_finish_spell(engine), make_read_file_spell(engine)]
-    if agent._state is not None:
-        agent._state.spells = agent._build_spells()
+    agent.reload_spells()
 
     if user_prompt is None:
         index_file = engine.evolution_dir / "index.md"
