@@ -20,6 +20,7 @@ class MCPSearchSpell(MvgeSpell):
         provider_registry: RealmRegistry,
         rune_runner: Any | None = None,
         config: dict[str, Any] | None = None,
+        rune_api: Any | None = None,
     ) -> None:
         self._cfg = config or {}
         super().__init__(
@@ -42,6 +43,7 @@ class MCPSearchSpell(MvgeSpell):
         )
         self._provider_registry = provider_registry
         self._rune_runner = rune_runner
+        self._rune_api = rune_api
         self._connections: dict[str, MCPConnector] = {}
         search_roots = self._cfg.get("search_roots", None)
         if search_roots is not None:
@@ -125,7 +127,10 @@ class MCPSearchSpell(MvgeSpell):
 
         # Build connector but do NOT store until fully initialized
         connector = MCPConnector(
-            info, self._rune_runner, timeout_overrides=self._timeout_overrides
+            info,
+            self._rune_runner,
+            timeout_overrides=self._timeout_overrides,
+            rune_api=self._rune_api,
         )
         try:
             await connector.connect()
@@ -136,4 +141,16 @@ class MCPSearchSpell(MvgeSpell):
 
         # Only store after full initialization succeeds
         self._connections[info.name] = connector
+
+        # Widen Seeker's own active entry (pinned) and the global
+        # hides-all allowlist so the model can cast the new mcp_* spells.
+        # Both are no-ops when the corresponding mode is disabled.
+        if self._rune_api is not None:
+            names = [t.name for t in tool_spells]
+            widen_active = getattr(self._rune_api, "widen_active_spells", None)
+            if callable(widen_active):
+                widen_active(names)
+            widen_global = getattr(self._rune_api, "widen_global_allowlist", None)
+            if callable(widen_global):
+                widen_global(names)
         return tool_spells

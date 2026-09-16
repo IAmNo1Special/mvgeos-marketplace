@@ -259,9 +259,11 @@ class MCPConnector:
         server_info: MCPServerInfo,
         rune_runner: Any | None = None,
         timeout_overrides: dict[str, int] | None = None,
+        rune_api: Any | None = None,
     ) -> None:
         self._info = server_info
         self._rune_runner = rune_runner
+        self._rune_api = rune_api
         self._timeout_overrides = timeout_overrides or {}
         self._proc: asyncio.subprocess.Process | None = None
         self._http_base_url: str | None = None
@@ -610,19 +612,23 @@ class MCPConnector:
             )
             spells_to_register.append(spell)
 
-        # Register all spells; on failure unroll partial registration
-        if self._rune_runner is not None:
+        # Register all spells attributed to the seeker rune. Prefer the
+        # seeker-scoped RuneAPI (auto-attributes source_rune="seeker" and
+        # lands in seeker's own active entry pre-pin); fall back to the raw
+        # runner with an explicit rune_name so tools never land in the
+        # anonymous None bucket.
+        if self._rune_api is not None:
             registered: list[SpellDefinition] = []
-            try:
-                for spell in spells_to_register:
-                    self._rune_runner.register_spell(spell)
-                    registered.append(spell)
-                self._tool_spells.extend(registered)
-            except Exception:
-                # Unregister any spells registered so far
-                for spell in registered:
-                    self._rune_runner.unregister_spell(spell)
-                raise
+            for spell in spells_to_register:
+                self._rune_api.register_spell(spell)
+                registered.append(spell)
+            self._tool_spells.extend(registered)
+        elif self._rune_runner is not None:
+            registered = []
+            for spell in spells_to_register:
+                self._rune_runner.register_spell(spell, rune_name="seeker")
+                registered.append(spell)
+            self._tool_spells.extend(registered)
         else:
             self._tool_spells.extend(spells_to_register)
 

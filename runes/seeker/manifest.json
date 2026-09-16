@@ -8,7 +8,7 @@
   ],
   "entry_point": "rune.py",
   "hooks": [
-    "before_mvge_start",
+    "session_start",
     "session_shutdown"
   ],
   "shortcuts": [],

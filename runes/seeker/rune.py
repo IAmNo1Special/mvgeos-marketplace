@@ -46,6 +46,7 @@ def rune_factory(api: RuneAPI) -> None:
     mcp_search = MCPSearchSpell(
         provider_registry=provider_registry,
         rune_runner=runner,
+        rune_api=api,
         config={
             "search_roots": [Path(".agents/.mvgeos/extensions")],
             "max_connections": 5,
@@ -74,14 +75,19 @@ def rune_factory(api: RuneAPI) -> None:
 
     api.on(SigilHook.SESSION_SHUTDOWN, close_mcp_connections)
 
-    # Pin the active-spell set to the Seeker meta-tools. The engine seeds the
-    # active set with every registered rune spell by default; we narrow it here
-    # so only the meta-tools appear in the system prompt initially, and tool_search
-    # widens it at runtime via set_active_spells as capabilities are discovered.
+    # Seeker hides-all mode. The engine seeds the per-rune active set with
+    # every registered rune spell by default; we narrow our own entry here
+    # so only the meta-tools appear initially. We additionally enable the
+    # engine-owned global allowlist (checked by Mvge._build_spells for
+    # builtins + all runes) so the model is only aware of Seeker meta-tools
+    # and surfaces everything else through discovery. Enable once (replace
+    # would wipe widening contributed by other runes such as heal-my-goap).
     # Mirrors upstream Pi's setActiveTools called from a session_start hook.
     meta_spells = ["tool_search", "skill_search", "skill_execute", "mcp_search"]
 
     def activate_seeker_meta_tools(_data: dict[str, Any]) -> None:
         api.set_active_spells(meta_spells)
+        if api.get_global_spell_allowlist() is None:
+            api.set_global_spell_allowlist(meta_spells)
 
     api.on(SigilHook.SESSION_START, activate_seeker_meta_tools)

@@ -105,6 +105,14 @@ class ToolSearchSpell(MvgeSpell):
                 "error": f"schema load failed: {e}",
             }
 
+        # Widen the Seeker hides-all allowlist so the model can cast the
+        # discovered spells on the next turn. No-op when hides-all is
+        # disabled (Seeker absent / allowlist never enabled).
+        if self._rune_api is not None:
+            widen = getattr(self._rune_api, "widen_global_allowlist", None)
+            if callable(widen):
+                widen([r["name"] for r in results if r.get("name")])
+
         return {"spells_found": len(results), "results": results, "error": None}
 
 
