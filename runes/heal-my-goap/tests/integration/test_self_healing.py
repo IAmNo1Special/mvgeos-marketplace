@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib.util
 import json
 import os
 from pathlib import Path
@@ -24,9 +23,13 @@ async def test_missing_read_tool_self_healing_execution(tmp_path: Path) -> None:
         "Hello from heal_my_goap self-healing read!", encoding="utf-8"
     )
 
+    # Pass marketplace runes directory so the agent can discover openrouter-realm rune
+    marketplace_runes_dir = Path(__file__).resolve().parent.parent.parent.parent
+
     agent = Mvge(
         name="coding_mvge",
         api_key="test_mock_key",
+        runes_paths=[str(marketplace_runes_dir)],
     )
     await agent.initialize()
 

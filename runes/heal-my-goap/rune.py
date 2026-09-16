@@ -299,23 +299,33 @@ def rune_factory(api: RuneAPI) -> None:
     api.register_spell(GoapSenseWorldSpell())
     api.register_spell(GoapSynthesizeActionSpell(engine))
 
+    # Track heal's own spells locally so per-rune widening never copies
+    # the union (which would defeat Seeker hides-all isolation).
+    heal_spells = list(HEAL_MY_GOAP_SPELLS)
+
+    def widen_heal_allowlist() -> None:
+        # No-op when Seeker hides-all is disabled (heal installed alone).
+        # Called on SESSION_START and every invocation: if heal's
+        # SESSION_START ran before Seeker enabled the allowlist, the
+        # BEFORE_INVOCATION widen still lands afterward. Idempotent union.
+        widen = getattr(api, "widen_global_allowlist", None)
+        if callable(widen):
+            widen(list(heal_spells))
+
     # Sigil Hook: Sync spells before invocation
     async def on_before_invocation(payload: Any = None) -> None:
         sync_spells_to_goap(engine, api)
+        widen_heal_allowlist()
 
     api.on(SigilHook.BEFORE_INVOCATION, on_before_invocation)
     api.on(SigilHook.SESSION_START, on_before_invocation)
 
-    # Own the active-spell surface explicitly (Pi-faithful setActiveTools
-    # pattern). Mirrors the seeker rune: pin to heal-my-goap's own tools so the
-    # system prompt reflects only this rune's capabilities and is not clobbered
-    # by another rune that pins its own active set.
+    # Own the active-spell surface explicitly: pin only heal-my-goap's own
+    # tools (per-rune composition — never copy the union into our entry)
+    # and widen the Seeker hides-all allowlist so our tools stay visible.
     def activate_heal_my_goap_spells(_data: dict[str, Any]) -> None:
-        # Add heal-my-goap's tools to whatever active set already exists rather
-        # than replacing it, so this rune composes with others that own their
-        # own active set (e.g. seeker). Becomes a native per-rune additive call
-        # once issue #40 lands.
-        api.set_active_spells([*api.get_active_spells(), *HEAL_MY_GOAP_SPELLS])
+        api.set_active_spells(list(heal_spells))
+        widen_heal_allowlist()
 
     api.on(SigilHook.SESSION_START, activate_heal_my_goap_spells)
 
@@ -348,12 +358,15 @@ def rune_factory(api: RuneAPI) -> None:
                 api.register_spell(SynthesizedRuneSpell(synth_action, engine))
 
                 # The active set is pinned, so a fresh registration does not
-                # auto-join it. Widen explicitly so the model can cast the
-                # newly synthesized repair spell. (This is the in-rune form of
-                # the engine's runtime-widening work tracked in issue #41.)
-                api.set_active_spells(
-                    [*api.get_active_spells(), synth_action.name]
-                )
+                # auto-join it. Widen explicitly (own entry + global
+                # allowlist) so the model can cast the repair spell.
+                heal_spells.append(synth_action.name)
+                widen_active = getattr(api, "widen_active_spells", None)
+                if callable(widen_active):
+                    widen_active([synth_action.name])
+                else:
+                    api.set_active_spells(list(heal_spells))
+                widen_heal_allowlist()
 
                 return {
                     "result": {

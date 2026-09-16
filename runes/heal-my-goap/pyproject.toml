@@ -10,5 +10,8 @@ dependencies = [
     "mvgeos-core",
     "mvgeos-agent",
     "mvgeos-runes",
-    "heal_my_goap",
+    "heal-my-goap",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
