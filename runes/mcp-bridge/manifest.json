@@ -1,0 +1,13 @@
+{
+  "name": "mcp-bridge",
+  "version": "0.1.0",
+  "description": "Official Model Context Protocol (MCP) bridge for MvgeOS",
+  "types": ["Spell", "Spell Modifier", "Command"],
+  "runtime": "python",
+  "entry_point": "rune.py",
+  "hooks": ["session_start", "session_shutdown"],
+  "commands": ["mcp"],
+  "python_deps": ["mcp>=2.2.0"],
+  "execution_mode": "parallel",
+  "enabled": true
+}

@@ -85,6 +85,31 @@
         "session_shutdown"
       ],
       "python_deps": []
+    },
+    "mcp-bridge": {
+      "name": "mcp-bridge",
+      "version": "0.1.0",
+      "description": "Official Model Context Protocol (MCP) bridge for MvgeOS",
+      "types": [
+        "Spell",
+        "Spell Modifier",
+        "Command"
+      ],
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "runes/mcp-bridge",
+      "created_at": "2026-09-17T00:00:00Z",
+      "updated_at": "2026-09-17T00:00:00Z",
+      "hooks": [
+        "session_start",
+        "session_shutdown"
+      ],
+      "commands": [
+        "mcp"
+      ],
+      "python_deps": [
+        "mcp>=2.2.0"
+      ]
     }
   },
   "mvges": {
