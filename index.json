@@ -239,6 +239,37 @@
         "pyyaml>=6.0",
         "typer>=0.12"
       ]
+    },
+    "skills-bridge": {
+      "name": "skills-bridge",
+      "version": "0.1.0",
+      "description": "Official Agent Skills (agentskills.io) and Agent Plugins bridge for MvgeOS",
+      "types": [
+        "Sigil",
+        "Spell",
+        "Command"
+      ],
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "runes/skills-bridge",
+      "created_at": "2026-09-18T00:00:00Z",
+      "updated_at": "2026-09-18T00:00:00Z",
+      "hooks": [
+        "session_start",
+        "before_mvge_start",
+        "context_transform",
+        "session_shutdown"
+      ],
+      "commands": [
+        "skill"
+      ],
+      "spells": [
+        "activate_skill"
+      ],
+      "python_deps": [
+        "pyyaml>=6.0",
+        "typer>=0.12"
+      ]
     }
   },
   "mvges": {

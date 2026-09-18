@@ -16,7 +16,17 @@ dependencies = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["runes"]
+testpaths = [
+    "runes/openrouter-realm/tests",
+    "runes/seeker/tests",
+    "runes/heal-my-goap/tests",
+    "runes/mcp-bridge/tests",
+    "runes/opentelemetry-bridge/tests",
+    "runes/okf-bridge/tests",
+    "runes/adr-bridge/tests",
+    "runes/skills-bridge/tests",
+]
+python_files = "*.py"
 pythonpath = [
     "runes/openrouter-realm",
     "runes/seeker",
@@ -25,7 +35,9 @@ pythonpath = [
     "runes/opentelemetry-bridge",
     "runes/okf-bridge",
     "runes/adr-bridge",
+    "runes/skills-bridge",
 ]
+addopts = "--import-mode=importlib"
 
 [tool.coverage.run]
 branch = true
