@@ -1,0 +1,21 @@
+{
+  "name": "okf-bridge",
+  "version": "0.1.0",
+  "description": "Official Open Knowledge Format (OKF v0.2) knowledge bridge for MvgeOS",
+  "types": ["Sigil", "Spell", "Command"],
+  "runtime": "python",
+  "entry_point": "rune.py",
+  "hooks": [
+    "session_start",
+    "before_mvge_start",
+    "context_transform",
+    "session_shutdown"
+  ],
+  "commands": ["okf"],
+  "python_deps": [
+    "pyyaml>=6.0",
+    "typer>=0.12"
+  ],
+  "execution_mode": "parallel",
+  "enabled": true
+}
