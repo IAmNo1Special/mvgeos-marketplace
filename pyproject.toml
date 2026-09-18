@@ -25,6 +25,7 @@ testpaths = [
     "runes/okf-bridge/tests",
     "runes/adr-bridge/tests",
     "runes/skills-bridge/tests",
+    "runes/steering-bridge/tests",
 ]
 python_files = "*.py"
 pythonpath = [
@@ -36,6 +37,7 @@ pythonpath = [
     "runes/okf-bridge",
     "runes/adr-bridge",
     "runes/skills-bridge",
+    "runes/steering-bridge",
 ]
 addopts = "--import-mode=importlib"
 

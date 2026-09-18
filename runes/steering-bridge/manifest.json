@@ -1,0 +1,19 @@
+{
+  "name": "steering-bridge",
+  "version": "0.1.0",
+  "description": "Official repository steering (AGENTS.md, .agents protocol) bridge for MvgeOS",
+  "types": ["Sigil", "Command"],
+  "runtime": "python",
+  "entry_point": "rune.py",
+  "hooks": [
+    "session_start",
+    "before_mvge_start",
+    "session_shutdown"
+  ],
+  "commands": ["steering"],
+  "python_deps": [
+    "typer>=0.12"
+  ],
+  "execution_mode": "parallel",
+  "enabled": true
+}

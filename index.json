@@ -270,6 +270,31 @@
         "pyyaml>=6.0",
         "typer>=0.12"
       ]
+    },
+    "steering-bridge": {
+      "name": "steering-bridge",
+      "version": "0.1.0",
+      "description": "Official repository steering (AGENTS.md, .agents protocol) bridge for MvgeOS",
+      "types": [
+        "Sigil",
+        "Command"
+      ],
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "runes/steering-bridge",
+      "created_at": "2026-09-18T00:00:00Z",
+      "updated_at": "2026-09-18T00:00:00Z",
+      "hooks": [
+        "session_start",
+        "before_mvge_start",
+        "session_shutdown"
+      ],
+      "commands": [
+        "steering"
+      ],
+      "python_deps": [
+        "typer>=0.12"
+      ]
     }
   },
   "mvges": {
