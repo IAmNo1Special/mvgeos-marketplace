@@ -70,9 +70,16 @@ class SkillsBridgeRune:
         if not catalog:
             return data
 
-        if isinstance(data, dict):
-            prompt = data.get("prompt", "")
-            data["prompt"] = f"{prompt}\n\n{catalog}" if prompt else catalog
+        if hasattr(data, "base_prompt"):
+            prompt = getattr(data, "base_prompt", "")
+            data.base_prompt = f"{prompt}\n\n{catalog}" if prompt else catalog
+            return data
+        elif isinstance(data, dict):
+            prompt = data.get("prompt", "") or data.get("base_prompt", "")
+            if "base_prompt" in data:
+                data["base_prompt"] = f"{prompt}\n\n{catalog}" if prompt else catalog
+            else:
+                data["prompt"] = f"{prompt}\n\n{catalog}" if prompt else catalog
             return data
         elif isinstance(data, str):
             return f"{data}\n\n{catalog}" if data else catalog
