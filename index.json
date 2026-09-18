@@ -110,6 +110,68 @@
       "python_deps": [
         "mcp>=2.2.0"
       ]
+    },
+    "opentelemetry-bridge": {
+      "name": "opentelemetry-bridge",
+      "version": "0.1.0",
+      "description": "Official OpenTelemetry GenAI tracing bridge for MvgeOS",
+      "types": [
+        "Sigil",
+        "Command"
+      ],
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "runes/opentelemetry-bridge",
+      "created_at": "2026-09-18T00:00:00Z",
+      "updated_at": "2026-09-18T00:00:00Z",
+      "hooks": [
+        "session_start",
+        "session_shutdown",
+        "turn_start",
+        "turn_end",
+        "before_provider_request",
+        "after_provider_response",
+        "before_spell_cast",
+        "after_spell_result"
+      ],
+      "commands": [
+        "otel"
+      ],
+      "python_deps": [
+        "opentelemetry-api>=1.30.0",
+        "opentelemetry-sdk>=1.30.0"
+      ]
+    },
+    "opentelemetry-brigde": {
+      "name": "opentelemetry-brigde",
+      "version": "0.1.0",
+      "description": "Official OpenTelemetry GenAI tracing bridge for MvgeOS (alias)",
+      "types": [
+        "Sigil",
+        "Command"
+      ],
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "runes/opentelemetry-bridge",
+      "created_at": "2026-09-18T00:00:00Z",
+      "updated_at": "2026-09-18T00:00:00Z",
+      "hooks": [
+        "session_start",
+        "session_shutdown",
+        "turn_start",
+        "turn_end",
+        "before_provider_request",
+        "after_provider_response",
+        "before_spell_cast",
+        "after_spell_result"
+      ],
+      "commands": [
+        "otel"
+      ],
+      "python_deps": [
+        "opentelemetry-api>=1.30.0",
+        "opentelemetry-sdk>=1.30.0"
+      ]
     }
   },
   "mvges": {

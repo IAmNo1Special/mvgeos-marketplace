@@ -1,0 +1,25 @@
+{
+  "name": "opentelemetry-bridge",
+  "version": "0.1.0",
+  "description": "Official OpenTelemetry GenAI tracing bridge for MvgeOS",
+  "types": ["Sigil", "Command"],
+  "runtime": "python",
+  "entry_point": "rune.py",
+  "hooks": [
+    "session_start",
+    "session_shutdown",
+    "turn_start",
+    "turn_end",
+    "before_provider_request",
+    "after_provider_response",
+    "before_spell_cast",
+    "after_spell_result"
+  ],
+  "commands": ["otel"],
+  "python_deps": [
+    "opentelemetry-api>=1.30.0",
+    "opentelemetry-sdk>=1.30.0"
+  ],
+  "execution_mode": "parallel",
+  "enabled": true
+}
