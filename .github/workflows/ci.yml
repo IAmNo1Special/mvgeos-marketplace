@@ -49,5 +49,13 @@ jobs:
               WITH_ARGS="$WITH_ARGS --with $dep"
             done < <(python3 -c "import sys,tomllib; print('\n'.join(tomllib.load(open(sys.argv[1],'rb')).get('project',{}).get('dependencies',[])))" "$py")
           done
+          # --ignore notes:
+          # - runes/heal-my-goap: its 'heal-my-goap' dep isn't published on PyPI;
+          #   re-enable once the package exists.
+          # - runes/mcp-bridge/mvgeos_runes_mcp_bridge/cli.py: not a test module.
+          #   python_files=*.py collects it and pytest mistakes its typer command
+          #   named `test` for a test function. test_cli.py imports this module
+          #   anyway, so it stays covered.
           uv run --project mvgeos $WITH_ARGS python -m pytest runes/ -q \
-            --ignore=runes/heal-my-goap # TODO: re-enable once heal-my-goap is published
+            --ignore=runes/heal-my-goap \
+            --ignore=runes/mcp-bridge/mvgeos_runes_mcp_bridge/cli.py
