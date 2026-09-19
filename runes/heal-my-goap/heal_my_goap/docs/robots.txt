@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://IAmNo1Special.github.io/heal_my_goap/sitemap.xml
