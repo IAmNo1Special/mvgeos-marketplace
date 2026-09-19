@@ -35,27 +35,33 @@ jobs:
       # the engine workspace. Collect them all and layer them onto the test
       # environment via --with, so newly added runes don't break CI.
       # mvgeos-* deps come from the engine sync above and are skipped.
+      # The heal-my-goap rune vendors its library in-tree
+      # (runes/heal-my-goap/heal_my_goap, src layout), so that nested
+      # pyproject is read too. Its goapauto dep is not on PyPI and is
+      # installed from the public goapauto repo instead.
       - name: Run rune test suite
         run: |
           WITH_ARGS=""
-          for py in runes/*/pyproject.toml; do
+          for py in runes/*/pyproject.toml runes/heal-my-goap/heal_my_goap/pyproject.toml; do
+            [ -f "$py" ] || continue
             while IFS= read -r dep; do
               case "$dep" in
                 ""|\#*) continue ;;
                 mvgeos-*) continue ;; # provided by the engine workspace sync
-                heal-my-goap) continue ;; # not published on PyPI; see --ignore below
+                heal-my-goap) continue ;; # vendored in-tree; importable via pytest pythonpath
+                goapauto*) WITH_ARGS="$WITH_ARGS --with goapauto@git+https://github.com/IAmNo1Special/goapauto" ;; # not on PyPI
                 ./*|/*|*://*) echo "WARNING: skipping non-PyPI dep '$dep' from $py" >&2; continue ;;
+                *) WITH_ARGS="$WITH_ARGS --with $dep" ;;
               esac
-              WITH_ARGS="$WITH_ARGS --with $dep"
             done < <(python3 -c "import sys,tomllib; print('\n'.join(tomllib.load(open(sys.argv[1],'rb')).get('project',{}).get('dependencies',[])))" "$py")
           done
           # --ignore notes:
-          # - runes/heal-my-goap: its 'heal-my-goap' dep isn't published on PyPI;
-          #   re-enable once the package exists.
           # - runes/mcp-bridge/mvgeos_runes_mcp_bridge/cli.py: not a test module.
           #   python_files=*.py collects it and pytest mistakes its typer command
           #   named `test` for a test function. test_cli.py imports this module
           #   anyway, so it stays covered.
-          uv run --project mvgeos $WITH_ARGS python -m pytest runes/ -q \
-            --ignore=runes/heal-my-goap \
+          # --with notes:
+          # - pytest-asyncio: the vendored heal-my-goap library's own test suite
+          #   has async tests, and `pytest runes/` collects them like the rest.
+          uv run --project mvgeos $WITH_ARGS --with pytest-asyncio python -m pytest runes/ -q \
             --ignore=runes/mcp-bridge/mvgeos_runes_mcp_bridge/cli.py

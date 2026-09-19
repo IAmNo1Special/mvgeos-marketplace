@@ -31,6 +31,8 @@ python_files = "*.py"
 pythonpath = [
     "runes/openrouter-realm",
     "runes/seeker",
+    # heal-my-goap vendors its library in-tree (src layout)
+    "runes/heal-my-goap/heal_my_goap/src",
     "runes/heal-my-goap",
     "runes/mcp-bridge",
     "runes/opentelemetry-bridge",
