@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Verify mypy installed
+        run: uv run python -c "import mypy; print('mypy ok')"
+
+      - name: Run Ruff (lint & format)
+        run: uvx ruff check . --fix && uvx ruff format . --check
+
+      - name: Run mdformat (markdown lint)
+        run: uvx --with mdformat-front-matters mdformat --check README.md AGENTS.md
+
+      - name: Run MyPy
+        run: uv run python -m mypy src tests
+
+      - name: Run Tests with Coverage
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: uv run pytest tests/ -v -s --cov=heal_my_goap --cov-report=term-missing --cov-fail-under=100 -W error
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false

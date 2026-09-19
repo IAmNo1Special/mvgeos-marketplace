@@ -1,0 +1,11 @@
+{
+  "89706cc998ca9a813ab0d6666cc0a37b93c6a2d5481f3692d4de308646627e73": {
+    "name": "synth_wildcard_has_key_2fc12914",
+    "preconditions": {},
+    "effects": {
+      "has_key": true
+    },
+    "cost": 50.0,
+    "code_payload": null
+  }
+}

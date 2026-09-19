@@ -1,0 +1,227 @@
+/* heal-my-goap Custom Modern Dark-First Theme Styling */
+
+/* 1. CSS Custom Properties — Dark Mode (Slate) */
+[data-md-color-scheme="slate"] {
+  /* Background Layers */
+  --md-default-bg-color:             #0f172a;  /* Page background */
+  --md-default-bg-color--light:      #1e293b;  /* Cards, admonitions, sidebar */
+  --md-default-bg-color--lighter:    #334155;  /* Hover states, borders */
+  --md-code-bg-color:                #090d16;  /* Code block background */
+
+  /* Text Colors */
+  --md-default-fg-color:             #f8fafc;  /* Primary text (contrast 15.4:1 AAA) */
+  --md-default-fg-color--light:      #cbd5e1;  /* Secondary text (contrast 9.8:1 AAA) */
+  --md-default-fg-color--lighter:    #94a3b8;  /* Tertiary/muted (contrast 5.6:1 AA) */
+
+  /* Accent Colors */
+  --md-primary-fg-color:             #6366f1;  /* Primary: indigo */
+  --md-primary-fg-color--light:      #818cf8;  /* Primary light */
+  --md-primary-fg-color--dark:       #4338ca;  /* Primary dark (hover) */
+  --md-accent-fg-color:              #06b6d4;  /* Accent: cyan */
+  --md-accent-fg-color--transparent: rgba(6, 182, 212, 0.1);
+
+  /* Hero Gradient Tokens */
+  --md-hero-gradient-start:          #818cf8;  /* Indigo light */
+  --md-hero-gradient-end:            #22d3ee;  /* Cyan light */
+}
+
+/* 1b. CSS Custom Properties — Light Mode (Default) */
+[data-md-color-scheme="default"] {
+  /* Background Layers */
+  --md-default-bg-color:             #ffffff;  /* Page background */
+  --md-default-bg-color--light:      #f1f5f9;  /* Cards, admonitions, sidebar */
+  --md-default-bg-color--lighter:    #e2e8f0;  /* Hover states, borders */
+  --md-code-bg-color:                #f8fafc;  /* Code block background */
+
+  /* Text Colors */
+  --md-default-fg-color:             #0f172a;  /* Primary text (contrast 18.1:1 AAA) */
+  --md-default-fg-color--light:      #334155;  /* Secondary text (contrast 10.7:1 AAA) */
+  --md-default-fg-color--lighter:    #64748b;  /* Tertiary/muted (contrast 4.6:1 AA) */
+
+  /* Accent Colors */
+  --md-primary-fg-color:             #4f46e5;  /* Primary: darker indigo for light bg */
+  --md-primary-fg-color--light:      #6366f1;
+  --md-primary-fg-color--dark:       #4338ca;
+  --md-accent-fg-color:              #0891b2;  /* Accent: darker cyan for light bg */
+  --md-accent-fg-color--transparent: rgba(8, 145, 178, 0.1);
+
+  /* Hero Gradient Tokens */
+  --md-hero-gradient-start:          #6366f1;
+  --md-hero-gradient-end:            #06b6d4;
+}
+
+/* 2. Hero Banner */
+.md-typeset .hero-banner {
+  padding: 3rem 2rem;
+  margin-bottom: 2rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.2) 0%, rgba(6, 182, 212, 0.15) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  box-shadow: 0 10px 30px -10px rgba(79, 70, 229, 0.3);
+  text-align: center;
+  backdrop-filter: blur(8px);
+}
+
+.md-typeset .hero-banner h1 {
+  font-size: 2.75rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, var(--md-hero-gradient-start) 0%, var(--md-hero-gradient-end) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.md-typeset .hero-banner p {
+  font-size: 1.2rem;
+  color: var(--md-default-fg-color--light);
+  max-width: 700px;
+  margin: 0 auto 1.5rem auto;
+}
+
+.md-typeset .hero-banner .md-button {
+  font-size: 1rem;
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.md-typeset .hero-banner .md-button--primary {
+  background-color: var(--md-primary-fg-color);
+  color: #ffffff;
+  border: none;
+}
+
+.md-typeset .hero-banner .md-button--primary:hover {
+  background-color: var(--md-primary-fg-color--dark);
+  transform: scale(1.03);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+}
+
+.md-typeset .hero-banner .md-button:not(.md-button--primary) {
+  background-color: transparent;
+  color: var(--md-default-fg-color);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.md-typeset .hero-banner .md-button:not(.md-button--primary):hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* 3. Feature Grid Cards */
+.grid.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.grid.cards > div {
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  background: var(--md-default-bg-color--light);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.grid.cards > div:hover {
+  transform: translateY(-4px);
+  border-color: rgba(6, 182, 212, 0.5);
+  box-shadow: 0 12px 24px -8px rgba(6, 182, 212, 0.2);
+}
+
+.grid.cards h3 {
+  margin-top: 0;
+  color: var(--md-accent-fg-color);
+  font-size: 1.15rem;
+}
+
+/* 4. Code Blocks */
+.highlight {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* 5. Admonitions */
+.md-typeset .admonition {
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* 6. Custom Scrollbar (WebKit) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--md-default-bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--md-default-bg-color--lighter);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--md-primary-fg-color);
+}
+
+/* 7. Focus Rings for Keyboard Navigation */
+:focus-visible {
+  outline: 2px solid var(--md-primary-fg-color) !important;
+  outline-offset: 2px !important;
+}
+
+/* 8. Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .grid.cards > div {
+    transition: none;
+  }
+  .grid.cards > div:hover {
+    transform: none;
+  }
+  .hero-banner {
+    animation: none;
+  }
+  .md-typeset .hero-banner .md-button {
+    transition: none;
+  }
+  .md-typeset .hero-banner .md-button:hover {
+    transform: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 9. Responsive Breakpoints */
+@media (max-width: 768px) {
+  .md-typeset .hero-banner h1 {
+    font-size: 2rem;
+  }
+  .md-typeset .hero-banner p {
+    font-size: 1rem;
+  }
+  .md-typeset .hero-banner .md-button {
+    display: block;
+    width: 100%;
+    margin: 0.5rem 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .grid.cards {
+    grid-template-columns: 1fr;
+  }
+  .md-typeset .hero-banner {
+    padding: 2rem 1rem;
+  }
+}
