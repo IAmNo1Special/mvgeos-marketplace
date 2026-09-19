@@ -7,7 +7,7 @@ before and after action execution and compute observed predicate effects.
 from abc import ABC, abstractmethod
 from typing import Any
 
-from heal_my_goap.models import WorldState
+from mvgeos_runes_heal_my_goap.models import WorldState
 
 __all__ = ["BaseObserver", "DeltaObserver"]
 

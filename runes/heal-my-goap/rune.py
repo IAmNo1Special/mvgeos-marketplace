@@ -8,9 +8,9 @@ import os
 from pathlib import Path
 from typing import Any
 
-from heal_my_goap.engine import GoapEngine
-from heal_my_goap.models import Action, Gap, Goal, WorldState, goal, world_state_from_sensors
-from heal_my_goap.sensors import SystemSensors
+from mvgeos_runes_heal_my_goap.engine import GoapEngine
+from mvgeos_runes_heal_my_goap.models import Action, Gap, Goal, WorldState, goal, world_state_from_sensors
+from mvgeos_runes_heal_my_goap.sensors import SystemSensors
 from mvgeos_runes.rune_api import RuneAPI
 from mvgeos_runes.types import ExecutionMode, SigilHook, SpellDefinition
 

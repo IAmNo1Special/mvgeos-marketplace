@@ -1,12 +1,10 @@
-"""heal-my-goap Rune internals."""
+"""heal-my-goap Rune: GOAP engine with LLM-powered self-healing."""
 
 from __future__ import annotations
 
-"""A GOAP library with LLM-powered self-healing."""
-
-from heal_my_goap.engine import GoapEngine
-from heal_my_goap.gap_analyzer import BaseGapAnalyzer, GapAnalyzer
-from heal_my_goap.models import (
+from mvgeos_runes_heal_my_goap.engine import GoapEngine
+from mvgeos_runes_heal_my_goap.gap_analyzer import BaseGapAnalyzer, GapAnalyzer
+from mvgeos_runes_heal_my_goap.models import (
     Action,
     Actions,
     Decrement,
@@ -33,10 +31,10 @@ from heal_my_goap.models import (
     goal,
     world_state_from_sensors,
 )
-from heal_my_goap.observer import BaseObserver, DeltaObserver
-from heal_my_goap.sandbox import BaseSandboxExecutor, SandboxExecutor
-from heal_my_goap.storage import ActionStorage, BaseActionStorage
-from heal_my_goap.synthesizer import BaseSynthesizer, LLMSynthesizer
+from mvgeos_runes_heal_my_goap.observer import BaseObserver, DeltaObserver
+from mvgeos_runes_heal_my_goap.sandbox import BaseSandboxExecutor, SandboxExecutor
+from mvgeos_runes_heal_my_goap.storage import ActionStorage, BaseActionStorage
+from mvgeos_runes_heal_my_goap.synthesizer import BaseSynthesizer, LLMSynthesizer
 
 __version__ = "0.1.0"
 

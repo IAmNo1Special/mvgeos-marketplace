@@ -40,7 +40,7 @@ PROJECT_DIR = str(Path(__file__).resolve().parent.parent.parent)
 
 sys.path.insert(0, str(Path(PROJECT_DIR) / "src"))
 
-from heal_my_goap import (  # noqa: E402
+from mvgeos_runes_heal_my_goap import (  # noqa: E402
     Action,
     DeltaObserver,
     ExecutionResult,
@@ -473,7 +473,7 @@ def main() -> None:
 
     # Write report
     report_path = str(
-        Path(PROJECT_DIR) / "examples" / "heal_my_goap" / "benchmark_results.md"
+        Path(PROJECT_DIR) / "examples" / "mvgeos_runes_heal_my_goap" / "benchmark_results.md"
     )
     _write_report(all_metrics, report_path)
 

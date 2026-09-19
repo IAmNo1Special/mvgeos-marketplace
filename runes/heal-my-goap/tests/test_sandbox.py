@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from heal_my_goap.models import SandboxTimeoutError
-from heal_my_goap.sandbox import SandboxExecutor, _sandbox_process_target
+from mvgeos_runes_heal_my_goap.models import SandboxTimeoutError
+from mvgeos_runes_heal_my_goap.sandbox import SandboxExecutor, _sandbox_process_target
 
 
 def test_sandbox_safe_code_execution() -> None:
@@ -97,7 +97,7 @@ def test_sandbox_execute_code_empty_queue() -> None:
     fake_ctx.Process.return_value = fake_process
 
     with patch(
-        "heal_my_goap.sandbox.multiprocessing.get_context",
+        "mvgeos_runes_heal_my_goap.sandbox.multiprocessing.get_context",
         return_value=fake_ctx,
     ):
         result = executor.execute_code("x = 1")

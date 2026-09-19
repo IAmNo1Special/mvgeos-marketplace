@@ -2,8 +2,8 @@
 
 from typing import Any
 
-from heal_my_goap.gap_analyzer import GapAnalyzer
-from heal_my_goap.models import Action, Goal, WorldState
+from mvgeos_runes_heal_my_goap.gap_analyzer import GapAnalyzer
+from mvgeos_runes_heal_my_goap.models import Action, Goal, WorldState
 
 
 def test_gap_analyzer_direct_missing_precondition() -> None:

@@ -2,8 +2,8 @@
 
 from typing import Any
 
-from heal_my_goap.models import WorldState
-from heal_my_goap.observer import DeltaObserver
+from mvgeos_runes_heal_my_goap.models import WorldState
+from mvgeos_runes_heal_my_goap.observer import DeltaObserver
 
 
 def test_compute_delta_int_float_bool_str_changes() -> None:

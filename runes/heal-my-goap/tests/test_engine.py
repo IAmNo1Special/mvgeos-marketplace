@@ -5,10 +5,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from heal_my_goap.engine import GoapEngine
-from heal_my_goap.models import Action, Goal, WorldState
-from heal_my_goap.storage import ActionStorage
-from heal_my_goap.synthesizer import LLMSynthesizer
+from mvgeos_runes_heal_my_goap.engine import GoapEngine
+from mvgeos_runes_heal_my_goap.models import Action, Goal, WorldState
+from mvgeos_runes_heal_my_goap.storage import ActionStorage
+from mvgeos_runes_heal_my_goap.synthesizer import LLMSynthesizer
 
 
 @pytest.fixture
@@ -141,7 +141,7 @@ def test_engine_accepts_plain_list_plan(tmp_path: Any) -> None:
     initial_state = WorldState(**ws_kwargs)
     goal = Goal(target_state={"door_open": True})
 
-    with patch("heal_my_goap.engine.Planner") as mock_planner:
+    with patch("mvgeos_runes_heal_my_goap.engine.Planner") as mock_planner:
         mock_planner.return_value.generate_plan.return_value = ["open_door"]
         res = engine.run(initial_state, goal)
 
@@ -165,7 +165,7 @@ def test_engine_skips_unknown_plan_action(tmp_path: Any) -> None:
     initial_state = WorldState(**ws_kwargs)
     goal = Goal(target_state={"door_open": True})
 
-    with patch("heal_my_goap.engine.Planner") as mock_planner:
+    with patch("mvgeos_runes_heal_my_goap.engine.Planner") as mock_planner:
         mock_planner.return_value.generate_plan.return_value = [
             "ghost_action",
             "open_door",
@@ -202,7 +202,7 @@ def test_engine_execution_success_but_goal_not_satisfied(tmp_path: Any) -> None:
     initial_state = WorldState(**ws_kwargs)
     goal = Goal(target_state={"value": 1, "other": True})
 
-    with patch("heal_my_goap.engine.Planner") as mock_planner:
+    with patch("mvgeos_runes_heal_my_goap.engine.Planner") as mock_planner:
         mock_planner.return_value.generate_plan.return_value = ["set_value"]
         res = engine.run(initial_state, goal)
 
@@ -297,7 +297,7 @@ def test_engine_observer_with_live_state_refresh_callback(
     ws_init = WorldState(**refresh_state())
     goal = Goal(target_state={"cleaned": True})
 
-    with patch("heal_my_goap.engine.Planner") as mock_planner:
+    with patch("mvgeos_runes_heal_my_goap.engine.Planner") as mock_planner:
         mock_planner.return_value.generate_plan.return_value = ["do_clean"]
         res = engine.run(ws_init, goal)
 

@@ -5,8 +5,8 @@ import copy
 from collections.abc import Callable
 from typing import Any, cast
 
-from heal_my_goap.gap_analyzer import BaseGapAnalyzer, GapAnalyzer
-from heal_my_goap.models import (
+from mvgeos_runes_heal_my_goap.gap_analyzer import BaseGapAnalyzer, GapAnalyzer
+from mvgeos_runes_heal_my_goap.models import (
     Action,
     ExecutionResult,
     Gap,
@@ -15,10 +15,10 @@ from heal_my_goap.models import (
     WorldState,
     action_from_tool,
 )
-from heal_my_goap.observer import BaseObserver, DeltaObserver
-from heal_my_goap.sandbox import BaseSandboxExecutor, SandboxExecutor
-from heal_my_goap.storage import ActionStorage, BaseActionStorage
-from heal_my_goap.synthesizer import BaseSynthesizer, LLMSynthesizer
+from mvgeos_runes_heal_my_goap.observer import BaseObserver, DeltaObserver
+from mvgeos_runes_heal_my_goap.sandbox import BaseSandboxExecutor, SandboxExecutor
+from mvgeos_runes_heal_my_goap.storage import ActionStorage, BaseActionStorage
+from mvgeos_runes_heal_my_goap.synthesizer import BaseSynthesizer, LLMSynthesizer
 
 
 class GoapEngine:

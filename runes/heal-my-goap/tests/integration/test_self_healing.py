@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 pytest.importorskip("mvgeos_agent")
-pytest.importorskip("heal_my_goap")
+pytest.importorskip("mvgeos_runes_heal_my_goap")
 
 from mvgeos_runes.types import SigilHook
 from mvgeos_agent.mvge import Mvge
@@ -17,10 +17,10 @@ from mvgeos_agent.mvge import Mvge
 
 @pytest.mark.asyncio
 async def test_missing_read_tool_self_healing_execution(tmp_path: Path) -> None:
-    """Verifies heal_my_goap synthesizes and executes code when tool missing."""
+    """Verifies heal-my-goap synthesizes and executes code when tool missing."""
     readme_file = tmp_path / "README.md"
     readme_file.write_text(
-        "Hello from heal_my_goap self-healing read!", encoding="utf-8"
+        "Hello from mvgeos_runes_heal_my_goap self-healing read!", encoding="utf-8"
     )
 
     # Pass marketplace runes directory so the agent can discover openrouter-realm rune

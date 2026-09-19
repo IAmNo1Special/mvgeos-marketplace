@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 
-from heal_my_goap.models import Action, Gap
-from heal_my_goap.synthesizer import LLMSynthesizer
+from mvgeos_runes_heal_my_goap.models import Action, Gap
+from mvgeos_runes_heal_my_goap.synthesizer import LLMSynthesizer
 
 
 def test_synthesizer_fallback_wildcard_action_when_no_api_key() -> None:
@@ -16,7 +16,7 @@ def test_synthesizer_fallback_wildcard_action_when_no_api_key() -> None:
         dependent_action_name="process_file",
     )
 
-    with patch("heal_my_goap.synthesizer.os.getenv", return_value=""):
+    with patch("mvgeos_runes_heal_my_goap.synthesizer.os.getenv", return_value=""):
         synthesizer = LLMSynthesizer(api_key="")
         action = synthesizer.synthesize_bridge_action(gap, available_actions=[])
     assert action is not None

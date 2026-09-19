@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 from dotenv import load_dotenv
 
-from heal_my_goap import (
+from mvgeos_runes_heal_my_goap import (
     Action,
     Gap,
     Goal,

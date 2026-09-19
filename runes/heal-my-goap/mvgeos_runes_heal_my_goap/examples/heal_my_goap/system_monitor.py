@@ -29,14 +29,14 @@ from typing import Any
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from heal_my_goap import (
+from mvgeos_runes_heal_my_goap import (
     Action,
     GoapEngine,
     WorldState,
     goal,
     world_state_from_sensors,
 )
-from heal_my_goap.sensors import SystemSensors
+from mvgeos_runes_heal_my_goap.sensors import SystemSensors
 
 
 def main() -> None:

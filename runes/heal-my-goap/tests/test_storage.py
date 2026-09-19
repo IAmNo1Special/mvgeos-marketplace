@@ -5,8 +5,8 @@ from unittest.mock import patch
 
 import pytest
 
-from heal_my_goap.models import Action, Gap
-from heal_my_goap.storage import ActionStorage
+from mvgeos_runes_heal_my_goap.models import Action, Gap
+from mvgeos_runes_heal_my_goap.storage import ActionStorage
 
 
 @pytest.fixture
@@ -90,7 +90,7 @@ def test_storage_clear_handles_oserror(temp_storage: ActionStorage) -> None:
         )
     )
     with patch(
-        "heal_my_goap.storage.os.remove",
+        "mvgeos_runes_heal_my_goap.storage.os.remove",
         side_effect=OSError("Permission denied"),
     ):
         temp_storage.clear()

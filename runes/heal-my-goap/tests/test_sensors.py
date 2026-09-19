@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import psutil
 import pytest
 
-from heal_my_goap.sensors import SystemSensors
+from mvgeos_runes_heal_my_goap.sensors import SystemSensors
 
 
 @pytest.fixture

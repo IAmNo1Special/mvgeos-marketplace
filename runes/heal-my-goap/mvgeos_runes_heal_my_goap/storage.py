@@ -6,7 +6,7 @@ import os
 from abc import ABC, abstractmethod
 from typing import Any
 
-from heal_my_goap.models import Action, Gap
+from mvgeos_runes_heal_my_goap.models import Action, Gap
 
 
 class BaseActionStorage(ABC):

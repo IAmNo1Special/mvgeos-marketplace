@@ -10,7 +10,7 @@ import httpx
 from dotenv import load_dotenv
 from pydantic import ValidationError
 
-from heal_my_goap.models import (
+from mvgeos_runes_heal_my_goap.models import (
     Action,
     Gap,
     SynthesizedAction,

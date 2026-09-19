@@ -5,7 +5,7 @@ import multiprocessing
 import types
 from typing import Any, Protocol, cast, runtime_checkable
 
-from heal_my_goap.models import SandboxTimeoutError
+from mvgeos_runes_heal_my_goap.models import SandboxTimeoutError
 
 FORBIDDEN_NAMES = {
     "os",

@@ -13,13 +13,12 @@ from mvgeos_runes.loader import load_factory_from_manifest
 from mvgeos_runes.manifest import load_manifest
 from mvgeos_runes.types import SigilHook
 
-# The heal_my_goap engine package is not published; stub it so the loader's
-# python_deps preflight passes and the factory imports. The test only
-# exercises hook registration and spell pinning/widening, never the engine.
+# Stub the in-tree engine package so this test exercises hook registration
+# and spell pinning/widening without importing goapauto or the real engine.
 _HEAL_STUBS: dict[str, list[str]] = {
-    "heal_my_goap": [],
-    "heal_my_goap.engine": ["GoapEngine"],
-    "heal_my_goap.models": [
+    "mvgeos_runes_heal_my_goap": [],
+    "mvgeos_runes_heal_my_goap.engine": ["GoapEngine"],
+    "mvgeos_runes_heal_my_goap.models": [
         "Action",
         "Gap",
         "Goal",
@@ -27,18 +26,18 @@ _HEAL_STUBS: dict[str, list[str]] = {
         "goal",
         "world_state_from_sensors",
     ],
-    "heal_my_goap.sensors": ["SystemSensors"],
+    "mvgeos_runes_heal_my_goap.sensors": ["SystemSensors"],
 }
 
 
 @pytest.fixture(autouse=True)
-def _stub_heal_my_goap(monkeypatch: pytest.MonkeyPatch) -> None:
-    pkg = types.ModuleType("heal_my_goap")
+def _stub_engine_package(monkeypatch: pytest.MonkeyPatch) -> None:
+    pkg = types.ModuleType("mvgeos_runes_heal_my_goap")
     pkg.__path__ = []  # type: ignore[attr-defined]
-    pkg.__spec__ = ModuleSpec("heal_my_goap", loader=None, is_package=True)
-    monkeypatch.setitem(sys.modules, "heal_my_goap", pkg)
+    pkg.__spec__ = ModuleSpec("mvgeos_runes_heal_my_goap", loader=None, is_package=True)
+    monkeypatch.setitem(sys.modules, "mvgeos_runes_heal_my_goap", pkg)
     for mod_name, attrs in _HEAL_STUBS.items():
-        if mod_name == "heal_my_goap":
+        if mod_name == "mvgeos_runes_heal_my_goap":
             continue
         mod = types.ModuleType(mod_name)
         mod.__spec__ = ModuleSpec(mod_name, loader=None)

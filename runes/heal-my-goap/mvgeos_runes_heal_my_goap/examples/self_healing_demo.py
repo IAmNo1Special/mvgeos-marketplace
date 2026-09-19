@@ -1,6 +1,6 @@
 """Self-healing GOAP demo featuring missing action synthesis."""
 
-from heal_my_goap import Action, Goal, GoapEngine, WorldState
+from mvgeos_runes_heal_my_goap import Action, Goal, GoapEngine, WorldState
 
 
 def main() -> None:

@@ -10,7 +10,7 @@ Claude Code, Antigravity, or Devin) using heal-my-goap:
 
 from typing import Any
 
-from heal_my_goap import (
+from mvgeos_runes_heal_my_goap import (
     DeltaObserver,
     Goal,
     GoapEngine,

@@ -1,11 +1,11 @@
-"""Tests for heal_my_goap domain models and custom exceptions."""
+"""Tests for heal-my-goap domain models and custom exceptions."""
 
 from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
 
-from heal_my_goap.models import (
+from mvgeos_runes_heal_my_goap.models import (
     Action,
     ExecutionResult,
     Gap,

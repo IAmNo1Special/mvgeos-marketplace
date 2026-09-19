@@ -31,4 +31,6 @@ Synthesis needs an OpenRouter API key, read from `~/.agents/.mvgeos/auth/openrou
 
 ## Dependencies
 
-`heal_my_goap` (vendored in-tree at `runes/heal-my-goap/heal_my_goap/`).
+`goapauto` (from git — not on PyPI), `httpx`, `pydantic`, `psutil`,
+`python-dotenv`. The GOAP engine now lives in the rune's own
+`mvgeos_runes_heal_my_goap` package instead of a vendored library.

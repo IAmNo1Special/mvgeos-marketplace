@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from heal_my_goap.models import Action, Gap, Goal, WorldState
+from mvgeos_runes_heal_my_goap.models import Action, Gap, Goal, WorldState
 
 
 class BaseGapAnalyzer(ABC):

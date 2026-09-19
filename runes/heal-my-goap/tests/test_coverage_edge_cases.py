@@ -5,12 +5,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from heal_my_goap.engine import GoapEngine
-from heal_my_goap.gap_analyzer import GapAnalyzer
-from heal_my_goap.models import Action, Gap, Goal, WorldState
-from heal_my_goap.sandbox import SandboxExecutor
-from heal_my_goap.storage import ActionStorage
-from heal_my_goap.synthesizer import LLMSynthesizer
+from mvgeos_runes_heal_my_goap.engine import GoapEngine
+from mvgeos_runes_heal_my_goap.gap_analyzer import GapAnalyzer
+from mvgeos_runes_heal_my_goap.models import Action, Gap, Goal, WorldState
+from mvgeos_runes_heal_my_goap.sandbox import SandboxExecutor
+from mvgeos_runes_heal_my_goap.storage import ActionStorage
+from mvgeos_runes_heal_my_goap.synthesizer import LLMSynthesizer
 
 
 def test_gap_analyzer_dict_initial_state() -> None:

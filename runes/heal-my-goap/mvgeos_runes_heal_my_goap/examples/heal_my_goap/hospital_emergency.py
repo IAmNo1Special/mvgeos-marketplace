@@ -23,7 +23,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from goapauto.models.actions import Increment, Set
 
-from heal_my_goap import Action, Goal, GoapEngine, WorldState
+from mvgeos_runes_heal_my_goap import Action, Goal, GoapEngine, WorldState
 
 
 def main() -> None:
