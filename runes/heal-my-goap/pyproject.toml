@@ -15,3 +15,124 @@ dependencies = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["."]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "heal-my-goap"
+version = "0.1.0"
+description = "A lightweight, production-ready Goal-Oriented Action Planning (GOAP) library with LLM-powered self-healing."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+license = { text = "MIT" }
+authors = [{ name = "antigravity" }]
+keywords = ["goap", "ai", "agent", "planning", "self-healing", "llm", "openrouter"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = [
+    "goapauto>=0.3.0",
+    "httpx>=0.28.1",
+    "pydantic>=2.13.4",
+    "psutil>=6.0.0",
+    "python-dotenv>=1.2.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/antigravity/heal-my-goap"
+Repository = "https://github.com/antigravity/heal-my-goap"
+"Bug Tracker" = "https://github.com/antigravity/heal-my-goap/issues"
+Changelog = "https://github.com/antigravity/heal-my-goap/blob/main/CHANGELOG.md"
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/heal_my_goap"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 80
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "D"]
+ignore = []
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+ignore_missing_imports = true
+files = ["src", "tests"]
+
+# ---------------------------------------------------------------------------
+# Automated Changelog — git-cliff
+# Run: uvx git-cliff --output CHANGELOG.md
+# Uses Conventional Commits (feat:, fix:, chore:, docs:, etc.)
+# ---------------------------------------------------------------------------
+[tool.git-cliff.changelog]
+header = """
+# Changelog
+
+All notable changes to `heal-my-goap` are documented here.
+Generated automatically from [Conventional Commits](https://www.conventionalcommits.org/).
+"""
+body = """
+{% if version %}
+## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}
+## [Unreleased]
+{% endif %}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group }}
+{% for commit in commits %}
+- {{ commit.message | upper_first }} ([{{ commit.id | truncate(length=7, end="") }}](https://github.com/antigravity/heal-my-goap/commit/{{ commit.id }}))\
+{% endfor %}
+{% endfor %}
+"""
+trim = true
+
+[tool.git-cliff.git]
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+commit_parsers = [
+    { message = "^feat",  group = "✨ Features"   },
+    { message = "^fix",   group = "🐛 Bug Fixes"   },
+    { message = "^docs",  group = "📖 Documentation" },
+    { message = "^perf",  group = "⚡ Performance"  },
+    { message = "^refactor", group = "♻️ Refactor"  },
+    { message = "^test",  group = "🧪 Tests"        },
+    { message = "^chore", skip = true              },
+]
+filter_commits = true
+tag_pattern = "v[0-9].*"
+
+[dependency-groups]
+dev = [
+    "mdformat>=1.0.0",
+    "mdformat-front-matters>=2.0.0",
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.7",
+    "mypy>=2.3.0",
+    "pre-commit>=4.6.1",
+    "pymdown-extensions>=11.0.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.1",
+]
