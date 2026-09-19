@@ -20,7 +20,7 @@ async def test_missing_read_tool_self_healing_execution(tmp_path: Path) -> None:
     """Verifies heal-my-goap synthesizes and executes code when tool missing."""
     readme_file = tmp_path / "README.md"
     readme_file.write_text(
-        "Hello from mvgeos_runes_heal_my_goap self-healing read!", encoding="utf-8"
+        "Hello from heal_my_goap self-healing read!", encoding="utf-8"
     )
 
     # Pass marketplace runes directory so the agent can discover openrouter-realm rune
