@@ -1,5 +1,5 @@
 [project]
-name = "mvgeos-runes-pi-bridge"
+name = "mvgeos-runes-pi-codec"
 version = "0.1.0"
 description = "Import Pi agent session logs (JSONL v3/v4) into MvgeOS Tomes so any Pi session can resume in MvgeOS"
 requires-python = ">=3.13"
@@ -13,7 +13,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 include = [
-    "mvgeos_runes_pi_bridge/",
+    "mvgeos_runes_pi_codec/",
     "rune.py",
     "cli.py",
 ]

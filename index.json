@@ -180,26 +180,6 @@
         "typer>=0.12"
       ]
     },
-    "pi-bridge": {
-      "name": "pi-bridge",
-      "version": "0.1.0",
-      "description": "Import Pi agent session logs (JSONL v3/v4) into MvgeOS Tomes so any Pi session can resume in MvgeOS",
-      "types": [
-        "Command"
-      ],
-      "runtime": "python",
-      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
-      "path": "runes/pi-bridge",
-      "created_at": "2026-09-19T00:00:00Z",
-      "updated_at": "2026-09-19T00:00:00Z",
-      "hooks": [],
-      "commands": [
-        "pi-import"
-      ],
-      "python_deps": [
-        "typer>=0.12"
-      ]
-    },
     "adr-bridge": {
       "name": "adr-bridge",
       "version": "0.1.0",
@@ -288,6 +268,30 @@
       ],
       "python_deps": [
         "typer>=0.12"
+      ]
+    },
+    "pi-codec": {
+      "name": "pi-codec",
+      "version": "0.1.0",
+      "description": "Native Pi session codec: resume, append, fork, and validate Pi agent session logs (JSONL v3/v4) directly in MvgeOS with no conversion; pi-export copies a Tome v1 session to a Pi-native v4 file",
+      "types": [
+        "Codec"
+      ],
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "runes/pi-codec",
+      "created_at": "2026-09-19T00:00:00Z",
+      "updated_at": "2026-09-19T00:00:00Z",
+      "hooks": [],
+      "commands": [
+        "pi-export",
+        "pi-validate"
+      ],
+      "python_deps": [
+        "typer>=0.12"
+      ],
+      "session_codecs": [
+        "mvgeos_runes_pi_codec.codec:PiSessionCodec"
       ]
     }
   },

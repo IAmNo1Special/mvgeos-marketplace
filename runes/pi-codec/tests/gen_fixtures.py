@@ -1,14 +1,15 @@
-"""Generate pi-bridge test fixtures (realistic Pi v3/v4 session files)."""
+"""Generate pi-codec test fixtures (realistic Pi v3/v4 session files)."""
 
 import json
+import sys
 from pathlib import Path
 
 
 def gen_fixtures() -> None:
-    FIX = Path(__file__).parent / "fixtures"
-    FIX.mkdir(exist_ok=True)
+    fix = Path(__file__).parent / "fixtures"
+    fix.mkdir(exist_ok=True)
 
-    V3 = [
+    v3 = [
         {
             "type": "session",
             "version": 3,
@@ -165,7 +166,7 @@ def gen_fixtures() -> None:
         },
     ]
 
-    V4 = [
+    v4 = [
         {
             "v": 4,
             "kind": "header",
@@ -326,18 +327,19 @@ def gen_fixtures() -> None:
         {"kind": "mystery", "seq": 14, "note": "unknown write kind"},
     ]
 
-    (FIX / "pi_v3_sample.jsonl").write_text(
-        "\n".join(json.dumps(o) for o in V3) + "\n", encoding="utf-8"
+    (fix / "pi_v3_sample.jsonl").write_text(
+        "\n".join(json.dumps(o) for o in v3) + "\n", encoding="utf-8"
     )
-    (FIX / "pi_v4_sample.jsonl").write_text(
-        "\n".join(json.dumps(o) for o in V4) + "\n", encoding="utf-8"
+    (fix / "pi_v4_sample.jsonl").write_text(
+        "\n".join(json.dumps(o) for o in v4) + "\n", encoding="utf-8"
     )
     # torn tail: last line has no terminating newline -> must be skipped
-    torn = V3[:4]
-    (FIX / "pi_v3_torn.jsonl").write_text(
+    torn = v3[:4]
+    (fix / "pi_v3_torn.jsonl").write_text(
         "\n".join(json.dumps(o) for o in torn), encoding="utf-8"
     )
-    print("fixtures written:", sorted(p.name for p in FIX.iterdir()))
+    names = sorted(p.name for p in fix.iterdir())
+    sys.stdout.write("fixtures written: " + ",".join(names) + "\n")
 
 
 if __name__ == "__main__":

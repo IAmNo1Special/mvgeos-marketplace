@@ -1,0 +1,22 @@
+{
+  "commands": [
+    "pi-export",
+    "pi-validate"
+  ],
+  "description": "Native Pi session codec: resume, append, fork, and validate Pi agent session logs (JSONL v3/v4) directly in MvgeOS with no conversion; pi-export copies a Tome v1 session to a Pi-native v4 file",
+  "enabled": true,
+  "entry_point": "rune.py",
+  "hooks": [],
+  "name": "pi-codec",
+  "python_deps": [
+    "typer>=0.12"
+  ],
+  "runtime": "python",
+  "session_codecs": [
+    "mvgeos_runes_pi_codec.codec:PiSessionCodec"
+  ],
+  "types": [
+    "Codec"
+  ],
+  "version": "0.1.0"
+}
