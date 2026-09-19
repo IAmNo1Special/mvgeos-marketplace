@@ -24,6 +24,7 @@ testpaths = [
     "runes/opentelemetry-bridge/tests",
     "runes/okf-bridge/tests",
     "runes/adr-bridge/tests",
+    "runes/pi-bridge/tests",
     "runes/skills-bridge/tests",
     "runes/steering-bridge/tests",
 ]
@@ -36,6 +37,7 @@ pythonpath = [
     "runes/opentelemetry-bridge",
     "runes/okf-bridge",
     "runes/adr-bridge",
+    "runes/pi-bridge",
     "runes/skills-bridge",
     "runes/steering-bridge",
 ]

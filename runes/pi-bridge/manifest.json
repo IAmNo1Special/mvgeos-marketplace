@@ -1,0 +1,1 @@
+{"commands":["pi-import"],"description":"Import Pi agent session logs (JSONL v3/v4) into MvgeOS Tomes so any Pi session can resume in MvgeOS","enabled":true,"entry_point":"rune.py","hooks":[],"name":"pi-bridge","python_deps":["typer>=0.12"],"runtime":"python","types":["Command"],"version":"0.1.0"}

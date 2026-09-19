@@ -1,0 +1,14 @@
+{"type": "session", "version": 3, "id": "v3sess-001", "timestamp": "2026-09-10T12:00:00.000Z", "cwd": "/tmp/pi-proj"}
+{"type": "message", "id": "m1", "parentId": null, "timestamp": "2026-09-10T12:00:01.000Z", "message": {"role": "user", "content": "list the repo files", "timestamp": 1725883201000}}
+{"type": "message", "id": "m2", "parentId": "m1", "timestamp": "2026-09-10T12:00:05.000Z", "message": {"role": "assistant", "content": [{"type": "text", "text": "I'll list them now."}, {"type": "thinking", "thinking": "which tool? ls is fine"}, {"type": "toolCall", "id": "tc1", "name": "bash", "arguments": {"command": "ls"}}], "api": "anthropic-messages", "provider": "anthropic", "model": "claude-test", "usage": {"input": 10, "output": 20, "totalTokens": 30}, "stopReason": "toolUse", "timestamp": 1725883205000}}
+{"type": "message", "id": "m3", "parentId": "m2", "timestamp": "2026-09-10T12:00:06.000Z", "message": {"role": "toolResult", "toolCallId": "tc1", "toolName": "bash", "content": [{"type": "text", "text": "a.py\nb.py"}], "isError": false, "timestamp": 1725883206000}}
+{"type": "message", "id": "m4", "parentId": "m3", "timestamp": "2026-09-10T12:00:07.000Z", "message": {"role": "system", "content": "system prompt here", "timestamp": 1725883207000}}
+{"type": "compaction", "id": "c1", "parentId": "m4", "timestamp": "2026-09-10T12:01:00.000Z", "summary": "Listed repo files with bash.", "firstKeptEntryId": "m1", "tokensBefore": 5000, "fromHook": false, "retainedTail": [{"role": "user", "content": "list the repo files", "timestamp": 1725883201000}, {"role": "assistant", "content": [{"type": "text", "text": "a.py and b.py"}], "stopReason": "stop", "timestamp": 1725883260000}]}
+{"type": "branch_summary", "id": "b1", "parentId": "c1", "timestamp": "2026-09-10T12:01:01.000Z", "fromId": "root", "summary": "branched to try something", "fromHook": false}
+{"type": "label", "id": "l1", "parentId": "b1", "timestamp": "2026-09-10T12:01:02.000Z", "targetId": "m2", "label": "important"}
+{"type": "model_change", "id": "mc1", "parentId": "l1", "timestamp": "2026-09-10T12:01:03.000Z", "provider": "anthropic", "modelId": "claude-test-2"}
+{"type": "thinking_level_change", "id": "tl1", "parentId": "mc1", "timestamp": "2026-09-10T12:01:04.000Z", "thinkingLevel": "high"}
+{"type": "active_tools_change", "id": "at1", "parentId": "tl1", "timestamp": "2026-09-10T12:01:05.000Z", "activeToolNames": ["bash"]}
+{"type": "session_info", "id": "s1", "parentId": "at1", "timestamp": "2026-09-10T12:01:06.000Z", "name": "repo listing"}
+{"type": "custom", "id": "cu1", "parentId": "s1", "timestamp": "2026-09-10T12:01:07.000Z", "customType": "my_plugin", "data": {"foo": 1}}
+{"type": "custom_message", "id": "cm1", "parentId": "cu1", "timestamp": "2026-09-10T12:01:08.000Z", "customType": "notice", "content": "a notice", "display": true}

@@ -1,0 +1,14 @@
+{"v": 4, "kind": "header", "id": "v4sess-001", "storageVersion": 1, "createdAt": 1725883200000, "cwd": "/tmp/pi-proj"}
+{"kind": "entry", "id": "e1", "parentId": null, "seq": 1, "timestamp": 1725883201000, "type": "message", "message": {"role": "user", "content": [{"type": "text", "text": "hello"}, {"type": "image", "data": "aGVsbG8=", "mimeType": "image/png"}], "timestamp": 1725883201000}}
+[{"kind": "entry", "id": "e2", "parentId": "e1", "seq": 2, "timestamp": 1725883205000, "type": "message", "message": {"role": "assistant", "content": [{"type": "text", "text": "hi"}, {"type": "toolCall", "id": "tc9", "name": "read", "arguments": {"path": "a.py"}}], "api": "openai-completions", "provider": "openai", "model": "gpt-test", "usage": {"input": 5, "output": 7, "totalTokens": 12}, "stopReason": "toolUse", "timestamp": 1725883205000}}, {"kind": "usage", "id": "u1", "seq": 3, "usage": {"input": 5, "output": 7}, "entryId": "e2"}]
+{"kind": "entry", "id": "e3", "parentId": "e2", "seq": 4, "timestamp": 1725883206000, "type": "message", "message": {"role": "toolResult", "toolCallId": "tc9", "toolName": "read", "content": [{"type": "text", "text": "contents"}], "isError": false, "timestamp": 1725883206000}}
+{"kind": "value", "op": "set", "seq": 5, "namespace": "pi.entry.label", "key": "e2", "value": "important"}
+{"kind": "value", "op": "set", "seq": 6, "namespace": "pi.entry.label", "key": "e9-missing", "value": "dangling-target"}
+{"kind": "value", "op": "delete", "seq": 7, "namespace": "pi.entry.label", "key": "e9-missing"}
+{"kind": "value", "op": "set", "seq": 8, "namespace": "pi.session.name", "key": "name", "value": "v4 session"}
+{"kind": "value", "op": "set", "seq": 9, "namespace": "pi.lane.config", "key": "config", "value": {"model": "gpt-test"}}
+{"kind": "entry", "id": "e4", "parentId": "e3", "seq": 10, "timestamp": 1725883260000, "type": "compaction", "summary": "Said hi.", "retainedTail": [{"role": "user", "content": "hello", "timestamp": 1725883201000}], "tokensBefore": 120, "fromHook": false}
+{"kind": "entry", "id": "e5", "parentId": "e4", "seq": 11, "timestamp": 1725883261000, "type": "branch_summary", "fromId": null, "summary": "tried a branch", "fromHook": false}
+{"kind": "entry", "id": "e6", "parentId": "e5", "seq": 12, "timestamp": 1725883262000, "type": "custom", "customType": "plugin_x", "data": {"a": [1, 2]}}
+{"kind": "list", "op": "append", "seq": 13, "namespace": "pi.pending.assistant_frame", "key": "f1", "value": {}}
+{"kind": "mystery", "seq": 14, "note": "unknown write kind"}
