@@ -30,7 +30,24 @@ jobs:
         run: uv sync --all-packages
         working-directory: mvgeos
 
-      # --with aiohttp: the seeker rune's only third-party dep, not part of
-      # the engine workspace. pytest/pytest-asyncio/httpx come from it.
+      # Each rune ships its own pyproject.toml declaring third-party deps
+      # (mcp, opentelemetry, typer, pyyaml, aiohttp, ...) that are not part of
+      # the engine workspace. Collect them all and layer them onto the test
+      # environment via --with, so newly added runes don't break CI.
+      # mvgeos-* deps come from the engine sync above and are skipped.
       - name: Run rune test suite
-        run: uv run --project mvgeos --with aiohttp python -m pytest runes/ -q
+        run: |
+          WITH_ARGS=""
+          for py in runes/*/pyproject.toml; do
+            while IFS= read -r dep; do
+              case "$dep" in
+                ""|\#*) continue ;;
+                mvgeos-*) continue ;; # provided by the engine workspace sync
+                heal-my-goap) continue ;; # not published on PyPI; see --ignore below
+                ./*|/*|*://*) echo "WARNING: skipping non-PyPI dep '$dep' from $py" >&2; continue ;;
+              esac
+              WITH_ARGS="$WITH_ARGS --with $dep"
+            done < <(python3 -c "import sys,tomllib; print('\n'.join(tomllib.load(open(sys.argv[1],'rb')).get('project',{}).get('dependencies',[])))" "$py")
+          done
+          uv run --project mvgeos $WITH_ARGS python -m pytest runes/ -q \
+            --ignore=runes/heal-my-goap # TODO: re-enable once heal-my-goap is published
