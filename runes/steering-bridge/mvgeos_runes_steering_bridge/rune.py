@@ -79,13 +79,17 @@ class SteeringBridgeRune:
         if not self.state.section:
             # Lazy refresh so steering still applies when session_start
             # was skipped (e.g. embedded use). Cwd is read from the event
-            # payload when available.
+            # payload when available, else the last explicitly refreshed
+            # cwd — never the bare process cwd, which may be unrelated to
+            # the session's workspace.
             event_cwd: Path | str | None = None
             if hasattr(data, "cwd"):
                 event_cwd = getattr(data, "cwd", None)
             elif isinstance(data, dict) and data.get("cwd"):
                 event_cwd = data["cwd"]
-            self.refresh_steering(cwd=event_cwd)
+            if event_cwd is None:
+                event_cwd = self.state.cwd
+            self.refresh_steering(cwd=event_cwd, global_dir=self.state.global_dir)
 
         if not self.state.section:
             return data
