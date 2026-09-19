@@ -1,0 +1,97 @@
+site_name: MvgeOS Marketplace
+site_url: https://iamno1special.github.io/mvgeos-marketplace/
+site_description: Official extension marketplace for MvgeOS — runes, realms, and bridges.
+site_author: IAmNo1Special
+repo_url: https://github.com/IAmNo1Special/mvgeos-marketplace
+repo_name: IAmNo1Special/mvgeos-marketplace
+
+theme:
+  name: material
+  palette:
+    # Default Dark Mode (Slate)
+    - scheme: slate
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+    # Optional Light Mode toggle
+    - scheme: default
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - navigation.path
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/puzzle
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+nav:
+  - Home: index.md
+  - Runes:
+      - ADR Bridge: runes/adr-bridge.md
+      - heal-my-goap: runes/heal-my-goap.md
+      - MCP Bridge: runes/mcp-bridge.md
+      - OKF Bridge: runes/okf-bridge.md
+      - OpenRouter Realm: runes/openrouter-realm.md
+      - OpenTelemetry Bridge: runes/opentelemetry-bridge.md
+      - Seeker: runes/seeker.md
+      - Session Title: runes/session-title.md
+      - Skills Bridge: runes/skills-bridge.md
+      - Steering Bridge: runes/steering-bridge.md
