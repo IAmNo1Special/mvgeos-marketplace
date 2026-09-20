@@ -5,6 +5,10 @@ from pathlib import Path
 from typing import Any
 
 
+class MCPTransportError(Exception):
+    """Raised when MCP transport fails."""
+
+
 @dataclass
 class MCPServerInfo:
     name: str

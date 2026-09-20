@@ -5,9 +5,10 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+from mvgeos_core.invocations import SummonerRequest
 from mvgeos_runes.rune_api import RuneAPI
 from mvgeos_runes.types import SigilHook
-from openrouter import OpenRouterRealm
+from openrouter import OpenRouterRealm, _invocations_to_messages
 from rune import (
     after_provider_response,
     before_provider_request,
@@ -80,3 +81,42 @@ async def test_hooks_identity() -> None:
     data = {"sample": "value"}
     assert await before_provider_request(data) == data
     assert await after_provider_response(data) == data
+
+
+def test_user_string_content_stays_a_string() -> None:
+    inv = SummonerRequest(role="user", content="hello")
+    messages = _invocations_to_messages([inv])
+    assert messages == [{"role": "user", "content": "hello"}]
+
+
+def test_user_content_parts_map_to_native_wire_parts() -> None:
+    parts = [
+        {"type": "text", "text": "look at this"},
+        {
+            "type": "image_url",
+            "image_url": {"url": "data:image/png;base64,aGk="},
+        },
+        {
+            "type": "file",
+            "file": {
+                "filename": "doc.pdf",
+                "file_data": "data:application/pdf;base64,aGk=",
+            },
+        },
+    ]
+    inv = SummonerRequest(role="user", content=parts)
+    messages = _invocations_to_messages([inv])
+    assert messages == [{"role": "user", "content": parts}]
+
+
+def test_user_unknown_block_degrades_to_text_note() -> None:
+    inv = SummonerRequest(
+        role="user",
+        content=[{"type": "mystery", "mystery": {"x": 1}}],
+    )
+    messages = _invocations_to_messages([inv])
+    assert len(messages) == 1
+    content = messages[0]["content"]
+    assert isinstance(content, list)
+    assert content[0]["type"] == "text"
+    assert "mystery" in content[0]["text"]

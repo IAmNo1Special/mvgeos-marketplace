@@ -9,6 +9,8 @@ import aiohttp
 
 from mvgeos_runes.types import SpellDefinition, ExecutionMode
 
+from .discovery import MCPServerInfo, MCPTransportError
+
 
 MCP_PROTOCOL_VERSION = "2025-03-26"  # Negotiated with server
 
@@ -31,10 +33,6 @@ _MCP_MAX_PERMITTED_COMMANDS = [
     "deno",
     "bun",
 ]
-
-
-class MCPTransportError(Exception):
-    """Raised when MCP transport fails."""
 
 
 class MCPPermissionError(Exception):

@@ -23,14 +23,7 @@ jobs:
       # the engine workspace. Collect them all and layer them onto the test
       # environment via --with, so newly added runes don't break CI.
       # mvgeos-* deps come from the engine sync above and are skipped.
-      # heal-my-goap's goapauto dep is not on PyPI and is installed from
-      # the public goapauto repo instead.
       #
-      # --ignore notes:
-      # - runes/mcp-bridge/mvgeos_runes_mcp_bridge/cli.py: not a test module.
-      #   python_files=*.py collects it and pytest mistakes its typer command
-      #   named `test` for a test function. test_cli.py imports this module
-      #   anyway, so it stays covered.
       # --with notes:
       # - pytest-asyncio: heal-my-goap's test suite has async tests,
       #   and `pytest runes/` collects them like the rest.
@@ -42,11 +35,9 @@ jobs:
             case "$dep" in
               ""|\#*) continue ;;
               mvgeos-*) continue ;; # provided by the engine workspace sync
-              goapauto*) WITH_ARGS="$WITH_ARGS --with goapauto@git+https://github.com/IAmNo1Special/goapauto" ;; # not on PyPI
               ./*|/*|*://*) echo "WARNING: skipping non-PyPI dep '$dep' from $py" >&2; continue ;;
               *) WITH_ARGS="$WITH_ARGS --with $dep" ;;
             esac
           done < <(python3 -c "import sys,tomllib; print('\n'.join(tomllib.load(open(sys.argv[1],'rb')).get('project',{}).get('dependencies',[])))" "$py")
         done
-        uv run --project mvgeos $WITH_ARGS --with pytest-asyncio python -m pytest runes/ -q \
-          --ignore=runes/mcp-bridge/mvgeos_runes_mcp_bridge/cli.py
+        uv run --project mvgeos $WITH_ARGS --with pytest-asyncio python -m pytest runes/ -q

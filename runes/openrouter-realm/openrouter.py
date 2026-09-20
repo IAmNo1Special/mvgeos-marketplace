@@ -27,13 +27,45 @@ def _supports_reasoning(model: Model) -> bool:
     return any(m in model.id for m in _REASONING_MODELS)
 
 
+_NATIVE_USER_PART_TYPES = ("text", "image_url", "file")
+
+
+def _user_content_parts(content: Any) -> Any:
+    """Map summoner content to the OpenRouter message content shape.
+
+    Plain strings pass through untouched. Content part lists are validated
+    block by block: native multimodal parts (text, image_url, file) ride
+    through in their documented wire shape, and anything unrecognized
+    degrades to a text note instead of hitting the API as garbage.
+    """
+    if not isinstance(content, list):
+        return content or ""
+    parts: list[dict[str, Any]] = []
+    for block in content:
+        if isinstance(block, dict) and block.get("type") in _NATIVE_USER_PART_TYPES:
+            parts.append(block)
+        else:
+            block_type = (
+                block.get("type") if isinstance(block, dict) else type(block).__name__
+            )
+            parts.append(
+                {
+                    "type": "text",
+                    "text": f"[Unsupported content block: {block_type}]",
+                }
+            )
+    return parts
+
+
 def _invocations_to_messages(invocations: list[Any]) -> list[dict[str, Any]]:
     messages: list[dict[str, Any]] = []
     for inv in invocations:
         if hasattr(inv, "role") and inv.role == "system":
             messages.append({"role": "system", "content": inv.content or ""})
         elif hasattr(inv, "role") and inv.role == "user":
-            messages.append({"role": "user", "content": inv.content or ""})
+            messages.append(
+                {"role": "user", "content": _user_content_parts(inv.content)}
+            )
         elif hasattr(inv, "role") and inv.role == "assistant":
             if hasattr(inv, "content") and inv.content:
                 text_parts: list[str] = []

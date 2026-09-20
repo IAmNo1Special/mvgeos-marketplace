@@ -142,3 +142,16 @@ async def test_connector_registers_mcp_spells_under_seeker() -> None:
     await connector.register_all_capabilities()
     registered = [c.args[0].name for c in rune_api.register_spell.call_args_list]
     assert registered == ["mcp_t"]
+
+
+@pytest.mark.asyncio
+async def test_search_grimoires_matches_hint(tmp_path: Path) -> None:
+    from mvgeos_runes_seeker.router import DCIRouter
+
+    (tmp_path / "my_grimoire").mkdir()
+    (tmp_path / "other").mkdir()
+    router = DCIRouter(spells_root=tmp_path)
+    assert await router._search_grimoires("my grimoire") == [
+        tmp_path / "my_grimoire"
+    ]
+    assert await router._search_grimoires("") == []

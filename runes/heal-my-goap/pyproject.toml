@@ -10,11 +10,11 @@ readme = "README.md"
 requires-python = ">=3.13"
 license = { text = "MIT" }
 dependencies = [
-    "goapauto @ git+https://github.com/IAmNo1Special/goapauto@main",
     "httpx>=0.28.1",
     "pydantic>=2.13.4",
     "psutil>=6.0.0",
     "python-dotenv>=1.2.2",
+    "goapauto>=0.4.0",
 ]
 
 [tool.hatch.build.targets.wheel]

@@ -1,6 +1,7 @@
 from __future__ import annotations
 import asyncio
 import json as json_mod
+import re
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
@@ -94,7 +95,7 @@ class DCIRouter:
         """Find grimoire (domain) directories matching the hint."""
         if not hint:
             return []
-        hint_normalised = _re.sub(
+        hint_normalised = re.sub(
             r"[_\s-]+", " ", unicodedata.normalize("NFKC", hint.lower())
         )
         hint_tokens = hint_normalised.split()
@@ -104,7 +105,7 @@ class DCIRouter:
         try:
             for child in self._root.iterdir():
                 if child.is_dir():
-                    name_normalised = _re.sub(
+                    name_normalised = re.sub(
                         r"[_\s-]+",
                         " ",
                         unicodedata.normalize("NFKC", child.name.lower()),

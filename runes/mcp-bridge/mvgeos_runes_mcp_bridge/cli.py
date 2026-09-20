@@ -45,5 +45,10 @@ def test(server: str) -> None:
     asyncio.run(_test())
 
 
+# pytest collects any module-level function named `test*` (python_files = *.py);
+# this is a typer CLI command, not a test.
+test.__test__ = False
+
+
 if __name__ == "__main__":
     app()

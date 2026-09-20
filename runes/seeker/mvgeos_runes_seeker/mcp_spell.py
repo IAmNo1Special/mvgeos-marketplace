@@ -4,6 +4,7 @@ from typing import Any
 
 from mvgeos_core.spells import MvgeSpell, SpellExecutionMode
 from mvgeos_provider.registry import RealmRegistry
+from mvgeos_runes.types import SpellDefinition
 
 from .discovery import MCPConfigDiscovery, MCPServerInfo
 from .mcp_selector import MCPNLTSelector
