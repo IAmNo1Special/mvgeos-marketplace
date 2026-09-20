@@ -17,6 +17,12 @@ from mvgeos_core.truncate import (
 )
 
 try:
+    from .markers import read_only
+except ImportError:
+    from coding_mvge.spells.markers import read_only
+
+
+try:
     from ._ignore import IsExcluded, default_is_excluded
 except ImportError:
     from coding_mvge.spells._ignore import IsExcluded, default_is_excluded
@@ -63,6 +69,7 @@ def _find_matches(
     return matches, skipped
 
 
+@read_only
 async def find(
     pattern: str,
     path: str = ".",

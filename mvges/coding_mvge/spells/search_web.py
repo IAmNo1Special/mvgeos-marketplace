@@ -13,6 +13,11 @@ from mvgeos_core.spells import (
     SpellStatus,
 )
 
+try:
+    from .markers import read_only
+except ImportError:
+    from coding_mvge.spells.markers import read_only
+
 
 class _DuckDuckGoHTMLParser(HTMLParser):
     def __init__(self) -> None:
@@ -85,6 +90,7 @@ def _clean_ddg_url(raw_href: str) -> str:
     return raw_href
 
 
+@read_only
 async def search_web(
     query: str,
     domain: str | None = None,

@@ -15,6 +15,12 @@ from mvgeos_core.truncate import (
     truncation_details,
 )
 
+try:
+    from .markers import read_only
+except ImportError:
+    from coding_mvge.spells.markers import read_only
+
+
 _BINARY_PROBE_BYTES = 8192
 
 
@@ -25,6 +31,7 @@ def _split_file_lines(text: str) -> list[str]:
     return lines
 
 
+@read_only
 async def read(
     path: str, offset: int | None = None, limit: int | None = None
 ) -> SpellResult:

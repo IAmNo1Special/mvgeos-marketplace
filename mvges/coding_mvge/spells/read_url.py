@@ -13,6 +13,12 @@ from mvgeos_core.spells import (
     SpellStatus,
 )
 
+try:
+    from .markers import read_only
+except ImportError:
+    from coding_mvge.spells.markers import read_only
+
+
 _BINARY_TYPES = {
     "image/",
     "audio/",
@@ -109,6 +115,7 @@ class _HTMLToMarkdownParser(HTMLParser):
         return cleaned
 
 
+@read_only
 async def read_url(
     url: str,
     max_length: int = 20000,

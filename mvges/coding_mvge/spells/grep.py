@@ -20,6 +20,12 @@ from mvgeos_core.truncate import (
 )
 
 try:
+    from .markers import read_only
+except ImportError:
+    from coding_mvge.spells.markers import read_only
+
+
+try:
     from ._ignore import IsExcluded, default_is_excluded
 except ImportError:
     from coding_mvge.spells._ignore import IsExcluded, default_is_excluded
@@ -181,6 +187,7 @@ def _format_records(records: list[_GrepRecord], context: int) -> tuple[str, bool
     return "\n".join(out), lines_truncated
 
 
+@read_only
 async def grep(
     pattern: str,
     path: str = ".",

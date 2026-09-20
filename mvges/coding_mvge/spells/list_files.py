@@ -17,6 +17,11 @@ from mvgeos_core.truncate import (
     truncation_details,
 )
 
+try:
+    from .markers import read_only
+except ImportError:
+    from coding_mvge.spells.markers import read_only
+
 
 def _list_entries(base: Path) -> list[str]:
     if not base.exists():
@@ -48,6 +53,7 @@ def _empty_details() -> dict[str, object]:
     )
 
 
+@read_only
 async def list_files(
     path: str = ".", limit: int = MAX_LIST_RESULTS, include_ignored: bool = False
 ) -> SpellResult:
