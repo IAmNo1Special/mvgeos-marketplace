@@ -13,10 +13,12 @@ dependencies = [
     "opentelemetry-sdk>=1.30.0",
     "pyyaml>=6.0",
     "typer>=0.12",
+    "tomli-w>=1.0.0",
 ]
 
 [tool.pytest.ini_options]
 testpaths = [
+    "runes/approval-rune/tests",
     "runes/openrouter-realm/tests",
     "runes/seeker/tests",
     "runes/heal-my-goap/tests",
@@ -40,6 +42,7 @@ pythonpath = [
     "runes/pi-codec",
     "runes/skills-bridge",
     "runes/steering-bridge",
+    "runes/approval-rune",
 ]
 addopts = "--import-mode=importlib"
 

@@ -3,6 +3,26 @@
   "name": "mvgeos-marketplace",
   "description": "Official extension marketplace for MvgeOS runes and mvges",
   "runes": {
+    "approval-rune": {
+      "name": "approval-rune",
+      "version": "0.1.0",
+      "description": "Fail-closed execution gate: pauses every uncovered mutating spell cast until the user approves it, with scoped persistent grants, deny rules, and a durable audit trail",
+      "types": [
+        "Sigil",
+        "Spell Gate"
+      ],
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "runes/approval-rune",
+      "created_at": "2026-09-20T00:00:00Z",
+      "updated_at": "2026-09-20T00:00:00Z",
+      "hooks": [
+        "after_spell_result"
+      ],
+      "python_deps": [
+        "tomli-w>=1.0.0"
+      ]
+    },
     "openrouter-realm": {
       "name": "openrouter-realm",
       "version": "0.1.0",

@@ -1,0 +1,17 @@
+{
+  "description": "Fail-closed execution gate: pauses every uncovered mutating spell cast until the user approves it, with scoped persistent grants, deny rules, and a durable audit trail",
+  "enabled": true,
+  "entry_point": "rune.py",
+  "hooks": [
+    "after_spell_result"
+  ],
+  "name": "approval-rune",
+  "python_deps": [
+    "tomli-w>=1.0.0"
+  ],
+  "types": [
+    "Sigil",
+    "Spell Gate"
+  ],
+  "version": "0.1.0"
+}

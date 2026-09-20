@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mvgeos-runes-approval-rune"
+version = "0.1.0"
+description = "Fail-closed execution gate: approval prompts for mutating spell casts"
+readme = "README.md"
+requires-python = ">=3.13"
+license = { text = "MIT" }
+dependencies = [
+    "tomli-w>=1.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["mvgeos_runes_approval_rune"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 80
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+ignore_missing_imports = true
+files = ["mvgeos_runes_approval_rune", "tests", "rune.py"]

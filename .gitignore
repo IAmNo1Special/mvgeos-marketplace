@@ -8,3 +8,6 @@ __pycache__/
 .coverage.*
 coverage.xml
 .env
+
+# Installer-owned per-installation id; minted into rune dirs at install/load time.
+.install-id
