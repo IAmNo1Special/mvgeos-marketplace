@@ -102,3 +102,21 @@ def test_recent_reads_newest_last(tmp_path: Path) -> None:
         log.append_decision(_record(cast_id=f"call_{i}"))
     recent = log.recent(2)
     assert [r["cast_id"] for r in recent] == ["call_3", "call_4"]
+
+
+def test_rotation_never_overwrites_existing_archive(tmp_path: Path) -> None:
+    """Test rotation never overwrites existing archive."""
+    log = AuditLog(tmp_path, max_bytes=1)
+    log.append_decision(_record(cast_id="call_1"))
+    log.append_decision(_record(cast_id="call_2"))
+    log.append_decision(_record(cast_id="call_3"))
+
+    archives = sorted(tmp_path.glob("audit-*.jsonl"))
+    assert len(archives) == 2
+    cast_ids = [
+        json.loads(line)["cast_id"]
+        for archive in archives
+        for line in archive.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert sorted(cast_ids) == ["call_1", "call_2"]
