@@ -127,7 +127,7 @@ rune-op audit trail — successes and structured failures alike
 (`snapshot_failed` included). The read-only `extension_status` query is
 not audited.
 
-- **Location.** `<user-scope>/.agents/rune-ops/audit.jsonl` — the global
+- **Location.** `<user-scope>/.agents/extensions/audit.jsonl` — the global
   per-user layer (`$MVGEOS_GLOBAL_DIR` when set, else `~/.agents`),
   following the skills-bridge scope convention. Self-mod ops are
   agent-level mutations that outlive any single session, so
