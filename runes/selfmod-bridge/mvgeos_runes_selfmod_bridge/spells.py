@@ -364,6 +364,16 @@ class SelfmodSpellsMixin:
 
         Write-once: never writes into an existing snapshot dir. Immediately
         durable — inert files, not live state, so no reload caveat.
+
+        I/O failures are FAILURES, not crashes: any ``OSError`` from the
+        mkdir / copy / manifest phases returns a structured
+        ``{"ok": False, "error": "snapshot_failed", ...}`` result whose
+        message names the failed phase and carries the underlying OS error
+        (mirroring the ``scaffold_failed`` pattern), the raw traceback is
+        logged via ``logger.exception``, and any half-written snapshot dir
+        is removed. The ``FileExistsError`` → uuid-suffix fallback is NOT
+        an error (write-once). Callers abort their mutation fail-closed on
+        this result — nothing is written when the snapshot fails.
         """
         state = self.state
         assert state is not None
@@ -376,42 +386,63 @@ class SelfmodSpellsMixin:
                 "error": "no_config_dir",
                 "message": "no agent config dir resolved — cannot store snapshots",
             }
-        root.mkdir(parents=True, exist_ok=True)
 
-        stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S-%f")
-        snapshot_id = f"{stamp}-{label}" if label else stamp
-        snap_dir = root / snapshot_id
+        snap_dir: Path | None = None
+        snapshot_id = ""
+        phase = "mkdir"
         try:
-            snap_dir.mkdir(exist_ok=False)
-        except FileExistsError:
-            # Same-microsecond collision: write-once means never reuse the dir.
-            snapshot_id = f"{snapshot_id}-{uuid.uuid4().hex[:8]}"
+            root.mkdir(parents=True, exist_ok=True)
+
+            stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S-%f")
+            snapshot_id = f"{stamp}-{label}" if label else stamp
             snap_dir = root / snapshot_id
-            snap_dir.mkdir(exist_ok=False)
+            try:
+                snap_dir.mkdir(exist_ok=False)
+            except FileExistsError:
+                # Same-microsecond collision: write-once means never reuse the dir.
+                snapshot_id = f"{snapshot_id}-{uuid.uuid4().hex[:8]}"
+                snap_dir = root / snapshot_id
+                snap_dir.mkdir(exist_ok=False)
 
-        files: list[dict[str, str]] = []
-        if state.system_path is not None and state.system_path.is_file():
-            shutil.copy2(state.system_path, snap_dir / "SYSTEM.md")
-            files.append({"kind": "system", "name": "SYSTEM.md"})
-        if state.spells_dir is not None and state.spells_dir.is_dir():
-            shutil.copytree(state.spells_dir, snap_dir / "spells")
-            files.append({"kind": "spells", "name": "spells"})
-        config_file = state.config_dir / "config.json" if state.config_dir else None
-        if config_file is not None and config_file.is_file():
-            dest = snap_dir / "config.json"
-            shutil.copy2(config_file, dest)
-            dest.chmod(0o444)  # read-only: completeness only, no spell edits it
-            files.append({"kind": "config", "name": "config.json"})
+            files: list[dict[str, str]] = []
+            phase = "copy"
+            if state.system_path is not None and state.system_path.is_file():
+                shutil.copy2(state.system_path, snap_dir / "SYSTEM.md")
+                files.append({"kind": "system", "name": "SYSTEM.md"})
+            if state.spells_dir is not None and state.spells_dir.is_dir():
+                shutil.copytree(state.spells_dir, snap_dir / "spells")
+                files.append({"kind": "spells", "name": "spells"})
+            config_file = state.config_dir / "config.json" if state.config_dir else None
+            if config_file is not None and config_file.is_file():
+                dest = snap_dir / "config.json"
+                shutil.copy2(config_file, dest)
+                dest.chmod(0o444)  # read-only: completeness only, no spell edits it
+                files.append({"kind": "config", "name": "config.json"})
 
-        manifest = {
-            "created_at": datetime.now(UTC).isoformat(),
-            "label": label,
-            "files": files,
-            "agent_name": state.agent_name,
-        }
-        (snap_dir / "manifest.json").write_text(
-            json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
-        )
+            phase = "manifest"
+            manifest = {
+                "created_at": datetime.now(UTC).isoformat(),
+                "label": label,
+                "files": files,
+                "agent_name": state.agent_name,
+            }
+            (snap_dir / "manifest.json").write_text(
+                json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+            )
+        except OSError as exc:
+            logger.exception(
+                "selfmod-bridge: snapshot %s failed during %s",
+                snapshot_id or label or "<unnamed>",
+                phase,
+            )
+            if snap_dir is not None:
+                shutil.rmtree(snap_dir, ignore_errors=True)
+            return {
+                "ok": False,
+                "error": "snapshot_failed",
+                "message": f"snapshot failed during {phase}: {exc}",
+            }
+        assert snap_dir is not None  # set before any fallible step past "mkdir"
 
         # Cap: keep the 20 most recent, prune the rest. This is a SAFETY
         # CONTROL against disk-fill (a snapshot per mind-op is otherwise an

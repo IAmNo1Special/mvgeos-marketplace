@@ -77,9 +77,10 @@ def validate_target_dir(target_dir: str | Path, runes_paths: list[Path]) -> Path
     so a non-contained target is dead on arrival.
 
     Raises :class:`ValidationError` with code ``"outside_runes_paths"``.
-    Per spec §6.3 there is no ``"invalid_target_dir"`` code: a relative
-    path is an invalid explicit rune target the same way a non-contained
-    one is — never implicit cwd-relative, fail closed with the one code.
+    Per the spec §6.3 reuse rule, no distinct ``"invalid_target_dir"``
+    code is minted: a relative path is an invalid explicit rune target
+    the same way a non-contained one is — never implicit cwd-relative,
+    fail closed with the one core code.
     """
     candidate = Path(target_dir)
     if not candidate.is_absolute():

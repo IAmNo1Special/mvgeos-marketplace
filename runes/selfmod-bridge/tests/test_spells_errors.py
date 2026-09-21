@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from pathlib import Path
 from pathlib import Path as _Path
 from typing import Any
@@ -68,11 +69,11 @@ async def test_revise_persona_no_system_path(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_revise_persona_snapshot_io_failure_is_loud(tmp_path: Path) -> None:
+async def test_revise_persona_snapshot_io_failure_structured(tmp_path: Path) -> None:
     """Snapshot-first ordering: if the snapshot itself cannot be written,
-    the exception propagates BEFORE any persona write — the file is
-    untouched. (Whether this should be a pinned ``snapshot_failed`` result
-    instead of a raw OSError is an open spec question — flagged.)"""
+    the mutating op aborts BEFORE any persona write — the file is
+    untouched — and the failure is a structured ``snapshot_failed`` result
+    (spec §6.3 supplemental codes), not a raw OSError."""
     rune, _api = make_rune(tmp_path)
     assert rune.state is not None
     assert rune.state.config_dir is not None
@@ -80,11 +81,48 @@ async def test_revise_persona_snapshot_io_failure_is_loud(tmp_path: Path) -> Non
     # Snapshots root is a FILE: root.mkdir(exist_ok=True) raises FileExistsError.
     (rune.state.config_dir / ".selfmod-snapshots").write_text("x")
     before = rune.state.system_path.read_text(encoding="utf-8")
-    with pytest.raises(OSError):
-        await rune.revise_persona(
-            {"old_text": "You are a test agent.", "new_text": "You are changed."}
-        )
+    result = await rune.revise_persona(
+        {"old_text": "You are a test agent.", "new_text": "You are changed."}
+    )
+    assert result["ok"] is False
+    assert result["error"] == "snapshot_failed"
+    assert "mkdir" in result["message"]
+    _stale(result)
     assert rune.state.system_path.read_text(encoding="utf-8") == before
+
+
+@pytest.mark.asyncio
+async def test_self_snapshot_io_failure_no_stale_fields(tmp_path: Path) -> None:
+    """self_snapshot is read_only=True: its snapshot_failed result carries
+    no reload-staleness fields."""
+    rune, _api = make_rune(tmp_path)
+    assert rune.state is not None
+    assert rune.state.config_dir is not None
+    (rune.state.config_dir / ".selfmod-snapshots").write_text("x")
+    result = await rune.self_snapshot({"label": "boom"})
+    assert result["ok"] is False
+    assert result["error"] == "snapshot_failed"
+    assert "effective_after" not in result
+    assert "note" not in result
+
+
+@pytest.mark.asyncio
+async def test_snapshot_io_failure_removes_partial_dir(tmp_path: Path, monkeypatch: Any) -> None:
+    """A copy-phase snapshot failure removes the half-written snapshot dir."""
+    rune, _api = make_rune(tmp_path)
+    assert rune.state is not None
+    assert rune.state.config_dir is not None
+    root = rune.state.config_dir / ".selfmod-snapshots"
+
+    def _boom(src: Any, dst: Any, *args: Any, **kwargs: Any) -> Any:
+        raise OSError("copy exploded")
+
+    monkeypatch.setattr(shutil, "copytree", _boom)
+    result = await rune.self_snapshot({"label": "partial"})
+    assert result["ok"] is False
+    assert result["error"] == "snapshot_failed"
+    assert "copy" in result["message"]
+    assert [c for c in root.iterdir() if c.is_dir()] == []
 
 
 # -- teach -----------------------------------------------------------------
@@ -688,6 +726,31 @@ async def test_self_rollback_pre_snapshot_wrap(tmp_path: Path, monkeypatch: Any)
     assert result["ok"] is False
     assert result["error"] == "no_config_dir"
     _stale(result)
+
+
+@pytest.mark.asyncio
+async def test_self_rollback_pre_rollback_io_failure_structured(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    """A pre-rollback snapshot I/O failure aborts the rollback fail-closed
+    with a structured ``snapshot_failed`` result — nothing is restored."""
+    rune, _api = make_rune(tmp_path)
+    assert rune.state is not None
+    assert rune.state.system_path is not None
+    snap = await rune.self_snapshot({"label": "good"})
+    assert snap["ok"] is True
+    before = rune.state.system_path.read_text(encoding="utf-8")
+
+    def _boom(src: Any, dst: Any, *args: Any, **kwargs: Any) -> Any:
+        raise OSError("copy exploded")
+
+    monkeypatch.setattr(shutil, "copytree", _boom)
+    result = await rune.self_rollback({"snapshot_id": snap["snapshot_id"]})
+    assert result["ok"] is False
+    assert result["error"] == "snapshot_failed"
+    assert "copy" in result["message"]
+    _stale(result)
+    assert rune.state.system_path.read_text(encoding="utf-8") == before
 
 
 @pytest.mark.asyncio

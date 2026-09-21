@@ -79,14 +79,46 @@ All mutating spells return `effective_after: "reload"` with a human-readable
 process until the next reload. Every mutating result carries these fields,
 including failures.
 
-Failure results carry `error` codes: the pinned §6.3 vocabulary (`exists`,
-`invalid_name`, `invalid_label`, `invalid_scope`, `no_spells_dir`,
-`no_skills_dir`, `no_runes_paths`, `outside_runes_paths`,
-`state_not_initialized`, `no_match`, `ambiguous_match`,
-`unknown_snapshot`) plus per-operation codes for situations the spec leaves
-unnamed (`missing_section`, `invalid_mode`, `missing_old_text`,
-`missing_new_text`, `missing_description`, `no_system_path`,
-`no_config_dir`, `scaffold_failed`).
+## Failure codes
+
+Failure results are `{"ok": False, "error": "<code>", "message": ...}`.
+The pinned §6.3 vocabulary is the core — prefer a core code whenever one
+fits — and ops may return supplemental op-specific codes for situations
+the core does not name (reuse rule: never mint a new code when a core one
+fits). Every code is documented with its op below. Mutating failures also
+carry `effective_after: "reload"` + `note`; read-only failures
+(`extension_status`, `self_snapshot`) do not.
+
+- `scaffold_spell` — `exists`, `invalid_name`, `no_spells_dir`,
+  `state_not_initialized`.
+- `scaffold_rune` — `exists`, `invalid_name`, `no_runes_paths`,
+  `outside_runes_paths`, `scaffold_failed` (staging/rename I/O failure;
+  the message names the step and carries the OS error),
+  `state_not_initialized`.
+- `scaffold_skill` — `exists`, `invalid_name`, `invalid_scope`,
+  `missing_description`, `no_skills_dir`, `scaffold_failed` (as above),
+  `state_not_initialized`.
+- `extension_status` — `state_not_initialized`.
+- `revise_persona` — `missing_old_text`, `missing_new_text`, `no_match`
+  (also when the target file does not exist), `ambiguous_match`,
+  `no_system_path`, `snapshot_failed`, `state_not_initialized`.
+- `teach` — `missing_section`, `invalid_mode`, `missing_old_text`
+  (replace mode), `no_match`, `ambiguous_match`, `no_system_path`,
+  `snapshot_failed`, `state_not_initialized`.
+- `self_snapshot` — `invalid_label`, `no_config_dir`, `snapshot_failed`,
+  `state_not_initialized`.
+- `self_rollback` — `unknown_snapshot` (covers not-found and rejected —
+  never distinguished), `snapshot_failed` (pre-rollback snapshot I/O
+  failure; the rollback aborts, nothing is restored),
+  `state_not_initialized`.
+
+`snapshot_failed` — the snapshot could not be written (disk full,
+permissions, ...). The message names the failed phase (`mkdir`, `copy`,
+or `manifest`) and carries the underlying OS error; the raw traceback is
+logged via `logger.exception` (the engine's `RuneAPI` exposes no audit
+method, so the log is the durable failure trail); any half-written
+snapshot dir is removed. Mutating ops abort fail-closed on it — nothing
+is written when the snapshot fails.
 
 ## Snapshots
 
