@@ -98,6 +98,8 @@ def rune_tree(name: str, description: str) -> dict[str, str]:
     )
 
     root_rune = (
+        f"{doc}\n"
+        "\n"
         "from __future__ import annotations\n"
         "\n"
         f"from {pkg}.rune import {cls}, rune_factory\n"
@@ -131,6 +133,8 @@ def rune_tree(name: str, description: str) -> dict[str, str]:
     package_init = f"{doc}\n"
 
     cli = (
+        f"{doc}\n"
+        "\n"
         "from __future__ import annotations\n"
         "\n"
         "import typer\n"

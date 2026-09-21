@@ -290,6 +290,27 @@
         "typer>=0.12"
       ]
     },
+    "selfmod-bridge": {
+      "name": "selfmod-bridge",
+      "version": "0.1.0",
+      "description": "Official self-modification & customization bridge for MvgeOS",
+      "types": [
+        "Sigil",
+        "Spell",
+        "Command"
+      ],
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "runes/selfmod-bridge",
+      "created_at": "2026-09-21T00:00:00Z",
+      "updated_at": "2026-09-21T00:00:00Z",
+      "hooks": [
+        "before_mvge_start"
+      ],
+      "commands": [
+        "selfmod"
+      ]
+    },
     "pi-codec": {
       "name": "pi-codec",
       "version": "0.1.0",

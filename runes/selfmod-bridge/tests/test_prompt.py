@@ -26,9 +26,7 @@ def test_runes_paths_no_existence_check(tmp_path: Path) -> None:
     missing = tmp_path / "does-not-exist"
     section = build_selfmod_section([str(missing)], None)
     expected = (
-        "\nSelf-Modification & Customization:\n"
-        f"{INTRO}\n"
-        f"- Runes: {missing.as_posix()}/AGENTS.md"
+        f"\nSelf-Modification & Customization:\n{INTRO}\n- Runes: {missing.as_posix()}/AGENTS.md"
     )
     assert section == expected
 

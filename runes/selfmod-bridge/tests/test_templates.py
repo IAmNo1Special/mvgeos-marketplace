@@ -8,10 +8,14 @@ inputs must round-trip through ``ast.get_docstring``.
 from __future__ import annotations
 
 import ast
+import importlib.util
 import json
+import sys
 from pathlib import Path
 
 import pytest
+from mvgeos_agent.function_spell import discover_spells_from_dir
+from mvgeos_runes_skills_bridge.parser import parse_skill_manifest
 
 from mvgeos_runes_selfmod_bridge.templates import (
     rune_tree,
@@ -66,7 +70,6 @@ def test_spell_source_exactly_one_public_function() -> None:
 
 def test_scaffolded_spell_passes_real_discovery(tmp_path: Path) -> None:
     """The real engine discovery must load the scaffolded spell by stem rule."""
-    from mvgeos_agent.function_spell import discover_spells_from_dir
 
     (tmp_path / "hello.py").write_text(spell_source("hello", "Say hello."))
     spells = discover_spells_from_dir(tmp_path)
@@ -119,8 +122,6 @@ def test_rune_tree_pyproject_contract() -> None:
 
 def test_rune_tree_root_rune_reexports_factory(tmp_path: Path) -> None:
     """Materialize the tree and import the root rune.py for real."""
-    import importlib.util
-    import sys
 
     tree = rune_tree("myrune", "Does things.")
     for rel, content in tree.items():
@@ -130,9 +131,7 @@ def test_rune_tree_root_rune_reexports_factory(tmp_path: Path) -> None:
 
     sys.path.insert(0, str(tmp_path))
     try:
-        spec = importlib.util.spec_from_file_location(
-            "scaffolded_root_rune", tmp_path / "rune.py"
-        )
+        spec = importlib.util.spec_from_file_location("scaffolded_root_rune", tmp_path / "rune.py")
         assert spec is not None and spec.loader is not None
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -160,10 +159,8 @@ def test_rune_tree_adversarial_roundtrip(tmp_path: Path, description: str) -> No
         if not rel.endswith(".py"):
             continue
         parsed = ast.parse(content)  # valid Python regardless of input
-        # Every generated .py file embeds the description as a docstring
-        # except the root re-export and cli (no model-controlled content).
-        if rel in ("rune.py", "cli.py"):
-            continue
+        # Spec §5.5: EVERY generated .py file embeds the description as its
+        # module docstring — no carve-outs, not even the re-export shim.
         assert ast.get_docstring(parsed, clean=False) == description, rel
     # JSON built with the json module — description round-trips exactly.
     assert json.loads(tree["manifest.json"])["description"] == description
@@ -171,7 +168,6 @@ def test_rune_tree_adversarial_roundtrip(tmp_path: Path, description: str) -> No
 
 def test_skill_markdown_frontmatter_schema(tmp_path: Path) -> None:
     """The skills-bridge loader's parser reads back the stripped description."""
-    from mvgeos_runes_skills_bridge.parser import parse_skill_manifest
 
     text = skill_markdown("myskill", "  Does skill things.  ")
     skill_dir = tmp_path / "myskill"
@@ -186,7 +182,6 @@ def test_skill_markdown_frontmatter_schema(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("description", [ADVERSARIAL, '"""', "a: b # c"])
 def test_skill_markdown_adversarial(tmp_path: Path, description: str) -> None:
-    from mvgeos_runes_skills_bridge.parser import parse_skill_manifest
 
     text = skill_markdown("myskill", description)
     skill_dir = tmp_path / "myskill"

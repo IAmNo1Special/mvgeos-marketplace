@@ -76,15 +76,17 @@ def validate_target_dir(target_dir: str | Path, runes_paths: list[Path]) -> Path
     safety AND correctness: runes load exclusively from configured paths,
     so a non-contained target is dead on arrival.
 
-    Raises :class:`ValidationError` with code ``"invalid_target_dir"``
-    (not absolute) or ``"outside_runes_paths"`` (not contained).
+    Raises :class:`ValidationError` with code ``"outside_runes_paths"``.
+    Per spec §6.3 there is no ``"invalid_target_dir"`` code: a relative
+    path is an invalid explicit rune target the same way a non-contained
+    one is — never implicit cwd-relative, fail closed with the one code.
     """
     candidate = Path(target_dir)
     if not candidate.is_absolute():
         raise ValidationError(
-            "invalid_target_dir",
-            f"target_dir {str(target_dir)!r} must be an absolute path — "
-            "never implicit cwd-relative",
+            "outside_runes_paths",
+            f"target_dir {str(target_dir)!r} must be an absolute path inside a "
+            "configured runes path — never implicit cwd-relative",
         )
     resolved = candidate.resolve()
     for root in runes_paths:
