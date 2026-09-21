@@ -21,7 +21,7 @@ sys.modules.setdefault("selfmod_bridge_conftest", sys.modules[__name__])
 
 class FakeApi:
     """Minimal RuneAPI double: records hook/command/spell registration,
-    allowlist widening, and emitted events."""
+    allowlist widening, emitted events, and audit calls."""
 
     def __init__(self) -> None:
         self.hooks: dict[Any, Any] = {}
@@ -29,6 +29,8 @@ class FakeApi:
         self.spells: dict[str, Any] = {}
         self.widened: list[str] = []
         self.events: list[tuple[str, dict[str, Any]]] = []
+        self.audit_records: list[dict[str, Any]] = []
+        self.audit_error: BaseException | None = None
 
     def on(self, hook: Any, handler: Any) -> None:
         self.hooks[hook] = handler
@@ -45,6 +47,29 @@ class FakeApi:
 
     def emit_event(self, name: str, payload: dict[str, Any]) -> None:
         self.events.append((name, payload))
+
+    def audit(
+        self,
+        op: str,
+        *,
+        outcome: str,
+        code: str,
+        message: str,
+        target: str | None = None,
+        extra: dict[str, Any] | None = None,
+    ) -> None:
+        if self.audit_error is not None:
+            raise self.audit_error
+        self.audit_records.append(
+            {
+                "op": op,
+                "outcome": outcome,
+                "code": code,
+                "message": message,
+                "target": target,
+                "extra": extra,
+            }
+        )
 
 
 def make_state(tmp_path: Path) -> SelfmodState:

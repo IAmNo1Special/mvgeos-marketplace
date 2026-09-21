@@ -212,13 +212,32 @@ class SelfmodBridgeRune(SelfmodSpellsMixin):
         ("self_rollback", "Restore a snapshot (pre-rollback snapshot first)", False),
     )
 
+    # Mutating ops whose outcomes are audit-logged through the engine-owned
+    # rune-op audit trail (successes and structured failures alike).
+    # ``extension_status`` is read-only and stays unaudited.
+    _AUDITED_OPS = frozenset(
+        {
+            "scaffold_spell",
+            "scaffold_rune",
+            "scaffold_skill",
+            "revise_persona",
+            "teach",
+            "self_snapshot",
+            "self_rollback",
+        }
+    )
+
     def _spell_definitions(self) -> list[SpellDefinition]:
         return [
             SpellDefinition(
                 name=name,
                 description=description,
                 parameters=_SPELL_PARAMETERS[name],
-                handler=getattr(self, name),
+                handler=(
+                    self._with_audit(name, getattr(self, name))
+                    if name in self._AUDITED_OPS
+                    else getattr(self, name)
+                ),
                 read_only=read_only,
                 execution_mode=ExecutionMode.PARALLEL,
             )

@@ -26,9 +26,10 @@ import logging
 import os
 import shutil
 import uuid
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from mvgeos_runes_selfmod_bridge.state import SelfmodState
 from mvgeos_runes_selfmod_bridge.status import describe_extensions
@@ -259,6 +260,7 @@ class SelfmodSpellsMixin:
     """All selfmod-bridge spell handlers. Mixed into ``SelfmodBridgeRune``."""
 
     state: SelfmodState | None
+    api: Any
 
     # -- shared machinery -------------------------------------------------
 
@@ -300,6 +302,147 @@ class SelfmodSpellsMixin:
             "note": RELOAD_NOTE,
             **extra,
         }
+
+    # -- audit trail ------------------------------------------------------
+
+    def _with_audit(
+        self,
+        op: str,
+        handler: Callable[..., Awaitable[dict[str, Any]]],
+    ) -> Callable[..., Awaitable[dict[str, Any]]]:
+        """Wrap a mutating spell handler so its outcome is audit-logged.
+
+        The wrapper keeps the ``(params, signal=None, on_update=None)``
+        spell signature so ``SpellDefinition.execute`` keeps dispatching it
+        the same way (first parameter named ``params``, not
+        ``spell_cast_id``).
+        """
+
+        async def audited(
+            params: dict[str, Any], signal: Any = None, on_update: Any = None
+        ) -> dict[str, Any]:
+            try:
+                result = await handler(params, signal=signal, on_update=on_update)
+            except Exception as exc:
+                # The crash is audited best-effort, then the original
+                # exception propagates unchanged — audit never masks it.
+                await self._audit_crash(op, params, exc)
+                raise
+            return await self._audit_outcome(op, params, result)
+
+        audited.__name__ = getattr(handler, "__name__", op)
+        cast("Any", audited)._audit_op = op
+        return audited
+
+    async def _audit_outcome(
+        self, op: str, params: dict[str, Any], result: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Audit one op outcome through the engine-owned log.
+
+        Successes and structured failures are both recorded. If the audit
+        write itself fails, the result becomes ``audit_failed`` — loud, and
+        truthful about what the mutation did (see ``_audit_write_failure``).
+        """
+        if not isinstance(result, dict):
+            logger.warning("op %s returned a non-dict result; skipping audit", op)
+            return result
+        ok = bool(result.get("ok"))
+        code = "ok" if ok else str(result.get("error", "failed"))
+        target = result.get("path") or result.get("snapshot_id") or params.get("name")
+        message = str(result.get("message", "")) or f"{op} succeeded"
+        # The snapshot id is the rollback handle — keep it queryable even
+        # when the path is the primary target.
+        extra: dict[str, Any] | None = None
+        if isinstance(result.get("snapshot_id"), str):
+            extra = {"snapshot_id": result["snapshot_id"]}
+        audit = getattr(self.api, "audit", None)
+        if audit is None:
+            logger.warning(
+                "RuneAPI.audit unavailable (host predates rune-op audit); op %s ran unaudited",
+                op,
+            )
+            return result
+        try:
+            await asyncio.to_thread(
+                audit,
+                op,
+                outcome="ok" if ok else "failed",
+                code=code,
+                message=message,
+                target=str(target) if target is not None else None,
+                extra=extra,
+            )
+        except Exception as exc:
+            logger.exception("audit write failed for op %s", op)
+            return self._audit_write_failure(op, result, ok, code, message, exc)
+        return result
+
+    @staticmethod
+    def _audit_write_failure(
+        op: str,
+        result: dict[str, Any],
+        ok: bool,
+        code: str,
+        message: str,
+        exc: BaseException,
+    ) -> dict[str, Any]:
+        """Shape an ``audit_failed`` result: loud, and never a lie.
+
+        - Mutation succeeded but is unrecorded: report failure (never a
+          silent ``ok``), state plainly that the change IS live, and
+          preserve the reload-staleness fields — the change still needs
+          its reload.
+        - Mutation failed and its audit failed too: keep ``audit_failed``
+          but carry the original code/message so the root cause survives.
+        """
+        if ok:
+            shaped: dict[str, Any] = {
+                "ok": False,
+                "error": "audit_failed",
+                "message": (
+                    f"op {op!r} completed but the audit record could not be "
+                    f"written: {exc}. The change IS live but unrecorded — "
+                    "verify with self_snapshot or extension_status."
+                ),
+            }
+            for key in ("effective_after", "note", "path", "snapshot_id"):
+                if key in result:
+                    shaped[key] = result[key]
+            return shaped
+        shaped = {
+            "ok": False,
+            "error": "audit_failed",
+            "message": (
+                f"op {op!r} failed with {code!r}: {message}. Additionally, the "
+                f"audit record for this failure could not be written: {exc}."
+            ),
+        }
+        for key in ("effective_after", "note"):
+            if key in result:
+                shaped[key] = result[key]
+        return shaped
+
+    async def _audit_crash(self, op: str, params: dict[str, Any], exc: BaseException) -> None:
+        """Best-effort audit of a handler crash; never masks the error."""
+        audit = getattr(self.api, "audit", None)
+        if audit is None:
+            logger.warning(
+                "RuneAPI.audit unavailable (host predates rune-op audit); "
+                "crashed op %s ran unaudited",
+                op,
+            )
+            return
+        try:
+            await asyncio.to_thread(
+                audit,
+                op,
+                outcome="failed",
+                code="exception",
+                message=f"{type(exc).__name__}: {exc}",
+                target=str(params.get("name")) if params.get("name") else None,
+            )
+        except Exception:
+            logger.exception("audit write failed for crashed op %s", op)
 
     @staticmethod
     def _atomic_write_bytes(path: Path, data: bytes) -> None:

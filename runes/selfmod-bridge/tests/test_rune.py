@@ -208,9 +208,13 @@ def test_factory_and_registration(tmp_path: Path) -> None:
         spell = api.spells[name]
         assert spell.read_only is read_only, name
         assert spell.execution_mode == ExecutionMode.PARALLEL, name
-        # Handlers are async bound methods using self.state (spec §5.2).
-        assert getattr(spell._handler, "__self__", None) is rune, name
         assert inspect.iscoroutinefunction(spell._handler), name
+        # Mutating handlers are audit-wrapped (marked with the op name);
+        # the read-only status handler stays the raw bound method.
+        if read_only and name == "extension_status":
+            assert getattr(spell._handler, "__self__", None) is rune, name
+        else:
+            assert getattr(spell._handler, "_audit_op", None) == name, name
 
     assert api.widened == [name for name, _, _ in SelfmodBridgeRune._SPELLS]
 

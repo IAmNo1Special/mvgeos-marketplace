@@ -115,10 +115,46 @@ carry `effective_after: "reload"` + `note`; read-only failures
 `snapshot_failed` — the snapshot could not be written (disk full,
 permissions, ...). The message names the failed phase (`mkdir`, `copy`,
 or `manifest`) and carries the underlying OS error; the raw traceback is
-logged via `logger.exception` (the engine's `RuneAPI` exposes no audit
-method, so the log is the durable failure trail); any half-written
-snapshot dir is removed. Mutating ops abort fail-closed on it — nothing
-is written when the snapshot fails.
+logged via `logger.exception`; the failure is recorded in the engine-owned
+audit trail (see below); any half-written snapshot dir is removed.
+Mutating ops abort fail-closed on it — nothing is written when the
+snapshot fails.
+
+## Audit trail
+
+Every mutating op emits exactly one audit event through the engine-owned
+rune-op audit trail — successes and structured failures alike
+(`snapshot_failed` included). The read-only `extension_status` query is
+not audited.
+
+- **Location.** `<user-scope>/.agents/rune-ops/audit.jsonl` — the global
+  per-user layer (`$MVGEOS_GLOBAL_DIR` when set, else `~/.agents`),
+  following the skills-bridge scope convention. Self-mod ops are
+  agent-level mutations that outlive any single session, so
+  session-scoped tome storage is the wrong home. The log is append-only
+  JSONL (exclusive lock + `fsync` per write, `0600`/`0700` permissions,
+  size/age rotation that archives rather than deletes), following the
+  approval rune's durable audit-trail precedent.
+- **Stamping.** The engine stamps `rune` (the manifest name — a rune
+  cannot forge another rune's entries) and `timestamp` (UTC); these
+  stamped fields always win over anything the rune passes.
+- **Event schema.** `timestamp`, `rune`, `op`, `outcome` (`"ok"` /
+  `"failed"`), `code` (`"ok"` or the op's failure code), `target` (path,
+  name, or snapshot id), `message`, plus `snapshot_id` in `extra` when
+  the op produced one.
+- **Audit write failures are loud.** If the audit append fails, the op
+  result becomes `audit_failed` (`ok: False`) — never a silent `ok`.
+  When the mutation succeeded, the message states plainly that the
+  change IS live but unrecorded (verify with `self_snapshot` or
+  `extension_status`), and the reload-staleness fields are preserved.
+  When the mutation failed, the original code/message are carried inside
+  the `audit_failed` message so the root cause survives. An op that
+  cannot prove it happened must never report silent success.
+- **Host skew.** On hosts predating `RuneAPI.audit`, ops run unaudited
+  with a warning (the audit trail is unavailable, not silently broken).
+
+`audit_failed` is a wrapper-level code: it can replace any op's result
+when the audit write fails, so it is not listed per-op above.
 
 ## Snapshots
 
