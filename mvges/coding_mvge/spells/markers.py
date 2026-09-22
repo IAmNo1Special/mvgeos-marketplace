@@ -15,12 +15,9 @@ spell modules never assign ad-hoc attributes on callables.
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TypeVar
-
-F = TypeVar("F", bound=Callable[..., object])
 
 
-def read_only(func: F) -> F:
+def read_only[F: Callable[..., object]](func: F) -> F:
     """Mark a spell as read-only: it observes the world, never mutates it."""
     # setattr is deliberate: direct assignment is a mypy attr-defined error
     # on callables, so the marker is applied through this typed helper.

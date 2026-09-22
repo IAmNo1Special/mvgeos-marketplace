@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import asyncio
 import re
 from typing import Any
@@ -66,7 +67,7 @@ class NLTSelector:
                     for item in resp.invocation.content:
                         if item.get("type") == "text":
                             response_text += item.get("text", "")
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise SpellSearchError(
                 f"NLT selection timed out after {self._nlt_timeout}s"
             )

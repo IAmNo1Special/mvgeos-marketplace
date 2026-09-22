@@ -55,7 +55,9 @@ def _empty_details() -> dict[str, object]:
 
 @read_only
 async def list_files(
-    path: str = ".", limit: int = MAX_LIST_RESULTS, include_ignored: bool = False
+    path: str = ".",
+    limit: int = MAX_LIST_RESULTS,
+    include_ignored: bool = False,
 ) -> SpellResult:
     """List directory contents, sorted alphabetically with '/' for dirs.
 
@@ -122,7 +124,7 @@ async def list_files(
             status=SpellStatus.ERROR,
             error_message=f"Not a directory: {path}",
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- spell contract: return ERROR SpellResult instead of raising
         return SpellResult(
             spell_name="list_files",
             status=SpellStatus.ERROR,

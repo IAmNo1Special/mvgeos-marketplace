@@ -24,7 +24,7 @@ async def write(path: str, content: str) -> SpellResult:
             status=SpellStatus.SUCCESS,
             content=f"Wrote to {path}",
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- spell contract: return ERROR SpellResult instead of raising
         return SpellResult(
             spell_name="write",
             status=SpellStatus.ERROR,

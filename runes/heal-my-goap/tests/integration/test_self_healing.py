@@ -1,7 +1,7 @@
+"""Integration tests for heal-my-goap self-healing of failed spells."""
+
 from __future__ import annotations
 
-import json
-import os
 from pathlib import Path
 from typing import Any, cast
 from unittest.mock import MagicMock, patch
@@ -11,8 +11,8 @@ import pytest
 pytest.importorskip("mvgeos_agent")
 pytest.importorskip("mvgeos_runes_heal_my_goap")
 
-from mvgeos_runes.types import SigilHook
 from mvgeos_agent.mvge import Mvge
+from mvgeos_runes.types import SigilHook
 
 
 @pytest.mark.asyncio
@@ -23,7 +23,8 @@ async def test_missing_read_tool_self_healing_execution(tmp_path: Path) -> None:
         "Hello from heal_my_goap self-healing read!", encoding="utf-8"
     )
 
-    # Pass marketplace runes directory so the agent can discover openrouter-realm rune
+    # Pass the marketplace runes directory so the agent can discover the
+    # openrouter-realm rune
     marketplace_runes_dir = Path(__file__).resolve().parent.parent.parent.parent
 
     agent = Mvge(
@@ -37,8 +38,9 @@ async def test_missing_read_tool_self_healing_execution(tmp_path: Path) -> None:
     mock_action = MagicMock()
     mock_action.name = "synth_read_file"
     mock_action.code = (
-        "read_content = 'README file contents read via heal_my_goap self-healing!'\n"
-)
+        "read_content = 'README file contents read via "
+        "heal_my_goap self-healing!'\n"
+    )
     mock_action.preconditions = {}
     mock_action.effects = {"file_read": True}
 

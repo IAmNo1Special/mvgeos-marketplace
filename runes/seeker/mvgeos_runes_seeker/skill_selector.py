@@ -1,13 +1,13 @@
 from __future__ import annotations
+
 import logging
 import re
-from typing import Any
 
 from mvgeos_core.channel import ChannelConfig
 from mvgeos_core.invocations import SummonerRequest
 from mvgeos_provider.registry import RealmRegistry
 
-from .dci_matcher import SkillFile, SkillSearchError, DCISkillMatcher
+from .dci_matcher import SkillFile, SkillSearchError
 
 logger = logging.getLogger(__name__)
 

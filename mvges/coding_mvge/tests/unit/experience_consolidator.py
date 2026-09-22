@@ -6,14 +6,15 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from mvgeos_provider.registry import get_registry
-
 from coding_mvge.runes.skill_evolution.consolidator.consolidator import (
     ExperienceConsolidator,
 )
-from coding_mvge.runes.skill_evolution.consolidator.harvester import ExperienceHarvester
+from coding_mvge.runes.skill_evolution.consolidator.harvester import (
+    ExperienceHarvester,
+)
 from coding_mvge.runes.skill_evolution.queries import SkillEvolutionQueries
 from coding_mvge.runes.skill_evolution.store import SkillEvolutionStore
+from mvgeos_provider.registry import get_registry
 
 
 @pytest.fixture
@@ -23,7 +24,9 @@ def tmp_dirs():
         store = SkillEvolutionStore(td / "skill_evolution")
         store.bind_raw_experience(td / "raw_experience")
         qs = SkillEvolutionQueries(store)
-        hv = ExperienceHarvester(max_buffer_size=50, persist_path=td / "buf.json")
+        hv = ExperienceHarvester(
+            max_buffer_size=50, persist_path=td / "buf.json"
+        )
         yield store, qs, hv
 
 
@@ -54,7 +57,11 @@ class TestExperienceHarvester:
             {"type": "text", "text": "Casting spell..."},
             {
                 "type": "spell_cast",
-                "spell_cast": {"id": "c1", "name": "read_file", "arguments": {}},
+                "spell_cast": {
+                    "id": "c1",
+                    "name": "read_file",
+                    "arguments": {},
+                },
             },
         ]
         inv.tool_calls = []
@@ -123,7 +130,9 @@ class TestExperienceHarvester:
 
         # persist_buffer & load_buffer
         await hv.persist_buffer()
-        hv_new = ExperienceHarvester(max_buffer_size=50, persist_path=hv.persist_path)
+        hv_new = ExperienceHarvester(
+            max_buffer_size=50, persist_path=hv.persist_path
+        )
         await hv_new.load_buffer()
         assert len(hv_new.buffer) == 2
 
@@ -249,7 +258,9 @@ class TestExperienceConsolidator:
         assert res is None
 
     @pytest.mark.asyncio
-    async def test_consolidate_batch_resolves_complete_fn_from_api_key(self, tmp_dirs):
+    async def test_consolidate_batch_resolves_complete_fn_from_api_key(
+        self, tmp_dirs
+    ):
         store, qs, hv = tmp_dirs
         reg = get_registry()
         mock_realm = MagicMock()
@@ -269,7 +280,9 @@ class TestExperienceConsolidator:
             reg.unregister_realm_factory("openrouter")
 
     @pytest.mark.asyncio
-    async def test_consolidate_batch_no_realm_registered_returns_none(self, tmp_dirs):
+    async def test_consolidate_batch_no_realm_registered_returns_none(
+        self, tmp_dirs
+    ):
         store, qs, hv = tmp_dirs
         reg = get_registry()
         reg.unregister_realm_factory("openrouter")

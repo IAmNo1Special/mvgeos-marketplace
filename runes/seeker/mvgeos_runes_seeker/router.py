@@ -1,6 +1,6 @@
 from __future__ import annotations
+
 import asyncio
-import json as json_mod
 import re
 import unicodedata
 from dataclasses import dataclass
@@ -61,7 +61,7 @@ class DCIRouter:
                 stdout, stderr = await asyncio.wait_for(
                     proc.communicate(), timeout=self._timeout
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 try:
                     proc.kill()
                 except ProcessLookupError:
@@ -167,7 +167,7 @@ async def _reap_process(proc: asyncio.subprocess.Process) -> None:
         try:
             await asyncio.wait_for(proc.wait(), timeout=2)
             return
-        except asyncio.TimeoutError:
+        except TimeoutError:
             try:
                 proc.kill()
             except ProcessLookupError:

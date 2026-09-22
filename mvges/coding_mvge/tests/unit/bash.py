@@ -9,9 +9,6 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from mvgeos_agent.function_spell import FunctionSpell
-from mvgeos_core.spells import SpellStatus
-
 from coding_mvge.spells._process_tree import (
     DEFAULT_BASH_TIMEOUT_MS,
     kill_process_tree,
@@ -20,6 +17,8 @@ from coding_mvge.spells._process_tree import (
     validate_working_directory,
 )
 from coding_mvge.spells.bash import bash
+from mvgeos_agent.function_spell import FunctionSpell
+from mvgeos_core.spells import SpellStatus
 
 
 class _FakeReader:
@@ -50,10 +49,14 @@ def _mock_proc(
 ) -> MagicMock:
     proc = MagicMock()
     proc.stdout = (
-        _FakeReader(stdout_chunks) if stdout_chunks is not None else _FakeReader([])
+        _FakeReader(stdout_chunks)
+        if stdout_chunks is not None
+        else _FakeReader([])
     )
     proc.stderr = (
-        _FakeReader(stderr_chunks) if stderr_chunks is not None else _FakeReader([])
+        _FakeReader(stderr_chunks)
+        if stderr_chunks is not None
+        else _FakeReader([])
     )
     proc.wait = AsyncMock(return_value=returncode)
     proc.returncode = returncode
@@ -63,8 +66,12 @@ def _mock_proc(
 
 def _patch_spawn(proc: MagicMock) -> Any:
     return (
-        patch("asyncio.create_subprocess_shell", new=AsyncMock(return_value=proc)),
-        patch("asyncio.create_subprocess_exec", new=AsyncMock(return_value=proc)),
+        patch(
+            "asyncio.create_subprocess_shell", new=AsyncMock(return_value=proc)
+        ),
+        patch(
+            "asyncio.create_subprocess_exec", new=AsyncMock(return_value=proc)
+        ),
     )
 
 
@@ -78,11 +85,15 @@ class TestTimeoutResolution:
         with pytest.raises(ValueError, match="positive integer"):
             resolve_timeout_ms(-100)
 
-    def test_env_var_bash_timeout(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_env_var_bash_timeout(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setenv("MVGEOS_BASH_TIMEOUT_MS", "12345")
         assert resolve_timeout_ms() == 12345
 
-    def test_env_var_spell_timeout(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_env_var_spell_timeout(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.delenv("MVGEOS_BASH_TIMEOUT_MS", raising=False)
         monkeypatch.setenv("MVGEOS_SPELL_TIMEOUT_MS", "67890")
         assert resolve_timeout_ms() == 67890
@@ -137,16 +148,22 @@ class TestWorkspaceResolutionAndValidation:
         assert validate_working_directory("src", root) == sub
         assert validate_working_directory(str(sub), root) == sub
 
-    def test_validate_working_dir_outside_bounds_raises(self, tmp_path: Path) -> None:
+    def test_validate_working_dir_outside_bounds_raises(
+        self, tmp_path: Path
+    ) -> None:
         root = tmp_path / "workspace"
         root.mkdir()
         outside = tmp_path / "other"
         outside.mkdir()
 
-        with pytest.raises(ValueError, match="outside authorized workspace root"):
+        with pytest.raises(
+            ValueError, match="outside authorized workspace root"
+        ):
             validate_working_directory(str(outside), root.resolve())
 
-        with pytest.raises(ValueError, match="outside authorized workspace root"):
+        with pytest.raises(
+            ValueError, match="outside authorized workspace root"
+        ):
             validate_working_directory("../other", root.resolve())
 
     def test_validate_working_dir_not_found(self, tmp_path: Path) -> None:
@@ -268,7 +285,9 @@ class TestCastBash:
         assert "marker.txt" in result.content
 
     @pytest.mark.asyncio
-    async def test_cast_bash_cwd_violation_returns_error(self, tmp_path: Path) -> None:
+    async def test_cast_bash_cwd_violation_returns_error(
+        self, tmp_path: Path
+    ) -> None:
         workspace = tmp_path / "ws"
         workspace.mkdir()
 
@@ -281,7 +300,9 @@ class TestCastBash:
         assert "outside authorized workspace root" in result.error_message
 
     @pytest.mark.asyncio
-    async def test_cast_bash_cwd_not_found_returns_error(self, tmp_path: Path) -> None:
+    async def test_cast_bash_cwd_not_found_returns_error(
+        self, tmp_path: Path
+    ) -> None:
         result = await bash(
             command="echo hi",
             cwd="does_not_exist",
@@ -363,7 +384,9 @@ class TestCastBash:
 
 class TestBuiltinSpellBash:
     @pytest.mark.asyncio
-    async def test_builtin_spell_enforces_workspace_root(self, tmp_path: Path) -> None:
+    async def test_builtin_spell_enforces_workspace_root(
+        self, tmp_path: Path
+    ) -> None:
         workspace = tmp_path / "workspace"
         workspace.mkdir()
         outside = tmp_path / "outside"
@@ -481,7 +504,9 @@ class TestBashBounding:
         assert "[stderr truncated]" in result.error_message
 
     @pytest.mark.asyncio
-    async def test_lines_only_truncation_has_no_spill(self, tmp_path: Path) -> None:
+    async def test_lines_only_truncation_has_no_spill(
+        self, tmp_path: Path
+    ) -> None:
         lines = [f"l{i:04d}\n".encode() for i in range(2500)]
         proc = _mock_proc(lines)
         shell_patch, exec_patch = _patch_spawn(proc)

@@ -29,6 +29,7 @@ testpaths = [
     "runes/pi-codec/tests",
     "runes/skills-bridge/tests",
     "runes/steering-bridge/tests",
+    "runes/selfmod-bridge/tests",
     "runes/session-search/tests",
 ]
 python_files = "*.py"
@@ -44,6 +45,7 @@ pythonpath = [
     "runes/skills-bridge",
     "runes/steering-bridge",
     "runes/approval-rune",
+    "runes/selfmod-bridge",
     "runes/session-search",
 ]
 addopts = "--import-mode=importlib"

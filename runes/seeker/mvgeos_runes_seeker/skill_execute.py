@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -9,8 +8,7 @@ from typing import Any
 from mvgeos_core.spells import MvgeSpell, SpellExecutionMode
 from mvgeos_provider.registry import RealmRegistry
 
-from .dci_matcher import DCISkillMatcher, SkillSearchError, _get_skill_roots
-from .skill_selector import SkillNLTSelector
+from .dci_matcher import _get_skill_roots
 
 
 class SkillExecuteSpell(MvgeSpell):
@@ -104,7 +102,9 @@ class SkillExecuteSpell(MvgeSpell):
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout_b, stderr_b = await asyncio.wait_for(proc.communicate(), timeout=30.0)
+            stdout_b, stderr_b = await asyncio.wait_for(
+                proc.communicate(), timeout=30.0
+            )
             stdout = stdout_b.decode("utf-8", errors="replace")
             stderr = stderr_b.decode("utf-8", errors="replace")
             return {
@@ -119,5 +119,5 @@ class SkillExecuteSpell(MvgeSpell):
             except ProcessLookupError:
                 pass
             return {"status": "error", "error": "Execution timed out"}
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 -- spell returns an error payload instead of raising
             return {"status": "error", "error": str(e)}

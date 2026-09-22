@@ -5,7 +5,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from mvgeos_runes_heal_my_goap.models import SandboxTimeoutError
-from mvgeos_runes_heal_my_goap.sandbox import SandboxExecutor, _sandbox_process_target
+from mvgeos_runes_heal_my_goap.sandbox import (
+    SandboxExecutor,
+    _sandbox_process_target,
+)
 
 
 def test_sandbox_safe_code_execution() -> None:

@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+from typing import Self
+
 import httpx
 import pytest
+from coding_mvge.spells.read_url import read_url
+from coding_mvge.spells.search_web import search_web
 from mvgeos_core.abort import (
     AbortController,
     AbortError,
 )
 from mvgeos_core.spells import SpellStatus
-
-from coding_mvge.spells.read_url import read_url
-from coding_mvge.spells.search_web import search_web
 
 
 @pytest.mark.asyncio
@@ -38,9 +39,13 @@ async def test_search_web_success() -> None:
     result = await search_web("python docs", client=client)
     assert result.status == SpellStatus.SUCCESS
     assert result.content is not None
-    assert "[Python Documentation](https://docs.python.org/3/)" in result.content
+    assert (
+        "[Python Documentation](https://docs.python.org/3/)" in result.content
+    )
     assert "Official documentation for Python 3." in result.content
-    assert "[PyPI · The Python Package Index](https://pypi.org/)" in result.content
+    assert (
+        "[PyPI · The Python Package Index](https://pypi.org/)" in result.content
+    )
 
 
 @pytest.mark.asyncio
@@ -181,7 +186,9 @@ async def test_read_url_aborted_after_fetch() -> None:
 
     client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     with pytest.raises(AbortError):
-        await read_url("https://example.com", signal=controller.signal, client=client)
+        await read_url(
+            "https://example.com", signal=controller.signal, client=client
+        )
 
 
 @pytest.mark.asyncio
@@ -212,10 +219,14 @@ async def test_read_url_empty_content() -> None:
 
 @pytest.mark.asyncio
 async def test_read_url_without_title_and_with_br_and_headings() -> None:
-    html = "<h2>Subtitle</h2><br><p>Text with line break<br/></p><h3>Section</h3>"
+    html = (
+        "<h2>Subtitle</h2><br><p>Text with line break<br/></p><h3>Section</h3>"
+    )
 
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, text=html, headers={"Content-Type": "text/html"})
+        return httpx.Response(
+            200, text=html, headers={"Content-Type": "text/html"}
+        )
 
     client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     result = await read_url("https://example.com/notitle", client=client)
@@ -238,16 +249,20 @@ async def test_read_url_network_exception() -> None:
 
 
 @pytest.mark.asyncio
-async def test_read_url_default_client_mocked(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_read_url_default_client_mocked(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     mock_response = httpx.Response(
-        200, text="Default client content", headers={"Content-Type": "text/plain"}
+        200,
+        text="Default client content",
+        headers={"Content-Type": "text/plain"},
     )
 
     class MockAsyncClient:
         def __init__(self, *args: object, **kwargs: object) -> None:
             pass
 
-        async def __aenter__(self) -> MockAsyncClient:
+        async def __aenter__(self) -> Self:
             return self
 
         async def __aexit__(self, *args: object) -> None:
@@ -266,7 +281,8 @@ async def test_read_url_default_client_mocked(monkeypatch: pytest.MonkeyPatch) -
 async def test_search_web_empty_results() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
-            200, text="<html><body><div class='no-results'>None</div></body></html>"
+            200,
+            text="<html><body><div class='no-results'>None</div></body></html>",
         )
 
     client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
@@ -317,7 +333,7 @@ async def test_search_web_default_client_mocked(
         def __init__(self, *args: object, **kwargs: object) -> None:
             pass
 
-        async def __aenter__(self) -> MockAsyncClient:
+        async def __aenter__(self) -> Self:
             return self
 
         async def __aexit__(self, *args: object) -> None:
@@ -337,9 +353,14 @@ def test_clean_ddg_url_helper() -> None:
 
     assert _clean_ddg_url("") == ""
     assert _clean_ddg_url("//example.com") == "https://example.com"
-    assert _clean_ddg_url("https://example.com/direct") == "https://example.com/direct"
     assert (
-        _clean_ddg_url("https://duckduckgo.com/l/?uddg=https%3A%2F%2Fpython.org&rut=1")
+        _clean_ddg_url("https://example.com/direct")
+        == "https://example.com/direct"
+    )
+    assert (
+        _clean_ddg_url(
+            "https://duckduckgo.com/l/?uddg=https%3A%2F%2Fpython.org&rut=1"
+        )
         == "https://python.org"
     )
     assert (
@@ -353,7 +374,9 @@ def test_ddg_parser_close_flush() -> None:
 
     parser = _DuckDuckGoHTMLParser()
     # Feed an unclosed result tag at EOF
-    parser.feed('<a class="result__a" href="https://example.com">Unclosed Item</a>')
+    parser.feed(
+        '<a class="result__a" href="https://example.com">Unclosed Item</a>'
+    )
     parser.close()
     assert len(parser.results) == 1
     assert parser.results[0]["title"] == "Unclosed Item"

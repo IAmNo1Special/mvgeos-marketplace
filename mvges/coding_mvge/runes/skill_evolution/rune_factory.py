@@ -9,17 +9,12 @@ import re
 from pathlib import Path
 from typing import Any
 
-from mvgeos_agent import Mvge
-from mvgeos_runes.rune_api import RuneAPI
-from mvgeos_runes.types import (
-    RuneContext,
-    SigilHook,
-)
-
 from coding_mvge.runes.skill_evolution.consolidator.consolidator import (
     ExperienceConsolidator,
 )
-from coding_mvge.runes.skill_evolution.consolidator.harvester import ExperienceHarvester
+from coding_mvge.runes.skill_evolution.consolidator.harvester import (
+    ExperienceHarvester,
+)
 from coding_mvge.runes.skill_evolution.engine import SkillEvolutionEngine
 from coding_mvge.runes.skill_evolution.hooks.handlers import SkillEvolutionHooks
 from coding_mvge.runes.skill_evolution.proposer_mvge import (
@@ -32,6 +27,12 @@ from coding_mvge.runes.skill_evolution.spells import (
     make_export_spell,
 )
 from coding_mvge.runes.skill_evolution.store import SkillEvolutionStore
+from mvgeos_agent import Mvge
+from mvgeos_runes.rune_api import RuneAPI
+from mvgeos_runes.types import (
+    RuneContext,
+    SigilHook,
+)
 
 
 def rune_factory(api: RuneAPI) -> None:
@@ -60,11 +61,17 @@ def rune_factory(api: RuneAPI) -> None:
     )
 
     if is_project and cwd_path:
-        clean_name = re.sub(r"[^a-zA-Z0-9_-]", "_", cwd_path.name) or "workspace"
-        path_hash = hashlib.sha256(str(cwd_path).encode("utf-8")).hexdigest()[:8]
+        clean_name = (
+            re.sub(r"[^a-zA-Z0-9_-]", "_", cwd_path.name) or "workspace"
+        )
+        path_hash = hashlib.sha256(str(cwd_path).encode("utf-8")).hexdigest()[
+            :8
+        ]
         ws_slug = f"{clean_name}-{path_hash}"
         evolution_dir = config_base / "workspaces" / ws_slug / "skill_evolution"
-        raw_experience_dir = config_base / "workspaces" / ws_slug / "raw_experience"
+        raw_experience_dir = (
+            config_base / "workspaces" / ws_slug / "raw_experience"
+        )
         project_skills_dir: Path | None = cwd_path / ".agents" / "skills"
     else:
         evolution_dir = config_base / "skill_evolution"
@@ -77,7 +84,8 @@ def rune_factory(api: RuneAPI) -> None:
     store.bind_raw_experience(raw_experience_dir)
     queries = SkillEvolutionQueries(store)
     harvester = ExperienceHarvester(
-        max_buffer_size=100, persist_path=evolution_dir / "harvester_buffer.json"
+        max_buffer_size=100,
+        persist_path=evolution_dir / "harvester_buffer.json",
     )
     consolidator = ExperienceConsolidator(
         store=store,
@@ -98,7 +106,9 @@ def rune_factory(api: RuneAPI) -> None:
         auto_apply=True,
     )
     subagent_mvge = create_proposer_mvge(engine=engine, api_key=api_key)
-    subagent_mvge.event_bus.subscribe(lambda ev: api.emit_event("mvge_event", ev))
+    subagent_mvge.event_bus.subscribe(
+        lambda ev: api.emit_event("mvge_event", ev)
+    )
 
     class SubagentRunner:
         def __init__(self, mvge_inst: Mvge, eng: SkillEvolutionEngine) -> None:
@@ -143,11 +153,15 @@ def rune_factory(api: RuneAPI) -> None:
     api.register_command(
         name="skill-evolution-stats",
         description="Show skill evolution stats",
-        handler=lambda _: api._runner.send_message("[skill_evolution] Stats requested"),
+        handler=lambda _: api._runner.send_message(
+            "[skill_evolution] Stats requested"
+        ),
     )
 
     async def handle_propose(args: Any = None) -> None:
-        api.send_message("[skill_evolution] Skill Proposer sub-agent launched...")
+        api.send_message(
+            "[skill_evolution] Skill Proposer sub-agent launched..."
+        )
         res = await subagent.run(auto_apply=True)
         if res.get("success"):
             action = res.get("action", "no_action")

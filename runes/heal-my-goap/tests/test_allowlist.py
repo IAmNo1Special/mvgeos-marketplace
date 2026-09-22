@@ -1,3 +1,5 @@
+"""Tests for the heal-my-goap spell allowlist pinning."""
+
 from __future__ import annotations
 
 import inspect
@@ -34,7 +36,9 @@ _HEAL_STUBS: dict[str, list[str]] = {
 def _stub_engine_package(monkeypatch: pytest.MonkeyPatch) -> None:
     pkg = types.ModuleType("mvgeos_runes_heal_my_goap")
     pkg.__path__ = []  # type: ignore[attr-defined]
-    pkg.__spec__ = ModuleSpec("mvgeos_runes_heal_my_goap", loader=None, is_package=True)
+    pkg.__spec__ = ModuleSpec(
+        "mvgeos_runes_heal_my_goap", loader=None, is_package=True
+    )
     monkeypatch.setitem(sys.modules, "mvgeos_runes_heal_my_goap", pkg)
     for mod_name, attrs in _HEAL_STUBS.items():
         if mod_name == "mvgeos_runes_heal_my_goap":
@@ -60,6 +64,7 @@ def _load_factory() -> Any:
 
 @pytest.mark.asyncio
 async def test_heal_pins_own_spells_and_widens_allowlist() -> None:
+    """The rune pins its own spells and widens the allowlist additively."""
     factory = _load_factory()
     api = MagicMock()
     api.get_global_spell_allowlist.return_value = ["tool_search"]

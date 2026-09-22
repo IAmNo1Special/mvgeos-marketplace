@@ -1,0 +1,6 @@
+# Shared ruff configuration for the mvges workspace.
+# mvges/coding_mvge/pyproject.toml extends this file ("../pyproject.toml").
+
+[tool.ruff]
+line-length = 80
+target-version = "py313"

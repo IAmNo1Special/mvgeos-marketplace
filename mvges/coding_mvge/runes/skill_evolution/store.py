@@ -67,7 +67,7 @@ class SkillEvolutionStore:
     def get_metadata(self) -> SkillEvolutionMetadata:
         try:
             data = json.loads(self.gating_path.read_text(encoding="utf-8"))
-        except Exception:
+        except Exception:  # noqa: BLE001 -- corrupt or missing metadata file falls back to defaults
             data = {}
         patterns = list(self.patterns_dir.glob("*.md"))
         return SkillEvolutionMetadata(
@@ -86,7 +86,7 @@ class SkillEvolutionStore:
     ) -> None:
         try:
             data = json.loads(self.gating_path.read_text(encoding="utf-8"))
-        except Exception:
+        except Exception:  # noqa: BLE001 -- corrupt or missing metadata file falls back to defaults
             data = {}
         if last_turn is not None:
             data["last_turn"] = max(int(data.get("last_turn", 0)), last_turn)
@@ -95,14 +95,18 @@ class SkillEvolutionStore:
         if r_best is not None:
             data["R_best"] = r_best
         data["updated_at"] = datetime.now(UTC).isoformat()
-        self.gating_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        self.gating_path.write_text(
+            json.dumps(data, indent=2), encoding="utf-8"
+        )
 
     async def add_pattern(self, name: str, content: str, turn: int) -> None:
         target = self.patterns_dir / name
         target.write_text(content.strip() + "\n", encoding="utf-8")
         self._update_gating(last_turn=turn)
 
-    async def patch_pattern(self, name: str, edits: list[dict[str, Any]]) -> bool:
+    async def patch_pattern(
+        self, name: str, edits: list[dict[str, Any]]
+    ) -> bool:
         target = self.patterns_dir / name
         if not target.exists():
             return False
@@ -145,7 +149,8 @@ class SkillEvolutionStore:
             f"- Turn: {proposal.get('turn', '?')}\n"
             f"- Action: {p_act}\n"
             f"- Validation: {r_val}\n"
-            f"- Outcome: {status}\n" + (f"```diff\n{diff}\n```\n" if diff else "")
+            f"- Outcome: {status}\n"
+            + (f"```diff\n{diff}\n```\n" if diff else "")
         )
         with self.skill_impact_path.open("a", encoding="utf-8") as f:
             f.write(entry)

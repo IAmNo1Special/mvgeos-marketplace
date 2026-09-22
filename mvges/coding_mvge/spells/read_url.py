@@ -30,7 +30,15 @@ _BINARY_TYPES = {
     "application/gzip",
 }
 
-_IGNORED_TAGS = {"script", "style", "noscript", "svg", "header", "footer", "nav"}
+_IGNORED_TAGS = {
+    "script",
+    "style",
+    "noscript",
+    "svg",
+    "header",
+    "footer",
+    "nav",
+}
 
 
 class _HTMLToMarkdownParser(HTMLParser):
@@ -43,7 +51,9 @@ class _HTMLToMarkdownParser(HTMLParser):
         self._current_tag: str = ""
         self._current_link_href: str | None = None
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    def handle_starttag(
+        self, tag: str, attrs: list[tuple[str, str | None]]
+    ) -> None:
         tag_lower = tag.lower()
         if tag_lower in _IGNORED_TAGS:
             self._ignore_stack.append(tag_lower)
@@ -194,7 +204,8 @@ async def read_url(
 
         if len(content) > max_length:
             content = (
-                content[:max_length] + f"\n\n... [truncated at {max_length} characters]"
+                content[:max_length]
+                + f"\n\n... [truncated at {max_length} characters]"
             )
 
         return SpellResult(
@@ -204,7 +215,7 @@ async def read_url(
         )
     except AbortError:
         raise
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- spell contract: return ERROR SpellResult instead of raising
         return SpellResult(
             spell_name="read_url",
             status=SpellStatus.ERROR,

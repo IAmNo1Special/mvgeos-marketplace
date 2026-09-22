@@ -4,17 +4,16 @@ import asyncio
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-from mvgeos_core.spells import (
-    SpellResult,
-    SpellStatus,
-)
-
 import coding_mvge.spells as pkg_spells
+import pytest
 from coding_mvge.spells import (
     edit,
     read,
     write,
+)
+from mvgeos_core.spells import (
+    SpellResult,
+    SpellStatus,
 )
 
 
@@ -43,7 +42,9 @@ class TestWriteSpell:
 
     @pytest.mark.asyncio
     async def test_write_exception(self) -> None:
-        with patch.object(Path, "write_text", side_effect=PermissionError("denied")):
+        with patch.object(
+            Path, "write_text", side_effect=PermissionError("denied")
+        ):
             result = await write("out.txt", "data")
             assert result.status == SpellStatus.ERROR
             assert "denied" in result.error_message
@@ -74,7 +75,9 @@ class TestEditSpell:
 
     @pytest.mark.asyncio
     async def test_edit_exception(self) -> None:
-        with patch.object(Path, "exists", side_effect=PermissionError("denied")):
+        with patch.object(
+            Path, "exists", side_effect=PermissionError("denied")
+        ):
             result = await edit("any.txt", "a", "b")
             assert result.status == SpellStatus.ERROR
             assert "denied" in result.error_message
@@ -82,12 +85,16 @@ class TestEditSpell:
 
 class TestSpellConcurrency:
     @pytest.mark.asyncio
-    async def test_concurrent_reads_and_writes_no_race(self, tmp_path: Path) -> None:
+    async def test_concurrent_reads_and_writes_no_race(
+        self, tmp_path: Path
+    ) -> None:
         files = [(tmp_path / f"f{i}.txt") for i in range(20)]
         for f in files:
             f.write_text("seed", encoding="utf-8")
 
-        async def roundtrip(f: Path) -> tuple[SpellResult, SpellResult, SpellResult]:
+        async def roundtrip(
+            f: Path,
+        ) -> tuple[SpellResult, SpellResult, SpellResult]:
             r1 = await read(str(f))
             w1 = await write(str(f), "updated")
             r2 = await read(str(f))

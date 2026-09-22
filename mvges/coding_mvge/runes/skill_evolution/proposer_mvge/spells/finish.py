@@ -5,12 +5,11 @@ from collections.abc import Awaitable, Callable
 from contextvars import ContextVar
 from typing import Any
 
+from coding_mvge.runes.skill_evolution.engine import SkillEvolutionEngine
 from mvgeos_core.spells import (
     SpellResult,
     SpellStatus,
 )
-
-from coding_mvge.runes.skill_evolution.engine import SkillEvolutionEngine
 
 _ACTIVE_ENGINE: ContextVar[SkillEvolutionEngine | None] = ContextVar(
     "active_engine", default=None

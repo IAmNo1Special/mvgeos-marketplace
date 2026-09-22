@@ -7,6 +7,16 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
+from coding_mvge.runes.skill_evolution.consolidator.harvester import (
+    ExperienceHarvester,
+)
+from coding_mvge.runes.skill_evolution.consolidator.prompts import (
+    SKILL_EVOLUTION_MAINTAINER_SYSTEM,
+    build_consolidation_user_prompt,
+)
+from coding_mvge.runes.skill_evolution.models import ConsolidationLogEntry
+from coding_mvge.runes.skill_evolution.queries import SkillEvolutionQueries
+from coding_mvge.runes.skill_evolution.store import SkillEvolutionStore
 from mvgeos_core.abort import AbortSignal
 from mvgeos_core.channel import (
     ChannelConfig,
@@ -15,21 +25,16 @@ from mvgeos_core.channel import (
 from mvgeos_provider.base import NoRealmRegisteredError
 from mvgeos_provider.registry import get_registry
 
-from coding_mvge.runes.skill_evolution.consolidator.harvester import ExperienceHarvester
-from coding_mvge.runes.skill_evolution.consolidator.prompts import (
-    SKILL_EVOLUTION_MAINTAINER_SYSTEM,
-    build_consolidation_user_prompt,
-)
-from coding_mvge.runes.skill_evolution.models import ConsolidationLogEntry
-from coding_mvge.runes.skill_evolution.queries import SkillEvolutionQueries
-from coding_mvge.runes.skill_evolution.store import SkillEvolutionStore
-
 logger = logging.getLogger(__name__)
 
-CompleteFn = Callable[[list[dict[str, str]], AbortSignal | None], Awaitable[str]]
+CompleteFn = Callable[
+    [list[dict[str, str]], AbortSignal | None], Awaitable[str]
+]
 
 
-def make_realm_complete_fn(realm: Any, model_id: str = "openrouter/auto") -> CompleteFn:
+def make_realm_complete_fn(
+    realm: Any, model_id: str = "openrouter/auto"
+) -> CompleteFn:
     """Create a CompleteFn adapter wrapping Realm.complete()."""
     model = Model(
         id=model_id,
@@ -94,10 +99,14 @@ class ExperienceConsolidator:
             or kwargs.get("knowledge_queries")
         )
         if actual_queries is None:
-            raise ValueError("queries must be provided to ExperienceConsolidator")
+            raise ValueError(
+                "queries must be provided to ExperienceConsolidator"
+            )
         actual_harvester = harvester or kwargs.get("harvester")
         if actual_harvester is None:
-            raise ValueError("harvester must be provided to ExperienceConsolidator")
+            raise ValueError(
+                "harvester must be provided to ExperienceConsolidator"
+            )
         self.store = actual_store
         self.queries = actual_queries
         self.harvester = actual_harvester
@@ -127,7 +136,9 @@ class ExperienceConsolidator:
                 self.complete_fn = make_realm_complete_fn(realm, self.llm_model)
                 return self.complete_fn
             except NoRealmRegisteredError as exc:
-                logger.warning("Cannot initialize realm for consolidation: %s", exc)
+                logger.warning(
+                    "Cannot initialize realm for consolidation: %s", exc
+                )
                 return None
         return None
 
@@ -169,7 +180,9 @@ class ExperienceConsolidator:
         patterns = await self.store.list_patterns()
         pattern_texts: list[str] = []
         for p in patterns[:10]:
-            pattern_texts.append(f"### {p.name}\n{p.read_text(encoding='utf-8')[:500]}")
+            pattern_texts.append(
+                f"### {p.name}\n{p.read_text(encoding='utf-8')[:500]}"
+            )
 
         evolution_context = (
             f"# INDEX\n{evolution_index}\n\n"
@@ -215,7 +228,7 @@ class ExperienceConsolidator:
 
         try:
             proposals = json.loads(cleaned)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 -- LLM JSON may be malformed; warning + fallback is the contract
             logger.warning(
                 "Failed to parse consolidation LLM response as JSON: %s\nResponse: %s",
                 exc,
@@ -245,7 +258,9 @@ class ExperienceConsolidator:
         if new_index:
             await self.store.update_index(new_index)
 
-        append_log = proposals.get("append_log", f"Consolidated {len(sampled)} traces")
+        append_log = proposals.get(
+            "append_log", f"Consolidated {len(sampled)} traces"
+        )
         await self.store.append_log(append_log)
         log_entry = ConsolidationLogEntry(
             turn=current_turn,

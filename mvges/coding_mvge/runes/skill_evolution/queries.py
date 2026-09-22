@@ -46,7 +46,9 @@ class SkillEvolutionQueries:
         return {
             "total_entries": len(patterns),
             "total_consolidations": getattr(meta, "total_consolidations", 0),
-            "last_consolidation_turn": getattr(meta, "last_consolidation_turn", 0),
+            "last_consolidation_turn": getattr(
+                meta, "last_consolidation_turn", 0
+            ),
             "recent_entries_analyzed": len(patterns),
         }
 

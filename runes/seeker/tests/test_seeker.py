@@ -151,7 +151,5 @@ async def test_search_grimoires_matches_hint(tmp_path: Path) -> None:
     (tmp_path / "my_grimoire").mkdir()
     (tmp_path / "other").mkdir()
     router = DCIRouter(spells_root=tmp_path)
-    assert await router._search_grimoires("my grimoire") == [
-        tmp_path / "my_grimoire"
-    ]
+    assert await router._search_grimoires("my grimoire") == [tmp_path / "my_grimoire"]
     assert await router._search_grimoires("") == []

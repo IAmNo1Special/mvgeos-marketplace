@@ -4,10 +4,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from coding_mvge.spells import find
 from mvgeos_core.spells import SpellStatus
 from mvgeos_core.truncate import DEFAULT_MAX_BYTES
-
-from coding_mvge.spells import find
 
 
 class TestFindSpell:
@@ -63,7 +62,9 @@ class TestFindSpell:
         assert "hidden.py" in result.content
 
     @pytest.mark.asyncio
-    async def test_find_explicit_ignored_base_honored(self, tmp_path: Path) -> None:
+    async def test_find_explicit_ignored_base_honored(
+        self, tmp_path: Path
+    ) -> None:
         venv = tmp_path / ".venv"
         venv.mkdir()
         (venv / "hidden.py").touch()
@@ -118,7 +119,9 @@ class TestFindSpell:
         assert "50.0KB limit reached" in result.content
 
     @pytest.mark.asyncio
-    async def test_find_pattern_value_error_skipped(self, tmp_path: Path) -> None:
+    async def test_find_pattern_value_error_skipped(
+        self, tmp_path: Path
+    ) -> None:
         (tmp_path / "a.py").touch()
         with patch.object(Path, "match", side_effect=ValueError("bad")):
             result = await find("*.py", str(tmp_path))
@@ -141,7 +144,9 @@ class TestFindSpell:
 
     @pytest.mark.asyncio
     async def test_find_exception(self) -> None:
-        with patch.object(Path, "exists", side_effect=PermissionError("denied")):
+        with patch.object(
+            Path, "exists", side_effect=PermissionError("denied")
+        ):
             result = await find("*.py", "any")
             assert result.status == SpellStatus.ERROR
             assert "denied" in result.error_message

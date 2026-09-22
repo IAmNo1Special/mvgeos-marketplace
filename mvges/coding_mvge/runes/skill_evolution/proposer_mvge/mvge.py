@@ -7,8 +7,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-from mvgeos_agent import Mvge
-
 from coding_mvge.runes.skill_evolution.engine import SkillEvolutionEngine
 from coding_mvge.runes.skill_evolution.proposer_mvge.spells.finish import (
     get_active_engine,
@@ -18,6 +16,7 @@ from coding_mvge.runes.skill_evolution.proposer_mvge.spells.finish import (
 from coding_mvge.runes.skill_evolution.proposer_mvge.spells.read_file import (
     make_read_file_spell,
 )
+from mvgeos_agent import Mvge
 
 PROPOSER_DIR = Path(__file__).resolve().parent
 
@@ -39,9 +38,13 @@ def scoped_proposer_context(
     """Context manager for scoping a SkillEvolutionEngine to the current
     async context."""
     if engine is None:
-        evo_dir = evolution_dir or knowledge_dir or Path(".agents/skill_evolution")
+        evo_dir = (
+            evolution_dir or knowledge_dir or Path(".agents/skill_evolution")
+        )
         raw_dir = (
-            raw_experience_dir or raw_knowledge_dir or Path(".agents/raw_experience")
+            raw_experience_dir
+            or raw_knowledge_dir
+            or Path(".agents/raw_experience")
         )
         skills_dir = target_skills_dir or Path(".agents/skills")
         engine = SkillEvolutionEngine(
@@ -107,9 +110,15 @@ async def run_proposer(
             engine = active
             engine.auto_apply = auto_apply
             if available_skills is not None:
-                engine.available_skills = engine._normalize_skills(available_skills)
+                engine.available_skills = engine._normalize_skills(
+                    available_skills
+                )
         else:
-            evo_dir = evolution_dir or knowledge_dir or Path(".agents/skill_evolution")
+            evo_dir = (
+                evolution_dir
+                or knowledge_dir
+                or Path(".agents/skill_evolution")
+            )
             raw_dir = (
                 raw_experience_dir
                 or raw_knowledge_dir
@@ -148,7 +157,9 @@ async def run_proposer(
             else "No past proposals."
         )
         logs_text = (
-            logs_file.read_text(encoding="utf-8") if logs_file.exists() else "No logs."
+            logs_file.read_text(encoding="utf-8")
+            if logs_file.exists()
+            else "No logs."
         )
 
         skills_summary = []
@@ -194,14 +205,16 @@ async def run_proposer(
 
     # If finish spell wasn't executed directly, extract JSON from invocation
     # text if present
-    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", response_text, re.DOTALL)
+    match = re.search(
+        r"```(?:json)?\s*(\{.*?\})\s*```", response_text, re.DOTALL
+    )
     if match:
         try:
             parsed = json.loads(match.group(1))
             res = {"success": True, **parsed}
             engine.latest_proposal = res
             return res
-        except Exception:
+        except Exception:  # noqa: BLE001, S110 -- LLM output may not parse; fall through to no_action
             pass
 
     return {"success": True, "action": "no_action", "content": response_text}

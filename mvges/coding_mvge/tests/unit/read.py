@@ -4,9 +4,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from mvgeos_core.spells import SpellStatus
-
 from coding_mvge.spells import read
+from mvgeos_core.spells import SpellStatus
 
 
 class TestReadSpell:
@@ -26,7 +25,9 @@ class TestReadSpell:
 
     @pytest.mark.asyncio
     async def test_read_exception(self) -> None:
-        with patch.object(Path, "exists", side_effect=PermissionError("denied")):
+        with patch.object(
+            Path, "exists", side_effect=PermissionError("denied")
+        ):
             result = await read("any.txt")
             assert result.status == SpellStatus.ERROR
             assert "denied" in result.error_message
@@ -43,7 +44,9 @@ class TestReadSpell:
     @pytest.mark.asyncio
     async def test_read_offset_limit_window(self, tmp_path: Path) -> None:
         file = tmp_path / "lines.txt"
-        file.write_text("\n".join(f"line{i}" for i in range(1, 11)), encoding="utf-8")
+        file.write_text(
+            "\n".join(f"line{i}" for i in range(1, 11)), encoding="utf-8"
+        )
         result = await read(str(file), offset=3, limit=2)
         assert result.status == SpellStatus.SUCCESS
         assert "line3\nline4" in result.content
@@ -54,7 +57,9 @@ class TestReadSpell:
     @pytest.mark.asyncio
     async def test_read_user_limit_notice(self, tmp_path: Path) -> None:
         file = tmp_path / "lines.txt"
-        file.write_text("\n".join(f"line{i}" for i in range(1, 11)), encoding="utf-8")
+        file.write_text(
+            "\n".join(f"line{i}" for i in range(1, 11)), encoding="utf-8"
+        )
         result = await read(str(file), limit=4)
         assert result.status == SpellStatus.SUCCESS
         assert "more lines in file" in result.content
@@ -107,12 +112,16 @@ class TestReadSpell:
         assert "(2 lines total)" in beyond.error_message
 
     @pytest.mark.asyncio
-    async def test_read_directory_without_skill_md(self, tmp_path: Path) -> None:
+    async def test_read_directory_without_skill_md(
+        self, tmp_path: Path
+    ) -> None:
         result = await read(str(tmp_path))
         assert result.status == SpellStatus.ERROR
 
     @pytest.mark.asyncio
-    async def test_read_large_file_truncates_with_notice(self, tmp_path: Path) -> None:
+    async def test_read_large_file_truncates_with_notice(
+        self, tmp_path: Path
+    ) -> None:
         file = tmp_path / "big.txt"
         file.write_text(
             "\n".join(f"line{i:05d}" for i in range(20000)), encoding="utf-8"

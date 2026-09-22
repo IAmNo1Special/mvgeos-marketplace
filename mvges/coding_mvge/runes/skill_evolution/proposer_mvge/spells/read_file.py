@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 
-from mvgeos_core.spells import (
-    SpellResult,
-    SpellStatus,
-)
-
 from coding_mvge.runes.skill_evolution.engine import SkillEvolutionEngine
 from coding_mvge.runes.skill_evolution.proposer_mvge.spells.finish import (
     get_active_engine,
+)
+from mvgeos_core.spells import (
+    SpellResult,
+    SpellStatus,
 )
 
 
@@ -21,7 +20,9 @@ def make_read_file_spell(
         return await engine.read_file(path)
 
     read_file.__name__ = "read_file"
-    read_file.__doc__ = "Read a file safely within evolution store, traces, or skills."
+    read_file.__doc__ = (
+        "Read a file safely within evolution store, traces, or skills."
+    )
     return read_file
 
 

@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Any
 
 from mvgeos_core.channel import ChannelConfig
 from mvgeos_core.invocations import SummonerRequest
@@ -54,7 +53,7 @@ class MCPNLTSelector:
         finally:
             try:
                 await realm.close()
-            except Exception:
+            except Exception:  # noqa: BLE001, S110 -- best-effort realm.close() in finally must not raise
                 pass
 
     def _build_prompt(self, query: str, candidates: list[MCPServerInfo]) -> str:

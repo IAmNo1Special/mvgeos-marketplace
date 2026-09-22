@@ -96,7 +96,9 @@ class _TailAccumulator:
             truncated=truncated,
             strategy="tail" if truncated else None,
             total_lines=total_lines,
-            shown_start=(total_lines - shown + 1) if truncated and shown else None,
+            shown_start=(total_lines - shown + 1)
+            if truncated and shown
+            else None,
             shown_end=total_lines if truncated and shown else None,
             total_bytes=self.total_bytes,
         )
@@ -261,7 +263,7 @@ async def bash(
         if proc is not None:
             await kill_process_tree(proc)
         raise
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- spell contract: return ERROR SpellResult instead of raising
         return SpellResult(
             spell_name="bash",
             status=SpellStatus.ERROR,

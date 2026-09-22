@@ -5,14 +5,6 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from mvgeos_agent import Mvge
-from mvgeos_core.events import MvgeEventType
-from mvgeos_core.spells import SpellStatus
-from mvgeos_runes.types import (
-    SkillManifest,
-    SkillScope,
-)
-
 from coding_mvge.runes.skill_evolution.proposer_mvge import (
     create_proposer_mvge,
     proposer_mvge,
@@ -20,7 +12,16 @@ from coding_mvge.runes.skill_evolution.proposer_mvge import (
     scoped_proposer_context,
 )
 from coding_mvge.runes.skill_evolution.proposer_mvge.spells.finish import finish
-from coding_mvge.runes.skill_evolution.proposer_mvge.spells.read_file import read_file
+from coding_mvge.runes.skill_evolution.proposer_mvge.spells.read_file import (
+    read_file,
+)
+from mvgeos_agent import Mvge
+from mvgeos_core.events import MvgeEventType
+from mvgeos_core.spells import SpellStatus
+from mvgeos_runes.types import (
+    SkillManifest,
+    SkillScope,
+)
 
 
 @pytest.fixture
@@ -70,7 +71,9 @@ class TestProposerSpells:
 
         traces_dir = rdir / "traces"
         traces_dir.mkdir(parents=True, exist_ok=True)
-        (traces_dir / "inv_1.json").write_text('{"id": "inv_1"}', encoding="utf-8")
+        (traces_dir / "inv_1.json").write_text(
+            '{"id": "inv_1"}', encoding="utf-8"
+        )
 
         # Read index
         res1 = await read_file("skill_evolution/index.md")
@@ -92,10 +95,14 @@ class TestProposerSpells:
         self, tmp_evolution_env: tuple[Path, Path, Path, Path]
     ) -> None:
         _, _, rdir, _ = tmp_evolution_env
-        (rdir / "nested_trace.json").write_text('{"nested": true}', encoding="utf-8")
+        (rdir / "nested_trace.json").write_text(
+            '{"nested": true}', encoding="utf-8"
+        )
         sub = rdir / "sub"
         sub.mkdir(exist_ok=True)
-        (sub / "trace_glob_find.json").write_text('{"glob": true}', encoding="utf-8")
+        (sub / "trace_glob_find.json").write_text(
+            '{"glob": true}', encoding="utf-8"
+        )
 
         # Direct in raw_experience_dir via traces/
         res1 = await read_file("traces/nested_trace.json")
@@ -191,13 +198,15 @@ class TestProposerSpells:
             {"action": "create", "name": "valid-name", "skill_md": "content"}
         )
         assert res.status == SpellStatus.ERROR
-        assert "requires both skill_md and purpose_md" in (res.error_message or "")
+        assert "requires both skill_md and purpose_md" in (
+            res.error_message or ""
+        )
 
     @pytest.mark.asyncio
     async def test_finish_patch_proposal_append_and_insert_after(
         self, tmp_evolution_env: tuple[Path, Path, Path, Path]
     ) -> None:
-        _, edir, _, skills_dir = tmp_evolution_env
+        _, _edir, _, skills_dir = tmp_evolution_env
         skill_dir = skills_dir / "existing-skill"
         skill_dir.mkdir(parents=True, exist_ok=True)
         sk_path = skill_dir / "SKILL.md"
@@ -236,7 +245,9 @@ class TestProposerSpells:
     ) -> None:
         _, _, _, skills_dir = tmp_evolution_env
         # No edits
-        res1 = await finish({"action": "patch", "name": "my-skill", "edits": []})
+        res1 = await finish(
+            {"action": "patch", "name": "my-skill", "edits": []}
+        )
         assert res1.status == SpellStatus.ERROR
 
         # Skill not found
@@ -260,7 +271,11 @@ class TestProposerSpells:
                 "action": "patch",
                 "name": "find-me",
                 "edits": [
-                    {"op": "replace", "target": "missing target", "content": "new"}
+                    {
+                        "op": "replace",
+                        "target": "missing target",
+                        "content": "new",
+                    }
                 ],
             }
         )
@@ -273,7 +288,11 @@ class TestProposerSpells:
                 "action": "patch",
                 "name": "find-me",
                 "edits": [
-                    {"op": "insert_after", "target": "missing target", "content": "new"}
+                    {
+                        "op": "insert_after",
+                        "target": "missing target",
+                        "content": "new",
+                    }
                 ],
             }
         )
@@ -307,7 +326,9 @@ class TestProposerAutonomousLifecycle:
     ) -> None:
         _, edir, rdir, skills_dir = tmp_evolution_env
         (edir / "index.md").write_text("# Evolution Index\n", encoding="utf-8")
-        (edir / "skill-impact.md").write_text("# Past Proposals\n", encoding="utf-8")
+        (edir / "skill-impact.md").write_text(
+            "# Past Proposals\n", encoding="utf-8"
+        )
         (edir / "logs.md").write_text("Turn logs...", encoding="utf-8")
 
         events_received = []
@@ -328,7 +349,9 @@ class TestProposerAutonomousLifecycle:
         )
 
         async def fake_run(prompt: str):
-            agent.event_bus.emit(MvgeEventType.AGENT_START, {"name": "proposer_mvge"})
+            agent.event_bus.emit(
+                MvgeEventType.AGENT_START, {"name": "proposer_mvge"}
+            )
             agent.event_bus.emit(MvgeEventType.TURN_START, {"turn": 1})
             agent.event_bus.emit(MvgeEventType.AGENT_END, {"success": True})
             return MagicMock(content=[{"type": "text", "text": mock_response}])
@@ -396,7 +419,9 @@ class TestProposerAutonomousLifecycle:
         assert res.status == SpellStatus.SUCCESS
         assert "direct content" in (res.content or "")
 
-        with patch.object(Path, "read_text", side_effect=OSError("Disk failure")):
+        with patch.object(
+            Path, "read_text", side_effect=OSError("Disk failure")
+        ):
             res_err = await read_file("direct.txt")
             assert res_err.status == SpellStatus.ERROR
             assert "Disk failure" in (res_err.error_message or "")
@@ -429,7 +454,9 @@ class TestProposerMultiScopeResolution:
                 {
                     "action": "patch",
                     "name": "proj-skill",
-                    "edits": [{"op": "append", "content": "# Added in project\n"}],
+                    "edits": [
+                        {"op": "append", "content": "# Added in project\n"}
+                    ],
                 }
             )
             assert res.status == SpellStatus.SUCCESS
@@ -462,7 +489,9 @@ class TestProposerMultiScopeResolution:
                 {
                     "action": "patch",
                     "name": "agent-skill",
-                    "edits": [{"op": "append", "content": "# Added in agent\n"}],
+                    "edits": [
+                        {"op": "append", "content": "# Added in agent\n"}
+                    ],
                 }
             )
             assert res.status == SpellStatus.SUCCESS
@@ -497,7 +526,9 @@ class TestProposerMultiScopeResolution:
                 {
                     "action": "patch",
                     "name": "user-skill",
-                    "edits": [{"op": "append", "content": "# Universal patch\n"}],
+                    "edits": [
+                        {"op": "append", "content": "# Universal patch\n"}
+                    ],
                 }
             )
             assert res.status == SpellStatus.SUCCESS
@@ -509,7 +540,9 @@ class TestProposerMultiScopeResolution:
     async def test_fork_user_scope_to_project(self, tmp_path: Path) -> None:
         user_dir = tmp_path / "user" / "skills" / "forkable-skill"
         user_dir.mkdir(parents=True)
-        (user_dir / "SKILL.md").write_text("# Original User Skill\n", encoding="utf-8")
+        (user_dir / "SKILL.md").write_text(
+            "# Original User Skill\n", encoding="utf-8"
+        )
         (user_dir / "helper.sh").write_text("echo hello\n", encoding="utf-8")
 
         proj_skills_dir = tmp_path / "project" / ".agents" / "skills"
@@ -535,7 +568,9 @@ class TestProposerMultiScopeResolution:
                     "action": "patch",
                     "name": "forkable-skill",
                     "fork_to_project": True,
-                    "edits": [{"op": "append", "content": "# Repo-specific rule\n"}],
+                    "edits": [
+                        {"op": "append", "content": "# Repo-specific rule\n"}
+                    ],
                 }
             )
             assert res.status == SpellStatus.SUCCESS
@@ -543,14 +578,16 @@ class TestProposerMultiScopeResolution:
             assert payload.get("scope") == "project"
 
             # User file was NOT mutated
-            assert "# Repo-specific rule" not in (user_dir / "SKILL.md").read_text(
-                encoding="utf-8"
-            )
+            assert "# Repo-specific rule" not in (
+                user_dir / "SKILL.md"
+            ).read_text(encoding="utf-8")
 
             # Project copy was created and patched
             project_copy = proj_skills_dir / "forkable-skill" / "SKILL.md"
             assert project_copy.exists()
-            assert "# Repo-specific rule" in project_copy.read_text(encoding="utf-8")
+            assert "# Repo-specific rule" in project_copy.read_text(
+                encoding="utf-8"
+            )
             assert (proj_skills_dir / "forkable-skill" / "helper.sh").exists()
 
     @pytest.mark.asyncio
@@ -598,7 +635,9 @@ class TestProposerMultiScopeResolution:
         proj_skills_dir = tmp_path / "project" / ".agents" / "skills"
         sk_dir = proj_skills_dir / "readable-skill"
         sk_dir.mkdir(parents=True)
-        (sk_dir / "SKILL.md").write_text("# Readable Skill Content\n", encoding="utf-8")
+        (sk_dir / "SKILL.md").write_text(
+            "# Readable Skill Content\n", encoding="utf-8"
+        )
 
         manifest = SkillManifest(
             name="readable-skill",
@@ -620,7 +659,9 @@ class TestProposerMultiScopeResolution:
             assert "# Readable Skill Content" in (res.content or "")
 
     @pytest.mark.asyncio
-    async def test_run_proposer_includes_skills_in_prompt(self, tmp_path: Path) -> None:
+    async def test_run_proposer_includes_skills_in_prompt(
+        self, tmp_path: Path
+    ) -> None:
         edir = tmp_path / "skill_evolution"
         edir.mkdir()
         (edir / "index.md").write_text("# Index\n", encoding="utf-8")
@@ -632,7 +673,10 @@ class TestProposerMultiScopeResolution:
             captured_prompt.append(prompt)
             return MagicMock(
                 content=[
-                    {"type": "text", "text": '```json\n{"action": "no_action"}\n```'}
+                    {
+                        "type": "text",
+                        "text": '```json\n{"action": "no_action"}\n```',
+                    }
                 ]
             )
 
@@ -660,12 +704,16 @@ class TestProposerMultiScopeResolution:
         proj_skills_dir = tmp_path / "project" / ".agents" / "skills"
         p_sk = proj_skills_dir / "p-fallback"
         p_sk.mkdir(parents=True)
-        (p_sk / "SKILL.md").write_text("# P Fallback Original\n", encoding="utf-8")
+        (p_sk / "SKILL.md").write_text(
+            "# P Fallback Original\n", encoding="utf-8"
+        )
 
         agent_skills_dir = tmp_path / "agent" / "skills"
         a_sk = agent_skills_dir / "a-fallback"
         a_sk.mkdir(parents=True)
-        (a_sk / "SKILL.md").write_text("# A Fallback Original\n", encoding="utf-8")
+        (a_sk / "SKILL.md").write_text(
+            "# A Fallback Original\n", encoding="utf-8"
+        )
 
         with scoped_proposer_context(
             evolution_dir=tmp_path / "skill_evolution",
@@ -684,7 +732,9 @@ class TestProposerMultiScopeResolution:
                 }
             )
             assert res1.status == SpellStatus.SUCCESS
-            assert "# P Edited" in (p_sk / "SKILL.md").read_text(encoding="utf-8")
+            assert "# P Edited" in (p_sk / "SKILL.md").read_text(
+                encoding="utf-8"
+            )
 
             # Patch agent fallback
             res2 = await finish(
@@ -695,4 +745,6 @@ class TestProposerMultiScopeResolution:
                 }
             )
             assert res2.status == SpellStatus.SUCCESS
-            assert "# A Edited" in (a_sk / "SKILL.md").read_text(encoding="utf-8")
+            assert "# A Edited" in (a_sk / "SKILL.md").read_text(
+                encoding="utf-8"
+            )

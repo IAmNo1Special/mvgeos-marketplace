@@ -4,14 +4,13 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from coding_mvge.runes.skill_evolution.hooks.handlers import SkillEvolutionHooks
 from mvgeos_runes.types import (
     AfterInvocationData,
     SessionShutdownData,
     SessionStartData,
     TurnEndData,
 )
-
-from coding_mvge.runes.skill_evolution.hooks.handlers import SkillEvolutionHooks
 
 
 @pytest.mark.asyncio
@@ -83,7 +82,9 @@ async def test_on_turn_end_exception_resilience() -> None:
     consolidator = MagicMock()
     consolidator.should_consolidate = MagicMock(return_value=True)
     consolidator.consolidate_batch = AsyncMock(
-        side_effect=RuntimeError("No LLM completion available for consolidation")
+        side_effect=RuntimeError(
+            "No LLM completion available for consolidation"
+        )
     )
     store = MagicMock()
 

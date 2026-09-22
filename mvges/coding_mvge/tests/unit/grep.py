@@ -4,9 +4,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from mvgeos_core.spells import SpellStatus
-
 from coding_mvge.spells import grep
+from mvgeos_core.spells import SpellStatus
 
 
 class TestGrepSpell:
@@ -62,7 +61,9 @@ class TestGrepSpell:
         assert "h.py" in result.content
 
     @pytest.mark.asyncio
-    async def test_grep_explicit_ignored_file_honored(self, tmp_path: Path) -> None:
+    async def test_grep_explicit_ignored_file_honored(
+        self, tmp_path: Path
+    ) -> None:
         venv = tmp_path / ".venv"
         venv.mkdir()
         target = venv / "h.py"
@@ -81,7 +82,9 @@ class TestGrepSpell:
     @pytest.mark.asyncio
     async def test_grep_limit_reached(self, tmp_path: Path) -> None:
         file1 = tmp_path / "a.txt"
-        file1.write_text("\n".join(f"hit {i}" for i in range(10)), encoding="utf-8")
+        file1.write_text(
+            "\n".join(f"hit {i}" for i in range(10)), encoding="utf-8"
+        )
 
         result = await grep("hit", str(file1), limit=3)
         assert result.status == SpellStatus.SUCCESS
@@ -101,7 +104,9 @@ class TestGrepSpell:
         assert "Invalid context" in result.error_message
 
     @pytest.mark.asyncio
-    async def test_grep_skips_binary_and_undecodable(self, tmp_path: Path) -> None:
+    async def test_grep_skips_binary_and_undecodable(
+        self, tmp_path: Path
+    ) -> None:
         (tmp_path / "good.txt").write_text("needle here", encoding="utf-8")
         (tmp_path / "blob.bin").write_bytes(b"\x00needle\xff")
         (tmp_path / "weird.txt").write_bytes(b"\xff\xfeneedle")
@@ -224,7 +229,9 @@ class TestGrepSpell:
 
     @pytest.mark.asyncio
     async def test_grep_exception(self) -> None:
-        with patch.object(Path, "exists", side_effect=PermissionError("denied")):
+        with patch.object(
+            Path, "exists", side_effect=PermissionError("denied")
+        ):
             result = await grep("hello", "any")
             assert result.status == SpellStatus.ERROR
             assert "denied" in result.error_message

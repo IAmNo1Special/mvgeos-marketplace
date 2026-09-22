@@ -1,14 +1,15 @@
 from __future__ import annotations
+
 import re as _re
-from typing import Any
 from pathlib import Path
+from typing import Any
 
 from mvgeos_core.spells import MvgeSpell, SpellExecutionMode
 from mvgeos_provider.registry import RealmRegistry
 
-from .router import DCIRouter, SpellFileMatch, SpellSearchError
-from .nlt_selector import NLTSelector
 from .lazy_loader import LazySpellRegistry
+from .nlt_selector import NLTSelector
+from .router import DCIRouter, SpellFileMatch, SpellSearchError
 
 
 class ToolSearchSpell(MvgeSpell):
@@ -98,7 +99,7 @@ class ToolSearchSpell(MvgeSpell):
         # Stage 3: Lazy schema load â€” load full JSON from source files
         try:
             results = await self._spell_registry.load_selected(selected)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 -- spell returns an error payload instead of raising
             return {
                 "spells_found": 0,
                 "results": [],
