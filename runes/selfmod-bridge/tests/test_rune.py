@@ -172,6 +172,60 @@ async def test_hook_spells_dir_falls_back_to_payload_cwd(tmp_path: Path) -> None
     assert rune.state.spells_dir == tmp_path / "spells"
 
 
+@pytest.mark.asyncio
+async def test_hook_prefers_payload_spells_dir_over_heuristic(tmp_path: Path) -> None:
+    """Spec §4.3/§5.3: the engine resolves the ACTIVE spells dir once; the
+    rune reads the payload's ``spells_dir`` instead of re-deriving the
+    branch logic. A payload-carried spells dir wins over the
+    config_dir/spells heuristic."""
+    rune, _api = make_rune(tmp_path, with_state=False)
+    engine_spells = tmp_path / "engine-resolved" / "spells"
+    engine_spells.mkdir(parents=True)
+    payload = {
+        "agent_name": "test-agent",
+        "config_dir": str(tmp_path / "agent-config"),
+        "runes_paths": [str(tmp_path / "runes")],
+        "system_path": str(tmp_path / "agent-config" / "SYSTEM.md"),
+        "spells_dir": str(engine_spells),
+        "base_prompt": "base",
+        "cwd": str(tmp_path),
+    }
+    await rune._on_before_mvge_start(payload)
+    assert rune.state is not None
+    assert rune.state.spells_dir == engine_spells
+
+
+@pytest.mark.asyncio
+async def test_hook_payload_spells_dir_must_be_a_dir(tmp_path: Path) -> None:
+    """A payload ``spells_dir`` that is not an existing dir is unusable —
+    fall back to the heuristic rather than pointing at a bogus path."""
+    rune, _api = make_rune(tmp_path, with_state=False)
+    (tmp_path / "agent-config" / "spells").mkdir(parents=True)
+    payload = {
+        "agent_name": "test-agent",
+        "config_dir": str(tmp_path / "agent-config"),
+        "runes_paths": [str(tmp_path / "runes")],
+        "system_path": str(tmp_path / "agent-config" / "SYSTEM.md"),
+        "spells_dir": str(tmp_path / "does-not-exist" / "spells"),
+        "base_prompt": "base",
+        "cwd": str(tmp_path),
+    }
+    await rune._on_before_mvge_start(payload)
+    assert rune.state is not None
+    assert rune.state.spells_dir == tmp_path / "agent-config" / "spells"
+
+
+@pytest.mark.asyncio
+async def test_hook_absent_payload_spells_dir_uses_heuristic(tmp_path: Path) -> None:
+    """Old-engine payload without ``spells_dir``: graceful degradation to
+    the config_dir/cwd heuristic."""
+    rune, _api = make_rune(tmp_path, with_state=False)
+    payload = _payload(tmp_path)
+    await rune._on_before_mvge_start(payload)
+    assert rune.state is not None
+    assert rune.state.spells_dir == tmp_path / "agent-config" / "spells"
+
+
 # -- registration ----------------------------------------------------------
 
 

@@ -82,10 +82,20 @@ class SelfmodBridgeRune(SelfmodSpellsMixin):
         config_dir_path = Path(config_dir) if config_dir else None
 
         spells_dir: Path | None = None
+        # Spec §4.3/§5.3: the engine resolves the ACTIVE spells dir ONCE and
+        # hands it over in the payload — the rune reads it, it does NOT
+        # re-derive the discovery branch logic (one resolution, structural).
+        # The config_dir/cwd heuristic below is graceful degradation for
+        # hosts predating the payload field, not a second resolution.
+        payload_spells_dir = self._payload_get(payload, "spells_dir")
+        if payload_spells_dir:
+            candidate_dir = Path(payload_spells_dir)
+            if candidate_dir.is_dir():
+                spells_dir = candidate_dir
         # The session's workspace root, when the payload carries it.
         cwd_value = self._payload_get(payload, "cwd")
         cwd_path = Path(cwd_value) if cwd_value else None
-        if config_dir_path is not None:
+        if spells_dir is None and config_dir_path is not None:
             candidate = config_dir_path / "spells"
             if candidate.is_dir():
                 spells_dir = candidate
