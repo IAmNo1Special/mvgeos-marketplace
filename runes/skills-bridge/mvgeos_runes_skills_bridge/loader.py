@@ -6,7 +6,10 @@ import os
 from pathlib import Path
 from typing import Any
 
-from mvgeos_runes_skills_bridge.parser import parse_skill_manifest
+from mvgeos_runes_skills_bridge.parser import (
+    parse_skill_manifest,
+    resolve_skill_file,
+)
 from mvgeos_runes_skills_bridge.types import (
     PluginManifest,
     SkillDiagnostic,
@@ -70,8 +73,8 @@ def load_cached_skill_manifest(
     lenient: bool = True,
 ) -> SkillManifest | None:
     """Parse or retrieve a cached SkillManifest."""
-    skill_file = path / "SKILL.md"
-    if not skill_file.is_file():
+    skill_file = resolve_skill_file(path)
+    if skill_file is None:
         return None
 
     try:
@@ -168,7 +171,7 @@ def discover_plugin_skill_paths(
                     continue
                 for rel_path in plugin.skills:
                     embedded_dir = (child / rel_path).resolve()
-                    if embedded_dir.is_dir() and (embedded_dir / "SKILL.md").is_file():
+                    if embedded_dir.is_dir() and resolve_skill_file(embedded_dir):
                         discovered.append((embedded_dir, scope))
         except (OSError, PermissionError):
             continue

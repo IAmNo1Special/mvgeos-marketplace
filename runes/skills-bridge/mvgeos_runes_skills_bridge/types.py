@@ -54,7 +54,7 @@ class SkillManifest:
 
     def __post_init__(self) -> None:
         if not self.location and self.path:
-            if self.path.endswith("SKILL.md"):
+            if self.path.endswith(("SKILL.md", "skill.md")):
                 self.location = self.path
             else:
                 self.location = (Path(self.path) / "SKILL.md").as_posix()
@@ -64,7 +64,7 @@ class SkillManifest:
     @property
     def base_dir(self) -> Path:
         loc = self.location or self.path
-        if loc.endswith("SKILL.md"):
+        if loc.endswith(("SKILL.md", "skill.md")):
             return Path(loc).parent
         return Path(loc)
 

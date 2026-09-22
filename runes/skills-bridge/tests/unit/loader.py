@@ -175,3 +175,65 @@ def test_discover_plugin_skill_paths(tmp_path: Path) -> None:
     found_path, scope = discovered[0]
     assert found_path.name == "plug-skill"
     assert scope == SkillScope.PROJECT
+
+
+def _create_skill_lowercase(parent: Path, name: str, desc: str = "Test skill") -> Path:
+    skill_dir = parent / name
+    skill_dir.mkdir(parents=True, exist_ok=True)
+    (skill_dir / "skill.md").write_text(
+        f"---\nname: {name}\ndescription: {desc}\n---\nBody of {name}",
+        encoding="utf-8",
+    )
+    return skill_dir
+
+
+def test_load_cached_skill_manifest_lowercase_fallback(tmp_path: Path) -> None:
+    """A skill with only lowercase skill.md loads (protocol casing)."""
+    clear_skill_manifest_cache()
+    s_dir = _create_skill_lowercase(tmp_path, "lower-skill")
+
+    manifest = load_cached_skill_manifest(s_dir)
+
+    assert manifest is not None
+    assert manifest.name == "lower-skill"
+    assert manifest.location.endswith("skill.md")
+    assert not manifest.location.endswith("SKILL.md")
+
+
+def test_load_cached_skill_manifest_uppercase_preferred(tmp_path: Path) -> None:
+    """SKILL.md wins when both casings exist."""
+    clear_skill_manifest_cache()
+    s_dir = _create_skill(tmp_path, "both-skill", "Upper version")
+    (s_dir / "skill.md").write_text(
+        "---\nname: both-skill\ndescription: Lower version\n---\nLower body",
+        encoding="utf-8",
+    )
+
+    manifest = load_cached_skill_manifest(s_dir)
+
+    assert manifest is not None
+    assert manifest.description == "Upper version"
+    assert manifest.location.endswith("SKILL.md")
+
+
+def test_load_skills_from_paths_discovers_lowercase(tmp_path: Path) -> None:
+    """End-to-end discovery picks up lowercase skill.md skills."""
+    clear_skill_manifest_cache()
+    skills_dir = tmp_path / "skills"
+    skills_dir.mkdir()
+    _create_skill_lowercase(skills_dir, "lower-only")
+
+    loads, _ = load_skills_from_paths([(skills_dir, SkillScope.PROJECT)])
+
+    assert [load.manifest.name for load in loads] == ["lower-only"]
+
+
+def test_load_cached_skill_manifest_neither_casing_returns_none(
+    tmp_path: Path,
+) -> None:
+    """No manifest file at all means not a skill: skipped."""
+    clear_skill_manifest_cache()
+    empty_dir = tmp_path / "no-manifest"
+    empty_dir.mkdir()
+
+    assert load_cached_skill_manifest(empty_dir) is None

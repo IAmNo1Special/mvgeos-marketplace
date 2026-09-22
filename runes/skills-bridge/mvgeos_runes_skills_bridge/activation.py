@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 
 from mvgeos_runes_skills_bridge.types import (
@@ -24,7 +25,7 @@ def enumerate_skill_resources(base_dir: Path) -> list[str]:
                 if not d.startswith(".") and d not in ("__pycache__", "node_modules")
             ]
             for file in sorted(files):
-                if file == "SKILL.md" or file.startswith("."):
+                if file in ("SKILL.md", "skill.md") or file.startswith("."):
                     continue
                 file_path = Path(root) / file
                 try:
@@ -40,7 +41,9 @@ def enumerate_skill_resources(base_dir: Path) -> list[str]:
     return resources
 
 
-def os_walk_bounded(top: Path, max_depth: int = 4):
+def os_walk_bounded(
+    top: Path, max_depth: int = 4
+) -> Iterator[tuple[str, list[str], list[str]]]:
     """Walk directory tree up to max_depth."""
     top_depth = len(top.resolve().parts)
     for root, dirs, files in top.walk():
