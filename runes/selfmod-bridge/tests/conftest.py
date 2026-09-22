@@ -35,9 +35,16 @@ class FakeApi:
     def on(self, hook: Any, handler: Any) -> None:
         self.hooks[hook] = handler
 
-    def register_command(self, name: str, *args: Any) -> None:
-        # Tolerant: sibling runes register (name, description, handler).
-        self.commands[name] = args[-1]
+    def register_command(self, name: str, description: str = "", handler: Any = None) -> None:
+        # Mirrors the real RuneAPI.register_command(name, description="",
+        # handler=None) signature exactly — a positional handler in the
+        # description slot must not silently become the description.
+        assert isinstance(description, str), (
+            f"register_command({name!r}): description must be a string, "
+            f"got {type(description).__name__} — pass the handler as the "
+            "third positional arg"
+        )
+        self.commands[name] = (description, handler)
 
     def register_spell(self, spell: Any) -> None:
         self.spells[spell.name] = spell

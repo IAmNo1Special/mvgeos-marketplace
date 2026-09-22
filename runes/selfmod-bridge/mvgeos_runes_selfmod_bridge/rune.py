@@ -264,7 +264,11 @@ class SelfmodBridgeRune(SelfmodSpellsMixin):
             return
         self._registered = True
         self.api.on(SigilHook.BEFORE_MVGE_START, self._on_before_mvge_start)
-        self.api.register_command("selfmod", self.handle_selfmod_command)
+        self.api.register_command(
+            "selfmod",
+            "Show selfmod-bridge status and the resolved self-mod prompt section",
+            self.handle_selfmod_command,
+        )
         self.api.widen_global_allowlist([name for name, _, _ in self._SPELLS])
         for spell in self._spell_definitions():
             self.api.register_spell(spell)

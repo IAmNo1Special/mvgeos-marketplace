@@ -243,6 +243,15 @@ def test_factory_and_registration(tmp_path: Path) -> None:
     assert "selfmod" in api.commands
     assert len(api.spells) == 8
 
+    # The registered command must carry a string description and the real
+    # handler — the engine builds the CLI command's help text from the
+    # description and dispatches through the handler. A handler passed in
+    # the description slot breaks `mvgeos selfmod --help` and dispatches
+    # nothing (caught by installed CLI proof).
+    description, handler = api.commands["selfmod"]
+    assert isinstance(description, str) and description
+    assert handler == rune.handle_selfmod_command
+
     # Explicit re-registration is a no-op: the handler must not be replaced.
     handler_before = api.hooks[SigilHook.BEFORE_MVGE_START]
     rune.register()
