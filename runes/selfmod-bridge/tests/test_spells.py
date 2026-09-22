@@ -650,3 +650,48 @@ async def test_self_rollback_skips_config_and_reports(tmp_path: Path) -> None:
     # config.json is never restored — completeness only.
     assert (state.config_dir / "config.json").read_text(encoding="utf-8") == '{"a": 2}'
     assert any("config" in s for s in result["skipped"])
+
+
+@pytest.mark.asyncio
+async def test_teach_concurrent_appends_no_lost_update(tmp_path: Path) -> None:
+    """Two concurrent teach appends to the same file: no lost update.
+
+    Each append must observe the file's current content at write time —
+    the second writer must not overwrite the first's paragraph with a
+    stale copy. Pins the observable guarantee; guards the invariant if
+    the handler ever gains suspension points inside its critical section.
+    """
+    rune, _api = make_rune(tmp_path)
+    state = rune.state
+    assert state is not None and state.system_path is not None
+    p1 = {"section": "Concurrency", "mode": "append", "text": "First paragraph."}
+    p2 = {"section": "Concurrency", "mode": "append", "text": "Second paragraph."}
+    results = await asyncio.gather(rune.teach(p1), rune.teach(p2))
+    assert all(r["ok"] and r["changed"] for r in results)
+    content = state.system_path.read_text(encoding="utf-8")
+    assert "First paragraph." in content
+    assert "Second paragraph." in content
+
+
+@pytest.mark.asyncio
+async def test_revise_persona_concurrent_second_fails_no_match(tmp_path: Path) -> None:
+    """Two concurrent revise_persona ops on the same old_text: the loser must
+    fail with no_match, not silently overwrite the winner with stale content.
+
+    The exactly-one-match check is a safety invariant — each op must verify
+    it against the file's content as written, so a stale copy can never
+    clobber a concurrent edit. Pins the observable guarantee.
+    """
+    rune, _api = make_rune(tmp_path)
+    state = rune.state
+    assert state is not None and state.system_path is not None
+    state.system_path.write_text("alpha\n", encoding="utf-8")
+    p1 = {"old_text": "alpha\n", "new_text": "one\n"}
+    p2 = {"old_text": "alpha\n", "new_text": "two\n"}
+    results = await asyncio.gather(rune.revise_persona(p1), rune.revise_persona(p2))
+    oks = [r for r in results if r["ok"]]
+    no_match = [r for r in results if r.get("error") == "no_match"]
+    assert len(oks) == 1
+    assert len(no_match) == 1
+    content = state.system_path.read_text(encoding="utf-8")
+    assert content in ("one\n", "two\n")
