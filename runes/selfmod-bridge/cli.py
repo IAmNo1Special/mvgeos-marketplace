@@ -7,13 +7,13 @@ new power, so no approval interplay applies here.
 
 from __future__ import annotations
 
-from typing import Any
+from mvgeos_runes_selfmod_bridge.rune import SelfmodBridgeRune
 
 
 class SelfmodCLI:
     """``/selfmod`` command handler, delegating to the rune."""
 
-    def __init__(self, rune: Any) -> None:
+    def __init__(self, rune: SelfmodBridgeRune) -> None:
         self.rune = rune
 
     async def handle(self, args_str: str = "") -> str:
