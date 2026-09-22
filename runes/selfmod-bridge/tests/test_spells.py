@@ -586,6 +586,51 @@ async def test_self_snapshot_invalid_label(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_self_snapshot_falls_back_to_config_system_md(tmp_path: Path) -> None:
+    """Fresh agent: the hook resolved no system_path, but the agent-scope
+    file exists (teach created it per the spec's None rule). The snapshot
+    must capture it — otherwise rollback on a fresh agent is vacuous."""
+    rune, _api = make_rune(tmp_path)
+    state = rune.state
+    assert state is not None and state.config_dir is not None
+    state.system_path = None
+    assert (state.config_dir / "SYSTEM.md").is_file()
+    result = await rune.self_snapshot({})
+    assert result["ok"] is True
+    kinds = {f["kind"] for f in result["files"]}
+    assert "system" in kinds
+    snap = Path(result["path"])
+    assert (snap / "SYSTEM.md").read_text(encoding="utf-8") == (
+        state.config_dir / "SYSTEM.md"
+    ).read_text(encoding="utf-8")
+
+
+@pytest.mark.asyncio
+async def test_rollback_restores_teach_on_fresh_agent(tmp_path: Path) -> None:
+    """End-to-end on a fresh agent (system_path None): teach creates the
+    agent-scope file, snapshot captures it, second teach, rollback
+    restores the snapshot. Caught by installed-product proof."""
+    rune, _api = make_rune(tmp_path)
+    state = rune.state
+    assert state is not None and state.config_dir is not None
+    (state.config_dir / "SYSTEM.md").unlink()
+    state.system_path = None
+    first = await rune.teach({"section": "Proof", "mode": "append", "text": "first lesson"})
+    assert first["ok"] is True
+    snap = await rune.self_snapshot({})
+    assert snap["ok"] is True
+    second = await rune.teach({"section": "Proof", "mode": "append", "text": "second lesson"})
+    assert second["ok"] is True
+    target = Path(first["path"])
+    assert "second lesson" in target.read_text(encoding="utf-8")
+    rolled = await rune.self_rollback({"snapshot_id": snap["snapshot_id"]})
+    assert rolled["ok"] is True
+    content = target.read_text(encoding="utf-8")
+    assert "first lesson" in content
+    assert "second lesson" not in content
+
+
+@pytest.mark.asyncio
 async def test_self_snapshot_cap_prunes_oldest(tmp_path: Path) -> None:
     rune, _api = make_rune(tmp_path)
     ids: list[str] = []

@@ -549,8 +549,19 @@ class SelfmodSpellsMixin:
 
             files: list[dict[str, str]] = []
             phase = "copy"
-            if state.system_path is not None and state.system_path.is_file():
-                shutil.copy2(state.system_path, snap_dir / "SYSTEM.md")
+            # Mirror the teach targeting rule: when the hook resolved no
+            # system_path but the agent-scope file exists (teach created it
+            # per the spec's None rule), that file IS the instructions file
+            # and must be captured — otherwise rollback on a fresh agent
+            # restores nothing. Same fallback self_rollback uses for its
+            # restore target, so snapshot and restore stay symmetric.
+            system_file = state.system_path
+            if system_file is None and state.config_dir is not None:
+                candidate = state.config_dir / "SYSTEM.md"
+                if candidate.is_file():
+                    system_file = candidate
+            if system_file is not None and system_file.is_file():
+                shutil.copy2(system_file, snap_dir / "SYSTEM.md")
                 files.append({"kind": "system", "name": "SYSTEM.md"})
             if state.spells_dir is not None and state.spells_dir.is_dir():
                 shutil.copytree(state.spells_dir, snap_dir / "spells")
