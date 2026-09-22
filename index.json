@@ -313,6 +313,31 @@
       "session_codecs": [
         "mvgeos_runes_pi_codec.codec:PiSessionCodec"
       ]
+    },
+    "session-search": {
+      "name": "session-search",
+      "version": "0.1.0",
+      "description": "Full-text BM25 search over MvgeOS sessions: Tome v1, Pi sessions (via pi-codec), and Antigravity transcripts, indexed into local SQLite FTS5",
+      "types": [
+        "Spell"
+      ],
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "runes/session-search",
+      "created_at": "2026-09-22T00:00:00Z",
+      "updated_at": "2026-09-22T00:00:00Z",
+      "hooks": [
+        "session_start",
+        "session_shutdown"
+      ],
+      "spells": [
+        "session_search",
+        "session_get_step",
+        "session_list",
+        "session_stats",
+        "session_sync"
+      ],
+      "python_deps": []
     }
   },
   "mvges": {
