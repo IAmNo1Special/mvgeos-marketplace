@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+
 from mvgeos_runes_skills_bridge.rune import SkillsBridgeRune, rune_factory
 from mvgeos_runes_skills_bridge.types import SkillManifest
 

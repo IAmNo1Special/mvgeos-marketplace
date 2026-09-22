@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from mvgeos_runes_skills_bridge.activation import (
     activate_skill,
     enumerate_skill_resources,

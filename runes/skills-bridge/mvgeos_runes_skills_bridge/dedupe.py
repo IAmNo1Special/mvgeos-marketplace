@@ -13,6 +13,7 @@ from mvgeos_runes_skills_bridge.loader import (
     get_prioritized_skill_search_paths,
     load_skills_from_paths,
 )
+from mvgeos_runes_skills_bridge.parser import resolve_skill_file
 from mvgeos_runes_skills_bridge.types import (
     SkillDiagnosticKind,
     SkillScope,
@@ -64,7 +65,7 @@ def plan_skill_dedupe(
         diag_path = Path(diag.path)
         shadow_dir = (
             diag_path
-            if (diag_path / "SKILL.md").is_file()
+            if resolve_skill_file(diag_path) is not None
             else diag_path / diag.skill_name
         )
 

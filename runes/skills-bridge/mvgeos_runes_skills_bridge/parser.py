@@ -33,6 +33,21 @@ def repair_yaml_unquoted_colons(yaml_text: str) -> str:
     return UNQUOTED_COLON_REGEX.sub(replacer, yaml_text)
 
 
+def resolve_skill_file(path: Path) -> Path | None:
+    """Locate the skill manifest file inside a skill directory.
+
+    Checks SKILL.md first, then falls back to lowercase skill.md per the
+    .agents protocol. Returns None when neither exists (not a skill).
+    """
+    upper = path / "SKILL.md"
+    if upper.is_file():
+        return upper
+    lower = path / "skill.md"
+    if lower.is_file():
+        return lower
+    return None
+
+
 def parse_skill_manifest(
     path: Path,
     diagnostics: list[SkillDiagnostic] | None = None,
@@ -47,9 +62,11 @@ def parse_skill_manifest(
     - Lenient validation for non-fatal name/dir discrepancies
     - Strict skip on missing/empty description or unparseable YAML
     """
-    skill_md_path = (path / "SKILL.md").resolve()
-    if not skill_md_path.is_file():
+    resolved = resolve_skill_file(path)
+    if resolved is None:
         return None
+    skill_md_path = resolved.resolve()
+    file_label = skill_md_path.name
 
     path_resolved = path.resolve()
     if not str(skill_md_path).startswith(str(path_resolved)):
@@ -58,7 +75,7 @@ def parse_skill_manifest(
                 SkillDiagnostic(
                     kind=SkillDiagnosticKind.PATH_ESCAPE,
                     skill_name=path.name,
-                    message=f"SKILL.md in {path.name} resolves outside skill directory",
+                    message=f"{file_label} in {path.name} resolves outside skill directory",
                     scope=scope,
                     path=str(path),
                 )
@@ -78,7 +95,7 @@ def parse_skill_manifest(
                 SkillDiagnostic(
                     kind=SkillDiagnosticKind.PARSE_WARNING,
                     skill_name=path.name,
-                    message=f"SKILL.md in {path.name} missing '---' frontmatter delimiters",
+                    message=f"{file_label} in {path.name} missing '---' frontmatter delimiters",
                     scope=scope,
                     path=str(path),
                 )
@@ -137,7 +154,7 @@ def parse_skill_manifest(
                 SkillDiagnostic(
                     kind=SkillDiagnosticKind.PARSE_WARNING,
                     skill_name=path.name,
-                    message=f"SKILL.md in {path.name} missing 'name' in frontmatter",
+                    message=f"{file_label} in {path.name} missing 'name' in frontmatter",
                     scope=scope,
                     path=str(path),
                 )
@@ -181,7 +198,7 @@ def parse_skill_manifest(
                 SkillDiagnostic(
                     kind=SkillDiagnosticKind.PARSE_WARNING,
                     skill_name=name,
-                    message=f"SKILL.md for '{name}' missing required 'description'",
+                    message=f"{file_label} for '{name}' missing required 'description'",
                     scope=scope,
                     path=str(path),
                 )
