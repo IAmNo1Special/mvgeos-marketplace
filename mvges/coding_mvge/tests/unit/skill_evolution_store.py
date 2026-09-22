@@ -4,7 +4,6 @@ import tempfile
 from pathlib import Path
 
 import pytest
-
 from coding_mvge.runes.skill_evolution.queries import SkillEvolutionQueries
 from coding_mvge.runes.skill_evolution.store import SkillEvolutionStore
 
@@ -46,7 +45,8 @@ class TestSkillEvolutionStore:
         assert txt.startswith("hi")
         # insert_after
         ok = await tmp_evolution.patch_pattern(
-            "p.md", [{"op": "insert_after", "target": "hi", "content": " there"}]
+            "p.md",
+            [{"op": "insert_after", "target": "hi", "content": " there"}],
         )
         assert ok
         assert "hi there" in (tmp_evolution.patterns_dir / "p.md").read_text(
@@ -79,7 +79,9 @@ class TestSkillEvolutionStore:
         await tmp_evolution.add_pattern(
             "a.md", "extract method refactor long functions", turn=1
         )
-        await tmp_evolution.add_pattern("b.md", "async testing pytest-asyncio", turn=2)
+        await tmp_evolution.add_pattern(
+            "b.md", "async testing pytest-asyncio", turn=2
+        )
         hits = await tmp_evolution.search("refactor", limit=10)
         assert len(hits) == 1
         assert hits[0].name == "a.md"
@@ -93,12 +95,16 @@ class TestSkillEvolutionQueries:
         await tmp_evolution.add_pattern(
             "how-to-refactor.md", "refactor long functions via extract", turn=1
         )
-        await tmp_evolution.add_pattern("async-test.md", "testing async code", turn=2)
+        await tmp_evolution.add_pattern(
+            "async-test.md", "testing async code", turn=2
+        )
         qs = SkillEvolutionQueries(tmp_evolution)
         hits = await qs.find_relevant_patterns("refactor", limit=5)
         assert len(hits) == 1
         assert hits[0].name == "how-to-refactor.md"
-        hits = await qs.get_patterns_for_skill("refactor", "extract method", limit=5)
+        hits = await qs.get_patterns_for_skill(
+            "refactor", "extract method", limit=5
+        )
         assert any("refactor" in h.name for h in hits)
         stats = await qs.get_evolution_stats()
         assert stats["total_entries"] == 2

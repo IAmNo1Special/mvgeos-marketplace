@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from pathlib import Path
 from typing import Any
 
@@ -6,11 +7,9 @@ from mvgeos_core.spells import MvgeSpell, SpellExecutionMode
 from mvgeos_provider.registry import RealmRegistry
 
 from .dci_matcher import (
-    DCISkillMatcher,
-    SkillFile,
-    SkillSearchError,
     _DEFAULT_SKILL_DIRS,
-    _get_skill_roots,
+    DCISkillMatcher,
+    SkillSearchError,
 )
 from .skill_selector import SkillNLTSelector
 

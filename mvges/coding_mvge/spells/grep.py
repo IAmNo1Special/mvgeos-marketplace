@@ -54,7 +54,9 @@ def _iter_files(
     while stack:
         current = stack.pop()
         try:
-            entries = sorted(current.iterdir(), key=lambda e: (e.name.lower(), e.name))
+            entries = sorted(
+                current.iterdir(), key=lambda e: (e.name.lower(), e.name)
+            )
         except OSError:
             continue
         for entry in entries:
@@ -136,8 +138,12 @@ def _collect_matches(
                     "lineno": lineno,
                     "line": line,
                     "spans": spans,
-                    "before": [(no, lines[no - 1]) for no in range(start, lineno)],
-                    "after": [(no, lines[no - 1]) for no in range(lineno + 1, end + 1)],
+                    "before": [
+                        (no, lines[no - 1]) for no in range(start, lineno)
+                    ],
+                    "after": [
+                        (no, lines[no - 1]) for no in range(lineno + 1, end + 1)
+                    ],
                 }
             )
             acc_bytes += len(line.encode("utf-8")) + 64
@@ -151,7 +157,9 @@ def _cap_line(line: str, spans: list[tuple[int, int]]) -> tuple[str, bool]:
     return truncate_line_around_match(line, spans), True
 
 
-def _format_records(records: list[_GrepRecord], context: int) -> tuple[str, bool]:
+def _format_records(
+    records: list[_GrepRecord], context: int
+) -> tuple[str, bool]:
     lines_truncated = False
     out: list[str] = []
     index = 0
@@ -230,7 +238,9 @@ async def grep(
             )
         flags = re.IGNORECASE if ignore_case else 0
         try:
-            regex = re.compile(re.escape(pattern) if literal else pattern, flags)
+            regex = re.compile(
+                re.escape(pattern) if literal else pattern, flags
+            )
         except re.error as exc:
             return SpellResult(
                 spell_name="grep",
@@ -299,7 +309,7 @@ async def grep(
             status=SpellStatus.ERROR,
             error_message=f"Path not found: {path}",
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- spell contract: return ERROR SpellResult instead of raising
         return SpellResult(
             spell_name="grep",
             status=SpellStatus.ERROR,

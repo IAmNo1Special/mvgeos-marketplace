@@ -152,7 +152,7 @@ async def read(
             content=truncation.text,
             details=truncation_details(truncation),
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- spell contract: return ERROR SpellResult instead of raising
         return SpellResult(
             spell_name="read",
             status=SpellStatus.ERROR,

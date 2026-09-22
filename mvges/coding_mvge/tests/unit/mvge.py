@@ -6,6 +6,13 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from coding_mvge import root_mvge
+from coding_mvge.spells import (
+    bash,
+    grep,
+    read,
+    write,
+)
 from mvgeos_agent import (
     FunctionSpell,
     Mvge,
@@ -19,14 +26,6 @@ from mvgeos_core.channel import (
 from mvgeos_core.constants import DEFAULT_MODEL
 from mvgeos_core.events import ContemplationLevel
 from mvgeos_runes.types import SpellDefinition
-
-from coding_mvge import root_mvge
-from coding_mvge.spells import (
-    bash,
-    grep,
-    read,
-    write,
-)
 
 
 @pytest.fixture
@@ -149,7 +148,9 @@ class TestMvgeInit:
         assert agent._max_tokens == 2048
         assert agent._contemplation_level == "high"
 
-    def test_defaults(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_defaults(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("USERPROFILE", str(tmp_path))
         agent = Mvge(api_key="k")
@@ -204,16 +205,23 @@ class TestMvgeBuildSpells:
         mock_runner = MagicMock()
         mock_runner.get_all_registered_spells.return_value = [
             SpellDefinition(
-                name="tool_search", description="Search for tools", parameters={}
+                name="tool_search",
+                description="Search for tools",
+                parameters={},
             ),
             SpellDefinition(
-                name="skill_search", description="Search for skills", parameters={}
+                name="skill_search",
+                description="Search for skills",
+                parameters={},
             ),
             SpellDefinition(
                 name="inactive_tool", description="Inactive", parameters={}
             ),
         ]
-        mock_runner.get_active_spells.return_value = ["tool_search", "skill_search"]
+        mock_runner.get_active_spells.return_value = [
+            "tool_search",
+            "skill_search",
+        ]
         agent._runner = mock_runner
         spells = agent._build_spells()
         names = {s.name for s in spells}
@@ -229,7 +237,10 @@ class TestMvgeBuildSpells:
             SpellDefinition(name="tool_search", description="", parameters={}),
             SpellDefinition(name="skill_search", description="", parameters={}),
         ]
-        mock_runner.get_active_spells.return_value = ["tool_search", "skill_search"]
+        mock_runner.get_active_spells.return_value = [
+            "tool_search",
+            "skill_search",
+        ]
         agent._runner = mock_runner
         prompt = env_render_prompt(
             "You are Mvge", [s.name for s in agent._build_spells()], []
@@ -544,7 +555,8 @@ class TestMvgeToolCalls:
             assert result.content == [{"type": "text", "text": "done"}]
             assert agent.harness is not None
             assert any(
-                isinstance(inv, SpellResultMessage) for inv in agent.harness.state.invocations
+                isinstance(inv, SpellResultMessage)
+                for inv in agent.harness.state.invocations
             )
             await agent.close()
 
@@ -560,7 +572,10 @@ class TestMvgeToolCalls:
             )
             _install_mock(agent)
             assert agent.harness is not None
-            agent.harness.state.spells = [FunctionSpell(bash), FunctionSpell(read)]
+            agent.harness.state.spells = [
+                FunctionSpell(bash),
+                FunctionSpell(read),
+            ]
 
             captured: dict[str, Any] = {}
 
@@ -644,7 +659,9 @@ class TestBuildSystemPrompt:
     def test_system_md_loads(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             config_dir = Path(td)
-            (config_dir / "SYSTEM.md").write_text("Loaded from file.", encoding="utf-8")
+            (config_dir / "SYSTEM.md").write_text(
+                "Loaded from file.", encoding="utf-8"
+            )
             env = MvgeEnvironment.resolve(
                 "test-agent", config_dir=config_dir, allow_unknown_agent=True
             )
@@ -658,7 +675,9 @@ class TestBuildSystemPrompt:
     def test_append_system_md_loads(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             config_dir = Path(td)
-            (config_dir / "SYSTEM.md").write_text("File-based agent.", encoding="utf-8")
+            (config_dir / "SYSTEM.md").write_text(
+                "File-based agent.", encoding="utf-8"
+            )
             caller_dir = config_dir / "caller"
             caller_sys = caller_dir / "system_prompt"
             caller_sys.mkdir(parents=True)

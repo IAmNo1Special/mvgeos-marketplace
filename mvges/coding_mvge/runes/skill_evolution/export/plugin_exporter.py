@@ -33,7 +33,10 @@ class SkillPluginExporter:
 
         paths = [(p, scope) for scope, p in SKILL_SCOPES]
         expanded = [
-            (Path(str(p).replace("{agent_name}", actual_agent)).expanduser(), scope)
+            (
+                Path(str(p).replace("{agent_name}", actual_agent)).expanduser(),
+                scope,
+            )
             for p, scope in paths
         ]
         loads, _ = load_skills_from_paths(expanded, actual_agent)
@@ -56,7 +59,9 @@ class SkillPluginExporter:
             if dst_dir.exists():
                 shutil.rmtree(dst_dir)
             shutil.copytree(src_dir, dst_dir)
-            plugin_skills.append({"name": name, "path": f"skills/{dst_dir.name}"})
+            plugin_skills.append(
+                {"name": name, "path": f"skills/{dst_dir.name}"}
+            )
 
         plugin_json = {
             "name": plugin_name,

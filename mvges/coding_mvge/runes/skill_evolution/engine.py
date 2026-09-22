@@ -7,12 +7,11 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+from coding_mvge.runes.skill_evolution.models import SkillEvolutionResult
 from mvgeos_core.spells import (
     SpellResult,
     SpellStatus,
 )
-
-from coding_mvge.runes.skill_evolution.models import SkillEvolutionResult
 
 NAME_REGEX = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
@@ -34,7 +33,9 @@ class SkillEvolutionEngine:
         auto_apply: bool = True,
     ) -> None:
         self.evolution_dir = Path(evolution_dir).expanduser().resolve()
-        self.raw_experience_dir = Path(raw_experience_dir).expanduser().resolve()
+        self.raw_experience_dir = (
+            Path(raw_experience_dir).expanduser().resolve()
+        )
         self.target_skills_dir = Path(target_skills_dir).expanduser().resolve()
         self.project_skills_dir = (
             Path(project_skills_dir).expanduser().resolve()
@@ -109,12 +110,18 @@ class SkillEvolutionEngine:
 
             if self.project_skills_dir:
                 cand = (self.project_skills_dir / sub).resolve()
-                if cand.is_relative_to(self.project_skills_dir) and cand.exists():
+                if (
+                    cand.is_relative_to(self.project_skills_dir)
+                    and cand.exists()
+                ):
                     return cand
 
             if self.target_skills_dir:
                 cand = (self.target_skills_dir / sub).resolve()
-                if cand.is_relative_to(self.target_skills_dir) and cand.exists():
+                if (
+                    cand.is_relative_to(self.target_skills_dir)
+                    and cand.exists()
+                ):
                     return cand
 
         # Handle skill_evolution/ or legacy knowledge/ alias
@@ -128,7 +135,10 @@ class SkillEvolutionEngine:
             return target
 
         target_raw = (self.raw_experience_dir / clean).resolve()
-        if target_raw.is_relative_to(self.raw_experience_dir) and target_raw.exists():
+        if (
+            target_raw.is_relative_to(self.raw_experience_dir)
+            and target_raw.exists()
+        ):
             return target_raw
 
         if target.is_relative_to(self.evolution_dir):
@@ -152,7 +162,7 @@ class SkillEvolutionEngine:
                 status=SpellStatus.SUCCESS,
                 content=content,
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 -- spell contract: return ERROR SpellResult instead of raising
             return SpellResult(
                 spell_name="read_file",
                 status=SpellStatus.ERROR,
@@ -166,7 +176,7 @@ class SkillEvolutionEngine:
         if isinstance(proposal, str):
             try:
                 proposal_dict = json.loads(proposal)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 -- unparseable proposal is a validation failure, not a crash
                 return SkillEvolutionResult(
                     success=False,
                     action="unknown",
@@ -178,7 +188,9 @@ class SkillEvolutionEngine:
         action = proposal_dict.get("action", "")
 
         if action in ("no_action", "NO_ACTION"):
-            await self._record_impact({"name": "none", "action": "no_action"}, diff="")
+            await self._record_impact(
+                {"name": "none", "action": "no_action"}, diff=""
+            )
             res = SkillEvolutionResult(success=True, action="no_action")
             self.latest_proposal = {"success": True, "action": "no_action"}
             return res
@@ -233,7 +245,9 @@ class SkillEvolutionEngine:
                 skill_dir = target_parent / skill_name
                 skill_dir.mkdir(parents=True, exist_ok=True)
                 (skill_dir / "SKILL.md").write_text(skill_md, encoding="utf-8")
-                (skill_dir / "PURPOSE.md").write_text(purpose_md, encoding="utf-8")
+                (skill_dir / "PURPOSE.md").write_text(
+                    purpose_md, encoding="utf-8"
+                )
                 applied_path = skill_dir
 
         elif action == "patch":
@@ -251,7 +265,9 @@ class SkillEvolutionEngine:
             origin_dir: Path | None = None
             if manifest:
                 origin_scope = getattr(manifest, "scope", None) or (
-                    manifest.get("scope") if isinstance(manifest, dict) else None
+                    manifest.get("scope")
+                    if isinstance(manifest, dict)
+                    else None
                 )
                 raw_path = getattr(manifest, "path", None) or (
                     manifest.get("path") if isinstance(manifest, dict) else None
@@ -278,7 +294,9 @@ class SkillEvolutionEngine:
                 applied_scope = "project"
             elif origin_dir and (origin_dir / "SKILL.md").exists():
                 skill_dir = origin_dir
-                applied_scope = str(origin_scope).lower() if origin_scope else "unknown"
+                applied_scope = (
+                    str(origin_scope).lower() if origin_scope else "unknown"
+                )
             elif (
                 self.project_skills_dir
                 and (self.project_skills_dir / skill_name / "SKILL.md").exists()
@@ -328,7 +346,9 @@ class SkillEvolutionEngine:
                             error=f"insert_after target not found: {tgt!r}",
                         )
                     idx = patched_text.index(tgt) + len(tgt)
-                    patched_text = patched_text[:idx] + content + patched_text[idx:]
+                    patched_text = (
+                        patched_text[:idx] + content + patched_text[idx:]
+                    )
                 else:
                     return SkillEvolutionResult(
                         success=False,
@@ -359,7 +379,8 @@ class SkillEvolutionEngine:
             )
 
         await self._record_impact(
-            {"name": skill_name, "action": action, "scope": applied_scope}, diff=diff
+            {"name": skill_name, "action": action, "scope": applied_scope},
+            diff=diff,
         )
 
         outcome = SkillEvolutionResult(
@@ -383,7 +404,9 @@ class SkillEvolutionEngine:
     async def _record_impact(self, proposal: dict[str, Any], diff: str) -> None:
         self.evolution_dir.mkdir(parents=True, exist_ok=True)
         impact_file = self.evolution_dir / "skill-impact.md"
-        scope_str = f" [{proposal.get('scope')}]" if proposal.get("scope") else ""
+        scope_str = (
+            f" [{proposal.get('scope')}]" if proposal.get("scope") else ""
+        )
         entry = (
             f"\n## [{proposal.get('action')}]{scope_str} {proposal.get('name')}\n"
             f"- Status: Accepted\n"

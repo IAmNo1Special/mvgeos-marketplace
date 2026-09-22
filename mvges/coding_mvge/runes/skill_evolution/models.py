@@ -27,7 +27,9 @@ class SkillEvolutionEntry(BaseModel):
 
     def to_markdown(self) -> str:
         sources = (
-            ", ".join(self.raw_invocation_ids) if self.raw_invocation_ids else "none"
+            ", ".join(self.raw_invocation_ids)
+            if self.raw_invocation_ids
+            else "none"
         )
         lines = [
             f"# {self.summary}",
@@ -108,7 +110,9 @@ class SkillProposal(BaseModel):
     def patch_existing(
         cls, skill_name: str, edits: list[PatchOperation]
     ) -> SkillProposal:
-        return cls(action=ProposalAction.PATCH, skill_name=skill_name, edits=edits)
+        return cls(
+            action=ProposalAction.PATCH, skill_name=skill_name, edits=edits
+        )
 
     @classmethod
     def no_action(cls) -> SkillProposal:

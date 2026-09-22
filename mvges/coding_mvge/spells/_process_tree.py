@@ -22,7 +22,9 @@ def resolve_workspace_root(workspace_root: str | Path | None = None) -> Path:
     return Path.cwd().resolve()
 
 
-def validate_working_directory(cwd: str | Path | None, workspace_root: Path) -> Path:
+def validate_working_directory(
+    cwd: str | Path | None, workspace_root: Path
+) -> Path:
     """Validate and constrain working directory to the authorized workspace root."""
     resolved_root = workspace_root.resolve()
     if cwd is None or str(cwd).strip() in ("", "."):
@@ -55,7 +57,9 @@ def resolve_timeout_ms(timeout_ms: int | None = None) -> int:
     """Resolve command timeout duration in milliseconds."""
     if timeout_ms is not None:
         if timeout_ms <= 0:
-            raise ValueError("Timeout must be a positive integer in milliseconds.")
+            raise ValueError(
+                "Timeout must be a positive integer in milliseconds."
+            )
         return timeout_ms
 
     env_val = os.environ.get("MVGEOS_BASH_TIMEOUT_MS") or os.environ.get(
@@ -105,7 +109,7 @@ async def kill_process_tree(proc: asyncio.subprocess.Process) -> None:
                 pass
             except AttributeError:
                 proc.kill()
-    except Exception:
+    except Exception:  # noqa: BLE001 -- process teardown must not raise during cleanup
         with contextlib.suppress(ProcessLookupError):
             proc.kill()
 

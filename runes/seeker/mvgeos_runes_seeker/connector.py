@@ -1,16 +1,14 @@
 from __future__ import annotations
+
 import asyncio
 import json
 import os
-from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, ClassVar
 
 import aiohttp
-
-from mvgeos_runes.types import SpellDefinition, ExecutionMode
+from mvgeos_runes.types import ExecutionMode, SpellDefinition
 
 from .discovery import MCPServerInfo, MCPTransportError
-
 
 MCP_PROTOCOL_VERSION = "2025-03-26"  # Negotiated with server
 
@@ -337,7 +335,7 @@ class MCPConnector:
                 ),
                 timeout=init_timeout,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise MCPTransportError(f"MCP initialize timed out after {init_timeout}s")
         if "error" in result:
             raise MCPTransportError(
@@ -357,7 +355,7 @@ class MCPConnector:
                 request_id="",
                 notification=True,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001, S110 -- MCP server may disconnect after initialized notification; acceptable per spec
             # Server may disconnect after initialized notification;
             # this is acceptable per spec.
             pass
@@ -410,7 +408,7 @@ class MCPConnector:
             line = await asyncio.wait_for(
                 self._proc.stdout.readline(), timeout=stdio_timeout
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise MCPTransportError(
                 f"stdio {self._info.name} timed out after {stdio_timeout}s"
             )
@@ -463,7 +461,7 @@ class MCPConnector:
                         f"HTTP {self._info.name} returned {resp.status} {resp.reason}"
                     )
                 body = await resp.read()
-        except (asyncio.TimeoutError, aiohttp.ClientError) as exc:
+        except (TimeoutError, aiohttp.ClientError) as exc:
             timeout_label = getattr(exc, "timeout", http_timeout)
             raise MCPTransportError(
                 f"HTTP {self._info.name} timed out after {timeout_label}s"
@@ -494,7 +492,7 @@ class MCPConnector:
 
     # Maps JSON-RPC method names to their response field names.
     # e.g., "tools/list" returns {"tools": [...]}, not {"list": [...]}.
-    _LIST_RESPONSE_KEY: dict[str, str] = {
+    _LIST_RESPONSE_KEY: ClassVar[dict[str, str]] = {
         "tools/list": "tools",
         "resources/list": "resources",
         "prompts/list": "prompts",
@@ -529,7 +527,7 @@ class MCPConnector:
                     self.send_jsonrpc(method=method, params=params),
                     timeout=tool_list_timeout,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise MCPTransportError(
                     f"{method} timed out after {tool_list_timeout}s"
                 )
@@ -649,7 +647,7 @@ class MCPConnector:
                 if self._proc.stdin:
                     self._proc.stdin.close()
                 await asyncio.wait_for(self._proc.wait(), timeout=5)
-            except (asyncio.TimeoutError, ProcessLookupError):
+            except (TimeoutError, ProcessLookupError):
                 self._proc.kill()
                 await self._proc.wait()
             finally:
@@ -657,7 +655,7 @@ class MCPConnector:
         if self._http_session is not None:
             try:
                 await asyncio.wait_for(self._http_session.close(), timeout=5)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
             finally:
                 self._http_session = None

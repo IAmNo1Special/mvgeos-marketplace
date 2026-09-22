@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from coding_mvge import root_mvge
+from coding_mvge.spells import bash, read
 from mvgeos_agent import Mvge
 from mvgeos_agent.config_manager import ConfigManager
 from mvgeos_agent.environment import MvgeEnvironment, PromptSource
@@ -26,14 +28,13 @@ from mvgeos_runes.types import (
     SpellDefinition,
 )
 
-from coding_mvge import root_mvge
-from coding_mvge.spells import bash, read
-
 
 def _make_runner() -> RuneRunner:
     runner = RuneRunner()
     runner.bind_context(
-        RuneContext(cwd="/tmp", mode="cli", agent_name="test-agent", api_key="key")
+        RuneContext(
+            cwd="/tmp", mode="cli", agent_name="test-agent", api_key="key"
+        )
     )
     return runner
 
@@ -266,7 +267,9 @@ class TestBuildSnapshotPrompt:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setattr(Mvge, "config_dir", property(lambda self: tmp_path))
-        (tmp_path / "SYSTEM.md").write_text("Custom system from file", encoding="utf-8")
+        (tmp_path / "SYSTEM.md").write_text(
+            "Custom system from file", encoding="utf-8"
+        )
 
         agent = Mvge(api_key="key", name="test-agent", spells=[])
         snap = agent.build_snapshot()
@@ -334,7 +337,9 @@ class TestBuildSnapshotSerialisation:
 
         def factory(api: Any) -> None:
             api.register_spell(
-                SpellDefinition(name="spell1", description="s1", source_rune="r1")
+                SpellDefinition(
+                    name="spell1", description="s1", source_rune="r1"
+                )
             )
 
         await runner.load_rune_loads(

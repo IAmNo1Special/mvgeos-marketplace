@@ -8,11 +8,18 @@ import os
 from pathlib import Path
 from typing import Any
 
-from mvgeos_runes_heal_my_goap.engine import GoapEngine
-from mvgeos_runes_heal_my_goap.models import Action, Gap, Goal, WorldState, goal, world_state_from_sensors
-from mvgeos_runes_heal_my_goap.sensors import SystemSensors
 from mvgeos_runes.rune_api import RuneAPI
 from mvgeos_runes.types import ExecutionMode, SigilHook, SpellDefinition
+
+from mvgeos_runes_heal_my_goap.engine import GoapEngine
+from mvgeos_runes_heal_my_goap.models import (
+    Action,
+    Gap,
+    Goal,
+    WorldState,
+    world_state_from_sensors,
+)
+from mvgeos_runes_heal_my_goap.sensors import SystemSensors
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +56,8 @@ class GoapPlanAndExecuteSpell(SpellDefinition):
                 "properties": {
                     "initial_state": {
                         "type": "object",
-                        "description": "Optional initial key-value world state.",
+                        "description": "Optional initial key-value "
+                        "world state.",
                     },
                     "target_state": {
                         "type": "object",
@@ -113,7 +121,8 @@ class GoapSenseWorldSpell(SpellDefinition):
         """Initializes GoapSenseWorldSpell."""
         super().__init__(
             name="goap_sense_world",
-            description="Reads live system metrics into a WorldState dictionary.",
+            description="Reads live system metrics into a WorldState "
+            "dictionary.",
             parameters={"type": "object", "properties": {}},
             execution_mode=ExecutionMode.PARALLEL,
         )
@@ -151,7 +160,8 @@ class GoapSynthesizeActionSpell(SpellDefinition):
         """
         super().__init__(
             name="goap_synthesize_action",
-            description="Synthesizes a missing Python action script via OpenRouter.",
+            description="Synthesizes a missing Python action script via "
+            "OpenRouter.",
             parameters={
                 "type": "object",
                 "properties": {
@@ -203,7 +213,7 @@ class GoapSynthesizeActionSpell(SpellDefinition):
 
 
 class SynthesizedRuneSpell(SpellDefinition):
-    """Dynamically generated SpellDefinition wrapping a synthesized GOAP Action."""
+    """SpellDefinition wrapping a synthesized GOAP action."""
 
     def __init__(self, action: Action, engine: GoapEngine) -> None:
         """Initializes SynthesizedRuneSpell with synthesized action.
@@ -214,7 +224,8 @@ class SynthesizedRuneSpell(SpellDefinition):
         """
         super().__init__(
             name=action.name,
-            description=action.description or f"Synthesized action for {action.name}",
+            description=action.description
+            or f"Synthesized action for {action.name}",
             parameters={"type": "object", "properties": {}},
             execution_mode=ExecutionMode.SEQUENTIAL,
         )
@@ -257,9 +268,8 @@ def sync_spells_to_goap(engine: GoapEngine, api: RuneAPI) -> None:
         api: RuneAPI instance.
     """
     for spell in api.get_all_spells():
-        if (
-            spell.name not in engine.actions_dict
-            and not spell.name.startswith("goap_")
+        if spell.name not in engine.actions_dict and not spell.name.startswith(
+            "goap_"
         ):
             engine.register_tool(
                 tool=spell.parameters,
@@ -276,9 +286,7 @@ def rune_factory(api: RuneAPI) -> None:
     """
     # Load OpenRouter API Key from ~/.agents/.mvgeos/credentials/openrouter.json
     home_dir = Path.home()
-    auth_file = (
-        home_dir / ".agents" / ".mvgeos" / "auth" / "openrouter.json"
-    )
+    auth_file = home_dir / ".agents" / ".mvgeos" / "auth" / "openrouter.json"
     if auth_file.exists():
         try:
             with auth_file.open("r", encoding="utf-8") as f:
@@ -329,7 +337,8 @@ def rune_factory(api: RuneAPI) -> None:
 
     api.on(SigilHook.SESSION_START, activate_heal_my_goap_spells)
 
-    # Sigil Hook: Catch failed spell results and register synthesized repair spell
+    # Sigil Hook: Catch failed spell results and register synthesized
+    # repair spell
     async def on_after_spell_result(
         payload: dict[str, Any],
     ) -> dict[str, Any] | None:
@@ -339,8 +348,8 @@ def rune_factory(api: RuneAPI) -> None:
             err_msg = str(result.get("error"))
 
             api.send_message(
-                f"[Rune: heal-my-goap] Intercepted failure in spell '{spell_name}': {err_msg}. "
-                "Synthesizing repair spell..."
+                f"[Rune: heal-my-goap] Intercepted failure in spell "
+                f"'{spell_name}': {err_msg}. Synthesizing repair spell..."
             )
 
             gap = Gap(
@@ -354,7 +363,8 @@ def rune_factory(api: RuneAPI) -> None:
                 )
                 engine.actions_dict[synth_action.name] = synth_action
 
-                # Dynamically register the synthesized action as a live Spell on RuneRunner
+                # Dynamically register the synthesized action as a live
+                # Spell on RuneRunner
                 api.register_spell(SynthesizedRuneSpell(synth_action, engine))
 
                 # The active set is pinned, so a fresh registration does not
@@ -372,9 +382,10 @@ def rune_factory(api: RuneAPI) -> None:
                     "result": {
                         "status": "spell_registered",
                         "instruction": (
-                            f"Tool '{spell_name}' failed or missing. Synthesized "
-                            f"and dynamically registered new spell '{synth_action.name}'. "
-                            f"Please cast spell '{synth_action.name}' to complete task."
+                            f"Tool '{spell_name}' failed or missing. "
+                            f"Synthesized and dynamically registered new "
+                            f"spell '{synth_action.name}'. Please cast spell "
+                            f"'{synth_action.name}' to complete task."
                         ),
                         "registered_spell_name": synth_action.name,
                         "healed_by": "heal-my-goap",
@@ -390,7 +401,8 @@ def rune_factory(api: RuneAPI) -> None:
                     "status": "healed",
                     "original_error": err_msg,
                     "healed_by": "heal-my-goap",
-                    "diagnostic": f"GOAP analyzed failure for spell '{spell_name}'",
+                    "diagnostic": "GOAP analyzed failure for spell "
+                    f"'{spell_name}'",
                 }
             }
         return None

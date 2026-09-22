@@ -51,8 +51,10 @@ class SkillEvolutionHooks:
                     and self.subagent is not None
                 ):
                     await self.subagent.run(auto_apply=True)
-        except Exception as exc:
-            logger.warning("Skill evolution consolidation failed on turn_end: %s", exc)
+        except Exception as exc:  # noqa: BLE001 -- hook failure containment: log and continue the session
+            logger.warning(
+                "Skill evolution consolidation failed on turn_end: %s", exc
+            )
 
     async def on_session_shutdown(self, data: SessionShutdownData) -> None:
         await self.store.flush()

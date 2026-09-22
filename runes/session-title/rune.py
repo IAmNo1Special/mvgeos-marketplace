@@ -8,7 +8,6 @@ from typing import Any
 from mvgeos_runes.rune_api import RuneAPI
 from mvgeos_runes.types import SigilHook
 
-
 TITLE_FALLBACK_MAX_WORDS = 8
 TITLE_FALLBACK_MAX_BYTES = 96
 TITLE_MAX_BYTES = 120
@@ -180,7 +179,7 @@ class SessionTitleRune:
             await self._call_llm_for_title()
         except asyncio.CancelledError:
             pass
-        except Exception:
+        except Exception:  # noqa: BLE001, S110 -- background title task must never crash the session
             pass
         finally:
             self._state.llm_pending = False
@@ -201,9 +200,7 @@ class SessionTitleRune:
         provider_registry = RealmRegistry()
         realm = provider_registry.create_realm(provider_name, model=model_id)
 
-        messages = [
-            {"role": "user", "content": self._state.first_user_text or ""}
-        ]
+        messages = [{"role": "user", "content": self._state.first_user_text or ""}]
 
         system = (
             "Generate a short, concise title (max 6 words, <=120 bytes) for a coding session. "
@@ -223,7 +220,9 @@ class SessionTitleRune:
         prompt = f"{system}\n\nUser request: {messages[0]['content']}\n\nTitle:"
 
         try:
-            response = await realm.call(prompt, model=model, max_tokens=50, temperature=0.3)
+            response = await realm.call(
+                prompt, model=model, max_tokens=50, temperature=0.3
+            )
             if not response:
                 return
             title = _normalize_title(response)
@@ -234,7 +233,7 @@ class SessionTitleRune:
             self._state.source = "provider"
             self._state.revision += 1
             self._runner.set_session_name(title)
-        except Exception:
+        except Exception:  # noqa: BLE001, S110 -- applying a title must never crash the session
             pass
 
 

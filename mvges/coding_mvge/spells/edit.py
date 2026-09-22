@@ -44,7 +44,7 @@ async def edit(path: str, old_string: str, new_string: str) -> SpellResult:
             status=SpellStatus.ERROR,
             error_message=f"File not found: {path}",
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- spell contract: return ERROR SpellResult instead of raising
         return SpellResult(
             spell_name="edit",
             status=SpellStatus.ERROR,

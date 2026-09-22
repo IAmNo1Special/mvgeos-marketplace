@@ -13,7 +13,10 @@ def runner():
     r = RuneRunner(sandbox_factory=MvgeSandbox)
     r.bind_context(
         RuneContext(
-            cwd=str(Path.cwd()), mode="test", agent_name="coding_mvge", api_key="test"
+            cwd=str(Path.cwd()),
+            mode="test",
+            agent_name="coding_mvge",
+            api_key="test",
         )
     )
     return r
@@ -31,7 +34,8 @@ def skill_evolution_rune_loaded(runner):
 class TestSkillEvolutionRuneIntegration:
     def test_rune_loads_spells(self, skill_evolution_rune_loaded):
         spells = {
-            s.name for s in skill_evolution_rune_loaded.get_all_registered_spells()
+            s.name
+            for s in skill_evolution_rune_loaded.get_all_registered_spells()
         }
         # Only admin/export spells are registered as spells; evolution store is not an
         # inference tool
@@ -76,7 +80,9 @@ class TestSkillEvolutionRuneIntegration:
         )
 
     @pytest.mark.asyncio
-    async def test_system_prompt_not_polluted(self, skill_evolution_rune_loaded):
+    async def test_system_prompt_not_polluted(
+        self, skill_evolution_rune_loaded
+    ):
         from mvgeos_runes.types import (
             BeforeMvgeStartData,
             SigilHook,
@@ -99,7 +105,8 @@ class TestSkillEvolutionRuneIntegration:
     @pytest.mark.asyncio
     async def test_consolidate_spell_no_llm(self, skill_evolution_rune_loaded):
         spells = {
-            s.name: s for s in skill_evolution_rune_loaded.get_all_registered_spells()
+            s.name: s
+            for s in skill_evolution_rune_loaded.get_all_registered_spells()
         }
         spell = spells["skill_evolution_consolidate"]
         with pytest.raises(RuntimeError, match="No LLM completion function"):
@@ -112,7 +119,9 @@ class TestSkillEvolutionRuneIntegration:
 
     @pytest.mark.asyncio
     async def test_store_queries_and_listing(self, skill_evolution_rune_loaded):
-        store = getattr(skill_evolution_rune_loaded, "_skill_evolution_store", None)
+        store = getattr(
+            skill_evolution_rune_loaded, "_skill_evolution_store", None
+        )
         assert store is not None
         index = await store.read_index()
         assert isinstance(index, str)
@@ -125,22 +134,30 @@ class TestSkillEvolutionRuneIntegration:
         import shutil
         from pathlib import Path
 
-        from mvgeos_core.spells import SpellStatus
-
         from coding_mvge.runes.skill_evolution.proposer_mvge.mvge import (
             scoped_proposer_context,
         )
-        from coding_mvge.runes.skill_evolution.proposer_mvge.spells.finish import finish
+        from coding_mvge.runes.skill_evolution.proposer_mvge.spells.finish import (
+            finish,
+        )
+        from mvgeos_core.spells import SpellStatus
 
         agent_skills = (
-            Path.home() / ".agents" / "agents" / "coding_mvge" / "skills" / "demo-skill"
+            Path.home()
+            / ".agents"
+            / "agents"
+            / "coding_mvge"
+            / "skills"
+            / "demo-skill"
         )
         agent_skills.mkdir(parents=True, exist_ok=True)
         (agent_skills / "SKILL.md").write_text(
             "---\nname: demo-skill\ndescription: demo skill\n---\n\n# Demo\n",
             encoding="utf-8",
         )
-        (agent_skills / "PURPOSE.md").write_text("# Purpose\n", encoding="utf-8")
+        (agent_skills / "PURPOSE.md").write_text(
+            "# Purpose\n", encoding="utf-8"
+        )
 
         with scoped_proposer_context(
             target_skills_dir=agent_skills.parent, auto_apply=True
@@ -175,11 +192,18 @@ class TestSkillEvolutionRuneIntegration:
                     shutil.rmtree(agent_skills)
 
     @pytest.mark.asyncio
-    async def test_export_skill_plugin(self, skill_evolution_rune_loaded, tmp_path):
+    async def test_export_skill_plugin(
+        self, skill_evolution_rune_loaded, tmp_path
+    ):
         from pathlib import Path
 
         agent_skills = (
-            Path.home() / ".agents" / "agents" / "coding_mvge" / "skills" / "export-me"
+            Path.home()
+            / ".agents"
+            / "agents"
+            / "coding_mvge"
+            / "skills"
+            / "export-me"
         )
         agent_skills.mkdir(parents=True, exist_ok=True)
         (agent_skills / "SKILL.md").write_text(
@@ -205,7 +229,10 @@ class TestSkillEvolutionRuneIntegration:
             assert "plugin_path" in result
             assert (Path(result["plugin_path"]) / "plugin.json").exists()
             assert (
-                Path(result["plugin_path"]) / "skills" / "export-me" / "SKILL.md"
+                Path(result["plugin_path"])
+                / "skills"
+                / "export-me"
+                / "SKILL.md"
             ).exists()
         finally:
             import shutil
@@ -219,20 +246,28 @@ class TestSkillEvolutionRuneIntegration:
 
         from mvgeos_runes.types import SigilHook
 
-        cmd_map = {c.name: c for c in skill_evolution_rune_loaded.get_commands()}
+        cmd_map = {
+            c.name: c for c in skill_evolution_rune_loaded.get_commands()
+        }
         # Invoke skill-evolution-consolidate, export, stats
         cmd_map["skill-evolution-consolidate"].handler(None)
         cmd_map["skill-evolution-export"].handler(None)
         cmd_map["skill-evolution-stats"].handler(None)
 
         # Invoke skill-evolution-propose success path
-        sub = getattr(skill_evolution_rune_loaded, "_skill_proposer_subagent", None)
+        sub = getattr(
+            skill_evolution_rune_loaded, "_skill_proposer_subagent", None
+        )
         assert sub is not None
         with patch.object(
             sub,
             "run",
             AsyncMock(
-                return_value={"success": True, "action": "create", "name": "foo"}
+                return_value={
+                    "success": True,
+                    "action": "create",
+                    "name": "foo",
+                }
             ),
         ):
             await cmd_map["skill-evolution-propose"].handler(None)
@@ -246,15 +281,21 @@ class TestSkillEvolutionRuneIntegration:
             await cmd_map["skill-evolution-propose"].handler(None)
 
         # Trigger agent start handler
-        handlers = skill_evolution_rune_loaded.get_sigil_handlers(SigilHook.AGENT_START)
+        handlers = skill_evolution_rune_loaded.get_sigil_handlers(
+            SigilHook.AGENT_START
+        )
         for h in handlers:
             await h(None)
 
     @pytest.mark.asyncio
-    async def test_set_llm_client_and_subagent_run(self, skill_evolution_rune_loaded):
+    async def test_set_llm_client_and_subagent_run(
+        self, skill_evolution_rune_loaded
+    ):
         from unittest.mock import AsyncMock, patch
 
-        from coding_mvge.runes.skill_evolution.rune_factory import set_llm_client
+        from coding_mvge.runes.skill_evolution.rune_factory import (
+            set_llm_client,
+        )
 
         mock_complete_fn = AsyncMock()
         set_llm_client(
@@ -298,7 +339,10 @@ class TestSkillEvolutionRuneIntegration:
 
         runner.bind_context(
             RuneContext(
-                cwd=str(ws), mode="test", agent_name="coding_mvge", api_key="test"
+                cwd=str(ws),
+                mode="test",
+                agent_name="coding_mvge",
+                api_key="test",
             )
         )
         api = runner.create_api("skill_evolution_ws")
@@ -313,7 +357,9 @@ class TestSkillEvolutionRuneIntegration:
         from coding_mvge.runes.skill_evolution import rune_factory
 
         runner.bind_context(
-            RuneContext(cwd="", mode="test", agent_name="coding_mvge", api_key="test")
+            RuneContext(
+                cwd="", mode="test", agent_name="coding_mvge", api_key="test"
+            )
         )
         api = runner.create_api("skill_evolution_standalone")
         rune_factory(api)

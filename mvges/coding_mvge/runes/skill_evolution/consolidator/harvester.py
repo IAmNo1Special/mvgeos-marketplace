@@ -61,7 +61,9 @@ class ExperienceHarvester:
 
         if hasattr(invocation, "tool_calls") and invocation.tool_calls:
             for tc in invocation.tool_calls:
-                spells_used.append(tc.get("function", {}).get("name", "unknown"))
+                spells_used.append(
+                    tc.get("function", {}).get("name", "unknown")
+                )
 
         success = True
         error = None
@@ -74,11 +76,15 @@ class ExperienceHarvester:
 
         resp_content = invocation.content
         trace_resp = (
-            resp_content if isinstance(resp_content, str) else str(resp_content or "")
+            resp_content
+            if isinstance(resp_content, str)
+            else str(resp_content or "")
         )
 
         trace = RawTrace(
-            invocation_id=getattr(invocation, "id", f"inv_{self._total_harvested}"),
+            invocation_id=getattr(
+                invocation, "id", f"inv_{self._total_harvested}"
+            ),
             turn=getattr(invocation, "turn", 0),
             prompt=getattr(invocation, "prompt", "") or "",
             response=trace_resp,
@@ -92,7 +98,9 @@ class ExperienceHarvester:
         self.buffer.append(trace)
         self._total_harvested += 1
 
-    def get_staged_traces(self, max_traces: int | None = None) -> list[RawTrace]:
+    def get_staged_traces(
+        self, max_traces: int | None = None
+    ) -> list[RawTrace]:
         """Get traces staged for consolidation."""
         traces = list(self.buffer)
         if max_traces:
@@ -126,7 +134,9 @@ class ExperienceHarvester:
             }
             for t in self.buffer
         ]
-        self.persist_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        self.persist_path.write_text(
+            json.dumps(data, indent=2), encoding="utf-8"
+        )
 
     async def load_buffer(self) -> None:
         """Load previously persisted buffer from disk."""
@@ -148,7 +158,7 @@ class ExperienceHarvester:
                         mana_used=d.get("mana_used", 0),
                     )
                 )
-        except Exception:
+        except Exception:  # noqa: BLE001, S110 -- best-effort harvest must never break the run
             pass
 
     async def persist_to_raw_experience(

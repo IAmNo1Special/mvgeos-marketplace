@@ -4,10 +4,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from coding_mvge.spells import list_files
 from mvgeos_core.spells import SpellStatus
 from mvgeos_core.truncate import DEFAULT_MAX_BYTES
-
-from coding_mvge.spells import list_files
 
 
 class TestListSpell:
@@ -29,7 +28,11 @@ class TestListSpell:
 
         result = await list_files(str(tmp_path))
         lines = result.content.splitlines()
-        assert [Path(line).name for line in lines] == ["a.txt", "b.txt", "C.txt"]
+        assert [Path(line).name for line in lines] == [
+            "a.txt",
+            "b.txt",
+            "C.txt",
+        ]
 
     @pytest.mark.asyncio
     async def test_list_empty_directory(self, tmp_path: Path) -> None:
@@ -45,7 +48,9 @@ class TestListSpell:
         assert ".hidden" in result.content
 
     @pytest.mark.asyncio
-    async def test_list_explicit_ignored_path_honored(self, tmp_path: Path) -> None:
+    async def test_list_explicit_ignored_path_honored(
+        self, tmp_path: Path
+    ) -> None:
         venv = tmp_path / ".venv"
         venv.mkdir()
         (venv / "big.txt").touch()
@@ -101,7 +106,9 @@ class TestListSpell:
     @pytest.mark.asyncio
     async def test_list_unreadable_entry_skipped(self, tmp_path: Path) -> None:
         (tmp_path / "a.txt").touch()
-        with patch.object(Path, "is_dir", side_effect=[True, OSError("denied")]):
+        with patch.object(
+            Path, "is_dir", side_effect=[True, OSError("denied")]
+        ):
             result = await list_files(str(tmp_path))
         assert result.status == SpellStatus.SUCCESS
         assert result.content == "(empty directory)"
@@ -132,7 +139,9 @@ class TestListSpell:
 
     @pytest.mark.asyncio
     async def test_list_exception(self) -> None:
-        with patch.object(Path, "exists", side_effect=PermissionError("denied")):
+        with patch.object(
+            Path, "exists", side_effect=PermissionError("denied")
+        ):
             result = await list_files("any")
             assert result.status == SpellStatus.ERROR
             assert "denied" in result.error_message

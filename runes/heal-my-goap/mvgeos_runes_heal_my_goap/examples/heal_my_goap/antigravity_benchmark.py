@@ -473,7 +473,10 @@ def main() -> None:
 
     # Write report
     report_path = str(
-        Path(PROJECT_DIR) / "examples" / "mvgeos_runes_heal_my_goap" / "benchmark_results.md"
+        Path(PROJECT_DIR)
+        / "examples"
+        / "mvgeos_runes_heal_my_goap"
+        / "benchmark_results.md"
     )
     _write_report(all_metrics, report_path)
 

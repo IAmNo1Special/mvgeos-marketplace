@@ -43,7 +43,9 @@ def _find_matches(
     while stack and len(matches) < limit:
         current = stack.pop()
         try:
-            entries = sorted(current.iterdir(), key=lambda e: (e.name.lower(), e.name))
+            entries = sorted(
+                current.iterdir(), key=lambda e: (e.name.lower(), e.name)
+            )
         except OSError:
             continue
         for entry in entries:
@@ -155,7 +157,7 @@ async def find(
             content=output,
             details=truncation_details(truncation),
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- spell contract: return ERROR SpellResult instead of raising
         return SpellResult(
             spell_name="find",
             status=SpellStatus.ERROR,

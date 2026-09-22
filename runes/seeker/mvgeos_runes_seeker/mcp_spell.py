@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from pathlib import Path
 from typing import Any
 
@@ -6,9 +7,9 @@ from mvgeos_core.spells import MvgeSpell, SpellExecutionMode
 from mvgeos_provider.registry import RealmRegistry
 from mvgeos_runes.types import SpellDefinition
 
+from .connector import MCPConnector, MCPTransportError
 from .discovery import MCPConfigDiscovery, MCPServerInfo
 from .mcp_selector import MCPNLTSelector
-from .connector import MCPConnector, MCPToolSpell, MCPTransportError
 
 
 class MCPSearchSpell(MvgeSpell):
@@ -87,7 +88,7 @@ class MCPSearchSpell(MvgeSpell):
         )
         try:
             selected = await selector.select(capability, configs, max_results)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 -- spell returns an error payload instead of raising
             return {"serversFound": 0, "servers": [], "error": str(e)}
 
         results = []

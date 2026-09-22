@@ -27,16 +27,24 @@ class _DuckDuckGoHTMLParser(HTMLParser):
         self._current_field: str | None = None
         self._text_chunks: list[str] = []
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    def handle_starttag(
+        self, tag: str, attrs: list[tuple[str, str | None]]
+    ) -> None:
         attr_dict = {k.lower(): (v or "") for k, v in attrs}
         classes = attr_dict.get("class", "").split()
 
         if tag == "a" and "result__a" in classes:
-            if self._current_result is not None and self._current_result.get("title"):
+            if self._current_result is not None and self._current_result.get(
+                "title"
+            ):
                 self.results.append(self._current_result)
             raw_href = attr_dict.get("href", "")
             clean_url = _clean_ddg_url(raw_href)
-            self._current_result = {"title": "", "url": clean_url, "snippet": ""}
+            self._current_result = {
+                "title": "",
+                "url": clean_url,
+                "snippet": "",
+            }
             self._current_field = "title"
             self._text_chunks = []
         elif "result__snippet" in classes:
@@ -83,7 +91,7 @@ def _clean_ddg_url(raw_href: str) -> str:
     if "uddg=" in raw_href:
         parsed = urllib.parse.urlparse(raw_href)
         query = urllib.parse.parse_qs(parsed.query)
-        if "uddg" in query and query["uddg"]:
+        if query.get("uddg"):
             return urllib.parse.unquote(query["uddg"][0])
     if raw_href.startswith("//"):
         return "https:" + raw_href
@@ -124,12 +132,16 @@ async def search_web(
 
     try:
         if client is not None:
-            response = await client.post(url, data=data, headers=headers, timeout=15.0)
+            response = await client.post(
+                url, data=data, headers=headers, timeout=15.0
+            )
         else:
             async with httpx.AsyncClient(
                 timeout=15.0, follow_redirects=True
             ) as local_client:
-                response = await local_client.post(url, data=data, headers=headers)
+                response = await local_client.post(
+                    url, data=data, headers=headers
+                )
 
         if response.status_code != 200:
             return SpellResult(
@@ -171,7 +183,7 @@ async def search_web(
         )
     except AbortError:
         raise
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- spell contract: return ERROR SpellResult instead of raising
         return SpellResult(
             spell_name="search_web",
             status=SpellStatus.ERROR,

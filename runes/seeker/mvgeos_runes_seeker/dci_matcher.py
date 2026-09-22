@@ -1,11 +1,11 @@
 from __future__ import annotations
+
 import asyncio
 import logging
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
 
 # rg exit codes
 _RG_OK = 0
@@ -145,7 +145,7 @@ class DCISkillMatcher:
                 stdout, stderr = await asyncio.wait_for(
                     proc.communicate(), timeout=self._rg_timeout
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await _reap_process_skills(proc)
                 return [], f"rg timed out after {self._rg_timeout}s"
 
@@ -227,12 +227,13 @@ async def _reap_process_skills(proc: asyncio.subprocess.Process) -> None:
         try:
             await asyncio.wait_for(proc.wait(), timeout=2)
             return
-        except asyncio.TimeoutError:
+        except TimeoutError:
             proc.kill()
     try:
         await proc.wait()
     except ProcessLookupError:
         pass
+
 
 def _get_skill_roots(custom_roots: list[Path] | None = None) -> list[Path]:
     """Return list of existing skill directories."""
@@ -245,5 +246,5 @@ def _get_skill_roots(custom_roots: list[Path] | None = None) -> list[Path]:
     ]
     return [r for r in roots if r.is_dir()]
 
-DCI_SkillMatcher = DCISkillMatcher
 
+DCI_SkillMatcher = DCISkillMatcher
