@@ -86,7 +86,7 @@ class Concept:
 
     @property
     def is_stale(self) -> bool:
-        """Check if concept is past its stale_after date, per OKF v0.2 §5.4."""
+        """Check if concept is past its stale_after date, per OKF v0.2 §5.5."""
         if not self.stale_after:
             return False
         try:

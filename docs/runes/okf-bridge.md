@@ -25,7 +25,7 @@ Discovers `.okf/` knowledge bundles in your workspace (plus the global `~/.agent
 
 ## Conformance
 
-Strict OKF v0.2: §11 (bundle structure), §5 (trust / provenance / lifecycle), §10 (attestation), §13 (migration).
+Strict OKF v0.2: §3 (bundle structure), §11 (conformance), §5 (trust / provenance / lifecycle), §10 (attestation), §13 (changes from v0.1).
 
 ## Dependencies
 
