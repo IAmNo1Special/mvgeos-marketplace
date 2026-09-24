@@ -169,7 +169,7 @@
     },
     "okf-bridge": {
       "name": "okf-bridge",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "description": "Official Open Knowledge Format (OKF v0.2) knowledge bridge for MvgeOS",
       "types": [
         "Sigil",
@@ -191,9 +191,13 @@
         "okf"
       ],
       "spells": [
-        "okf_search",
-        "okf_get",
-        "okf_validate"
+        "concept_search",
+        "concept_get",
+        "concept_validate",
+        "concept_write",
+        "concept_verify",
+        "concept_deprecate",
+        "concept_set_context"
       ],
       "python_deps": [
         "pyyaml>=6.0",
