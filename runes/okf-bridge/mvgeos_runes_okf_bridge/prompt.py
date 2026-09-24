@@ -1,10 +1,14 @@
 """Budgeted working-concept injection for OKF knowledge.
 
-Only concepts with explicit `context: auto` are injected; `search-only`
-(and unset) concepts stay retrievable via the concept_search spell.
-Injection is capped at WORKING_CONCEPTS_TOKEN_BUDGET tokens (default 2000):
-newest generated.at first, full body preferred, description-only fallback
-when the body no longer fits. The block is replaced in place each turn so
+Progressive disclosure (skills-bridge pattern): only concepts with explicit
+`context: auto` are injected, and only as id/title/description metadata —
+never full bodies. The model calls `concept_get` for a full body when a
+description signals relevance. `search-only` (and unset) concepts stay
+retrievable via `concept_search`. Concepts without a description are not
+injected (a bare title is a pointer to nothing).
+
+Injection is capped at WORKING_CONCEPTS_TOKEN_BUDGET tokens (default 2000),
+newest generated.at first. The block is replaced in place each turn so
 context never accumulates.
 """
 
@@ -36,7 +40,11 @@ def _generated_at(concept: Concept) -> str:
     return str(concept.generated.get("at", ""))
 
 
-def _render_concept_block(concept: Concept, *, full_body: bool) -> str:
+def _render_concept_block(concept: Concept) -> str:
+    """Render one concept as metadata only — never the full body.
+
+    Bodies are fetched on demand with `concept_get` (progressive disclosure).
+    """
     stale_attr = ' stale="true"' if concept.is_stale else ""
     lines = [
         (
@@ -45,12 +53,8 @@ def _render_concept_block(concept: Concept, *, full_body: bool) -> str:
         ),
         f"    <title>{escape(concept.title)}</title>",
         f"    <description>{escape(concept.description)}</description>",
+        "  </concept>",
     ]
-    if full_body:
-        lines.append(f"    <body>{escape(concept.body)}</body>")
-    else:
-        lines.append("    <body-truncated/>")
-    lines.append("  </concept>")
     return "\n".join(lines)
 
 
@@ -65,7 +69,7 @@ def render_working_concepts(
     candidates = [
         c
         for c in graph.concepts.values()
-        if c.context == "auto" and c.status != "deprecated"
+        if c.context == "auto" and c.status != "deprecated" and c.description.strip()
     ]
     if not candidates:
         return ""
@@ -76,37 +80,27 @@ def render_working_concepts(
     header_open = "<working_concepts>"
     instructions = (
         "  <instructions>\n"
-        "    Working concepts are auto-loaded project knowledge. "
+        "    Working concepts are auto-loaded project knowledge (metadata only). "
         "Trust rises unverified < machine-confirmed < human-reviewed; "
         "stale concepts may be outdated.\n"
-        "    Use 'concept_search' to find more concepts, 'concept_get' for full "
-        "detail, and 'concept_write' to record durable knowledge "
-        "(machine-written concepts are stamped with the writing actor and held "
-        "at unverified trust until a human verifies them with 'concept_verify').\n"
+        "    Use 'concept_get' for a concept's full body when its description "
+        "is relevant, 'concept_search' to find more concepts, and "
+        "'concept_write' to record durable knowledge (machine-written "
+        "concepts are stamped with the writing actor and held at unverified "
+        "trust until a human verifies them with 'concept_verify').\n"
         "  </instructions>"
     )
     overhead = estimate_tokens(f"{header_open}\n{instructions}\n</working_concepts>")
 
-    included: list[tuple[Concept, bool]] = []
+    included: list[Concept] = []
     used = overhead
 
-    # Pass 1: full bodies, newest first, while they fit.
-    deferred: list[Concept] = []
+    # Metadata only, newest first, until the budget is spent.
     for concept in candidates:
-        block = _render_concept_block(concept, full_body=True)
+        block = _render_concept_block(concept)
         cost = estimate_tokens(block)
         if used + cost <= token_budget:
-            included.append((concept, True))
-            used += cost
-        else:
-            deferred.append(concept)
-
-    # Pass 2: description-only for the rest, newest first, while they fit.
-    for concept in deferred:
-        block = _render_concept_block(concept, full_body=False)
-        cost = estimate_tokens(block)
-        if used + cost <= token_budget:
-            included.append((concept, False))
+            included.append(concept)
             used += cost
 
     if not included:
@@ -122,8 +116,8 @@ def render_working_concepts(
             f'unverified="{trust[TrustTier.UNVERIFIED.value]}">'
         )
     ]
-    for concept, full_body in included:
-        lines.append(_render_concept_block(concept, full_body=full_body))
+    for concept in included:
+        lines.append(_render_concept_block(concept))
     lines.append(instructions)
     lines.append("</working_concepts>")
     return "\n".join(lines)

@@ -1,10 +1,12 @@
-"""Tests for budgeted working-concept injection.
+"""Tests for budgeted working-concept injection (progressive disclosure).
 
-Only concepts with explicit `context: auto` are injected (search-only and
-missing-context concepts stay retrievable via concept_search). Injection is
-capped at a token budget (default 2000), newest generated.at first, with a
-description-only fallback when the full body no longer fits. Every injected
-block carries its trust tier and stale state.
+Only concepts with explicit `context: auto` are injected — as id/title/
+description metadata, never full bodies (the model calls `concept_get` for
+a body when a description signals relevance). Search-only and missing-context
+concepts stay retrievable via concept_search. Concepts without a description
+are not injected. Injection is capped at a token budget (default 2000),
+newest generated.at first. Every injected block carries its trust tier and
+stale state.
 """
 
 from __future__ import annotations
@@ -92,31 +94,37 @@ def test_newest_generated_first(tmp_path: Path) -> None:
 
 
 def test_token_budget_is_respected(tmp_path: Path) -> None:
-    big_body = "word " * 2000  # ~2000 tokens by the estimator
+    big_desc = "word " * 900  # ~900 tokens by the estimator: fits once, not twice
     for i in range(5):
-        _concept(tmp_path, f"note-{i}", body=big_body)
+        _concept(
+            tmp_path,
+            f"note-{i}",
+            description=big_desc,
+            at=f"2026-09-0{i + 1}",
+        )
     xml = render_working_concepts(_load_single(tmp_path), token_budget=2000)
     assert estimate_tokens(xml) <= 2000
+    # newest first: only note-4 (2026-09-05) fits inside the cap
+    assert 'id="note-4"' in xml
+    assert 'id="note-0"' not in xml
 
 
-def test_description_preferred_when_constrained(tmp_path: Path) -> None:
+def test_bodies_are_never_injected_by_default(tmp_path: Path) -> None:
     big_body = "word " * 2000
-    _concept(
-        tmp_path,
-        "big",
-        body=big_body,
-        description="Short desc.",
-        at="2026-09-02",
-    )
-    _concept(tmp_path, "small", body="tiny body", at="2026-09-01")
+    _concept(tmp_path, "big", body=big_body, description="Short desc.")
     xml = render_working_concepts(_load_single(tmp_path), token_budget=2000)
-    # big is newest so it is considered first; its body cannot fit, so the
-    # description-only form is used and the concept is still present
     assert 'id="big"' in xml
     assert "Short desc." in xml
     assert "word word" not in xml
-    assert 'id="small"' in xml
-    assert estimate_tokens(xml) <= 2000
+    assert "<body>" not in xml
+
+
+def test_concepts_without_description_are_not_injected(tmp_path: Path) -> None:
+    (tmp_path / "nodesc.md").write_text(
+        "---\ntype: Note\ntitle: NoDesc\ncontext: auto\n---\nBody",
+        encoding="utf-8",
+    )
+    assert render_working_concepts(_load_single(tmp_path)) == ""
 
 
 def test_trust_and_stale_annotations(tmp_path: Path) -> None:

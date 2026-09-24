@@ -59,8 +59,11 @@ def test_render_structure_and_escaping(tmp_path: Path) -> None:
     assert 'trust="unverified"' in xml
     assert '<title>A "quoted" title</title>' in xml  # quotes need no escaping in text
     assert "Fish &amp; chips" in xml
-    assert "5 &gt; 3" in xml
-    assert "<title>" in xml and "<description>" in xml and "<body>" in xml
+    # progressive disclosure: metadata only — the body is never injected
+    assert "5 > 3" not in xml
+    assert "5 &gt; 3" not in xml
+    assert "<body>" not in xml
+    assert "<title>" in xml and "<description>" in xml
     assert "<instructions>" in xml
 
 
