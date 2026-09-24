@@ -1,11 +1,11 @@
 # okf-bridge
 
-Official Open Knowledge Format (OKF v0.2) and MADR 3.0 knowledge bridge for MvgeOS.
+Official Open Knowledge Format (OKF v0.2) knowledge bridge for MvgeOS.
 
 ## Features
-- Discovers `.okf/` knowledge bundles in workspace and global `~/.agents/.okf/`.
+- Owns the `.agents/knowledge/` OKF v0.2 concept bundle: merges the global (`$MVGEOS_GLOBAL_DIR/knowledge`, default `~/.agents/knowledge`) and workspace (`<cwd>/.agents/knowledge`) layers, workspace winning on collisions.
 - Conforms strictly to the OKF v0.2 normative specification (§3 bundle structure, §11 conformance, §5 trust/provenance/lifecycle, §10 attestation, §13 changes from v0.1).
-- Parses and lints MADR 3.0 Architectural Decision Records in `docs/adr/`.
-- Dynamic prompt injection: provides compact `<knowledge_catalog>` XML in `<project_context>` via `BEFORE_MVGE_START` and `CONTEXT_TRANSFORM`.
-- Spells: `okf_search`, `okf_get`, `okf_validate`, `adr_list`, `adr_get`.
-- CLI: `mvgeos okf` and `mvgeos adr` subcommands with cp1252-safe ASCII output.
+- Budgeted prompt injection: injects only `context: auto` concepts as a `<working_concepts>` block (default 2000-token cap, newest `generated.at` first, description preferred when constrained), replaced in place each turn via `BEFORE_MVGE_START` and `CONTEXT_TRANSFORM`. `search-only` concepts stay retrievable via search.
+- Concept lifecycle spells: `concept_write`, `concept_verify`, `concept_deprecate`, `concept_set_context` (atomic writes, rotating backups, `log.md` entries; machine-written concepts stay unverified until human-verified).
+- Read spells: `concept_search`, `concept_get`, `concept_validate`.
+- CLI: `mvgeos okf` subcommands with cp1252-safe ASCII output.

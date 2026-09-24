@@ -4,10 +4,24 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from mvgeos_runes_okf_bridge.graph import KnowledgeGraph
 
 
-def test_knowledge_graph_empty(tmp_path: Path) -> None:
+@pytest.fixture()
+def isolated_global(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    monkeypatch.setenv("MVGEOS_GLOBAL_DIR", str(tmp_path / "fake-global"))
+    return tmp_path / "fake-global"
+
+
+def _knowledge_dir(cwd: Path) -> Path:
+    kd = cwd / ".agents" / "knowledge"
+    kd.mkdir(parents=True)
+    return kd
+
+
+def test_knowledge_graph_empty(tmp_path: Path, isolated_global: Path) -> None:
     graph = KnowledgeGraph.load(cwd=tmp_path)
     assert len(graph.concepts) == 0
     assert graph.bundle_root is None
@@ -15,16 +29,18 @@ def test_knowledge_graph_empty(tmp_path: Path) -> None:
     assert graph.trust_summary()["human-reviewed"] == 0
 
 
-def test_knowledge_graph_scan_and_backlinks(tmp_path: Path) -> None:
-    okf_dir = tmp_path / ".okf"
-    okf_dir.mkdir()
+def test_knowledge_graph_scan_and_backlinks(
+    tmp_path: Path, isolated_global: Path
+) -> None:
+    kd = _knowledge_dir(tmp_path)
 
     # Concept A
-    (okf_dir / "service-a.md").write_text(
+    (kd / "service-a.md").write_text(
         "---\n"
         "type: Service\n"
         "title: Service A\n"
         "tags: [core, api]\n"
+        "context: auto\n"
         "verified:\n"
         "  - by: human:dan\n"
         "---\n"
@@ -33,11 +49,12 @@ def test_knowledge_graph_scan_and_backlinks(tmp_path: Path) -> None:
     )
 
     # Concept B
-    (okf_dir / "service-b.md").write_text(
+    (kd / "service-b.md").write_text(
         "---\n"
         "type: Service\n"
         "title: Service B\n"
         "tags: [storage]\n"
+        "context: search-only\n"
         "stale_after: '2020-01-01'\n"
         "verified:\n"
         "  - by: process:bot\n"
@@ -47,13 +64,17 @@ def test_knowledge_graph_scan_and_backlinks(tmp_path: Path) -> None:
     )
 
     # Reserved files should be ignored
-    (okf_dir / "index.md").write_text("# Index\n", encoding="utf-8")
-    (okf_dir / "log.md").write_text("# Log\n", encoding="utf-8")
+    (kd / "index.md").write_text("# Index\n", encoding="utf-8")
+    (kd / "log.md").write_text("# Log\n", encoding="utf-8")
 
     graph = KnowledgeGraph.load(cwd=tmp_path)
     assert len(graph.concepts) == 2
     assert "service-a" in graph.concepts
     assert "service-b" in graph.concepts
+
+    # Context field is parsed
+    assert graph.concepts["service-a"].context == "auto"
+    assert graph.concepts["service-b"].context == "search-only"
 
     # Backlinks
     assert graph.links_to("service-a") == ["service-b"]
@@ -80,17 +101,3 @@ def test_knowledge_graph_scan_and_backlinks(tmp_path: Path) -> None:
     assert trust["unverified"] == 0
 
     assert graph.stale_count() == 1
-
-
-def test_standalone_repo_discovery(tmp_path: Path) -> None:
-    # Standalone bundle has root index.md
-    (tmp_path / "index.md").write_text(
-        '---\nokf_version: "0.2"\n---\n# Root\n', encoding="utf-8"
-    )
-    (tmp_path / "concept.md").write_text(
-        "---\ntype: Guide\n---\nBody", encoding="utf-8"
-    )
-
-    graph = KnowledgeGraph.load(cwd=tmp_path)
-    assert graph.bundle_root == tmp_path
-    assert len(graph.concepts) == 1

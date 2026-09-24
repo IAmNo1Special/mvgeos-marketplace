@@ -160,6 +160,10 @@ def parse_concept_file(
     if isinstance(raw_tags, list):
         tags = [str(t).strip() for t in raw_tags if t is not None]
 
+    # Runtime-injection hint (dotagents extension key, OKF §4.1 allows it)
+    raw_context = data.get("context", "")
+    context = str(raw_context).strip() if raw_context else ""
+
     return Concept(
         id=concept_id,
         path=path,
@@ -172,6 +176,7 @@ def parse_concept_file(
         stale_after=str(data["stale_after"])
         if "stale_after" in data and data["stale_after"] is not None
         else None,
+        context=context,
         generated=gen_dict,
         verified=verified_list,
         sources=sources,

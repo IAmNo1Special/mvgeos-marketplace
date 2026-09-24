@@ -1,4 +1,10 @@
-"""Rune factory and lifecycle hook registration for okf-bridge."""
+"""Rune factory and lifecycle hook registration for okf-bridge.
+
+The rune owns the .agents/knowledge OKF bundle: it merges the global and
+workspace layers, injects a token-budgeted working-concept block each turn,
+and exposes the concept lifecycle (write, verify, deprecate, set context)
+as spells the model can call.
+"""
 
 from __future__ import annotations
 
@@ -9,13 +15,54 @@ from typing import Any
 from mvgeos_runes.rune_api import RuneAPI
 from mvgeos_runes.types import BeforeMvgeStartData, SigilHook, SpellDefinition
 
-from mvgeos_runes_okf_bridge.graph import KnowledgeGraph
+from mvgeos_runes_okf_bridge.graph import (
+    KnowledgeGraph,
+    global_knowledge_root,
+    workspace_knowledge_root,
+)
 from mvgeos_runes_okf_bridge.prompt import (
-    render_knowledge_catalog,
-    update_invocations_with_catalog,
+    WORKING_CONCEPTS_TOKEN_BUDGET,
+    render_working_concepts,
+    update_invocations_with_concepts,
 )
 from mvgeos_runes_okf_bridge.validator import validate_okf_bundle
 from mvgeos_runes_okf_bridge.visualizer import generate_html_graph
+from mvgeos_runes_okf_bridge.writer import (
+    CONTEXT_VALUES,
+    DEFAULT_GENERATED_BY,
+    deprecate_concept,
+    set_concept_context,
+    verify_concept,
+    write_concept,
+)
+
+
+def _merged_validation_report(graph: KnowledgeGraph) -> dict[str, Any]:
+    """Validate every loaded layer and merge the reports."""
+    merged_errors: list[dict[str, str]] = []
+    merged_warnings: list[dict[str, str]] = []
+    concepts = indexes = logs = 0
+    valid = True
+    for layer in graph.bundle_layers:
+        report = validate_okf_bundle(layer)
+        valid = valid and report.valid
+        concepts += report.concepts
+        indexes += report.indexes
+        logs += report.logs
+        merged_errors.extend(
+            {"path": e.rel_path, "message": e.message} for e in report.errors
+        )
+        merged_warnings.extend(
+            {"path": w.rel_path, "message": w.message} for w in report.warnings
+        )
+    return {
+        "valid": valid,
+        "errors": merged_errors,
+        "warnings": merged_warnings,
+        "concepts_checked": concepts,
+        "indexes_checked": indexes,
+        "logs_checked": logs,
+    }
 
 
 def rune_factory(api: RuneAPI) -> None:
@@ -25,39 +72,44 @@ def rune_factory(api: RuneAPI) -> None:
     raw_cwd = getattr(ctx, "cwd", None) if ctx else None
     cwd: Path | None = Path(raw_cwd) if raw_cwd else None
 
-    # In-memory knowledge graph
+    # In-memory merged knowledge graph (global + workspace layers)
     graph = KnowledgeGraph.load(cwd=cwd)
-    catalog_xml = render_knowledge_catalog(graph)
+    concepts_xml = render_working_concepts(graph)
+
+    # Model writes land in the workspace layer (created on demand).
+    def write_root() -> Path:
+        return workspace_knowledge_root(cwd) if cwd else global_knowledge_root()
+
+    def refresh() -> None:
+        nonlocal graph, concepts_xml
+        graph = KnowledgeGraph.load(cwd=cwd)
+        concepts_xml = render_working_concepts(graph)
 
     # 1. Lifecycle Hooks
     async def on_session_start(_data: Any = None) -> None:
-        nonlocal graph, catalog_xml
-        # Refresh on session start
-        graph = KnowledgeGraph.load(cwd=cwd)
-        catalog_xml = render_knowledge_catalog(graph)
+        refresh()
 
     async def on_before_mvge_start(data: Any = None) -> Any:
-        nonlocal catalog_xml
-        if not catalog_xml:
+        if not concepts_xml:
             return data
 
         if isinstance(data, BeforeMvgeStartData):
-            data.base_prompt = f"{data.base_prompt}\n\n{catalog_xml}".strip()
+            data.base_prompt = f"{data.base_prompt}\n\n{concepts_xml}".strip()
             return data
         if isinstance(data, dict) and "base_prompt" in data:
-            data["base_prompt"] = f"{data['base_prompt']}\n\n{catalog_xml}".strip()
+            data["base_prompt"] = f"{data['base_prompt']}\n\n{concepts_xml}".strip()
             return data
         return data
 
     async def on_context_transform(invocations: Any = None) -> Any:
         if isinstance(invocations, list):
-            return update_invocations_with_catalog(invocations, catalog_xml)
+            return update_invocations_with_concepts(invocations, concepts_xml)
         return invocations
 
     async def on_session_shutdown(_data: Any = None) -> None:
-        nonlocal graph, catalog_xml
+        nonlocal graph, concepts_xml
         graph = KnowledgeGraph()
-        catalog_xml = ""
+        concepts_xml = ""
 
     api.on(SigilHook.SESSION_START, on_session_start)
     api.on(SigilHook.BEFORE_MVGE_START, on_before_mvge_start)
@@ -65,7 +117,7 @@ def rune_factory(api: RuneAPI) -> None:
     api.on(SigilHook.SESSION_SHUTDOWN, on_session_shutdown)
 
     # 2. Spells
-    async def handle_okf_search(
+    async def handle_concept_search(
         params: dict[str, Any] | None = None,
         *args: Any,
         arguments: dict[str, Any] | None = None,
@@ -90,12 +142,13 @@ def rune_factory(api: RuneAPI) -> None:
                 "trust_tier": c.trust_tier.value,
                 "is_stale": c.is_stale,
                 "tags": c.tags,
+                "origin": c.origin,
             }
             for c in results
         ]
         return json.dumps(data, indent=2)
 
-    async def handle_okf_get(
+    async def handle_concept_get(
         params: dict[str, Any] | None = None,
         *args: Any,
         arguments: dict[str, Any] | None = None,
@@ -118,6 +171,8 @@ def rune_factory(api: RuneAPI) -> None:
             "tags": concept.tags,
             "status": concept.status,
             "stale_after": concept.stale_after,
+            "context": concept.context,
+            "origin": concept.origin,
             "trust_tier": concept.trust_tier.value,
             "is_stale": concept.is_stale,
             "generated": concept.generated,
@@ -139,7 +194,7 @@ def rune_factory(api: RuneAPI) -> None:
         }
         return json.dumps(data, indent=2)
 
-    async def handle_okf_validate(
+    async def handle_concept_validate(
         params: dict[str, Any] | None = None,
         *args: Any,
         arguments: dict[str, Any] | None = None,
@@ -147,32 +202,119 @@ def rune_factory(api: RuneAPI) -> None:
     ) -> str:
         payload = params if params is not None else arguments or {}
         target = payload.get("bundle_path")
-        strict = bool(payload.get("strict", False))
 
-        target_path = (
-            Path(str(target))
-            if target
-            else (graph.bundle_root or (cwd / ".okf" if cwd else Path(".okf")))
+        if target:
+            report = validate_okf_bundle(Path(str(target)))
+            data = {
+                "valid": report.valid,
+                "errors": [
+                    {"path": e.rel_path, "message": e.message} for e in report.errors
+                ],
+                "warnings": [
+                    {"path": w.rel_path, "message": w.message} for w in report.warnings
+                ],
+                "concepts_checked": report.concepts,
+                "indexes_checked": report.indexes,
+                "logs_checked": report.logs,
+            }
+            return json.dumps(data, indent=2)
+        return json.dumps(_merged_validation_report(graph), indent=2)
+
+    async def handle_concept_write(
+        params: dict[str, Any] | None = None,
+        *args: Any,
+        arguments: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> str:
+        payload = params if params is not None else arguments or {}
+        try:
+            concept = write_concept(
+                write_root(),
+                str(payload.get("concept_id", "")),
+                type=str(payload.get("type", "")),
+                title=str(payload.get("title", "")),
+                description=str(payload.get("description", "")),
+                body=str(payload.get("body", "")),
+                tags=list(payload.get("tags", []) or []),
+                context=payload.get("context"),
+                stale_after=payload.get("stale_after"),
+                generated_by=str(payload.get("by", "") or DEFAULT_GENERATED_BY),
+            )
+        except (ValueError, FileNotFoundError, OSError) as exc:
+            return json.dumps({"error": str(exc)})
+        refresh()
+        return json.dumps(
+            {
+                "id": concept.id,
+                "path": str(concept.path),
+                "trust_tier": concept.trust_tier.value,
+                "context": concept.context,
+            },
+            indent=2,
         )
-        report = validate_okf_bundle(target_path, strict=strict)
-        data = {
-            "valid": report.valid,
-            "errors": [
-                {"path": e.rel_path, "message": e.message} for e in report.errors
-            ],
-            "warnings": [
-                {"path": w.rel_path, "message": w.message} for w in report.warnings
-            ],
-            "concepts_checked": report.concepts,
-            "indexes_checked": report.indexes,
-            "logs_checked": report.logs,
-        }
-        return json.dumps(data, indent=2)
+
+    async def handle_concept_verify(
+        params: dict[str, Any] | None = None,
+        *args: Any,
+        arguments: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> str:
+        payload = params if params is not None else arguments or {}
+        try:
+            concept = verify_concept(
+                write_root(),
+                str(payload.get("concept_id", "")),
+                by=str(payload.get("by", "")),
+            )
+        except (ValueError, FileNotFoundError, OSError) as exc:
+            return json.dumps({"error": str(exc)})
+        refresh()
+        return json.dumps(
+            {"id": concept.id, "trust_tier": concept.trust_tier.value}, indent=2
+        )
+
+    async def handle_concept_deprecate(
+        params: dict[str, Any] | None = None,
+        *args: Any,
+        arguments: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> str:
+        payload = params if params is not None else arguments or {}
+        try:
+            concept = deprecate_concept(
+                write_root(), str(payload.get("concept_id", ""))
+            )
+        except (ValueError, FileNotFoundError, OSError) as exc:
+            return json.dumps({"error": str(exc)})
+        refresh()
+        return json.dumps({"id": concept.id, "status": concept.status}, indent=2)
+
+    async def handle_concept_set_context(
+        params: dict[str, Any] | None = None,
+        *args: Any,
+        arguments: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> str:
+        payload = params if params is not None else arguments or {}
+        try:
+            concept = set_concept_context(
+                write_root(),
+                str(payload.get("concept_id", "")),
+                str(payload.get("context", "")),
+            )
+        except (ValueError, FileNotFoundError, OSError) as exc:
+            return json.dumps({"error": str(exc)})
+        refresh()
+        return json.dumps({"id": concept.id, "context": concept.context}, indent=2)
 
     api.register_spell(
         SpellDefinition(
-            name="okf_search",
-            description="Search the project Open Knowledge Format (.okf/) knowledge base by query, type, or tags.",
+            name="concept_search",
+            description=(
+                "Search the Open Knowledge Format knowledge base (global and "
+                "workspace layers) by query, type, or tags. Finds both "
+                "auto-injected and search-only concepts."
+            ),
             parameters={
                 "type": "object",
                 "properties": {
@@ -181,17 +323,23 @@ def rune_factory(api: RuneAPI) -> None:
                         "type": "string",
                         "description": "Filter by concept type",
                     },
-                    "tag_filter": {"type": "string", "description": "Filter by tag"},
+                    "tag_filter": {
+                        "type": "string",
+                        "description": "Filter by tag",
+                    },
                 },
             },
-            handler=handle_okf_search,
+            handler=handle_concept_search,
         )
     )
 
     api.register_spell(
         SpellDefinition(
-            name="okf_get",
-            description="Retrieve detailed specifications, trust metadata, sources, and links for a specific OKF concept.",
+            name="concept_get",
+            description=(
+                "Retrieve full detail, trust metadata, sources, and links for "
+                "one OKF concept."
+            ),
             parameters={
                 "type": "object",
                 "properties": {
@@ -202,28 +350,159 @@ def rune_factory(api: RuneAPI) -> None:
                 },
                 "required": ["concept_id"],
             },
-            handler=handle_okf_get,
+            handler=handle_concept_get,
         )
     )
 
     api.register_spell(
         SpellDefinition(
-            name="okf_validate",
-            description="Validate an Open Knowledge Format bundle against the v0.2 specification (§11).",
+            name="concept_validate",
+            description=(
+                "Validate the loaded OKF bundle layers against the v0.2 "
+                "specification (§11). Pass bundle_path to validate one "
+                "directory instead."
+            ),
             parameters={
                 "type": "object",
                 "properties": {
                     "bundle_path": {
                         "type": "string",
-                        "description": "Optional path to bundle directory",
-                    },
-                    "strict": {
-                        "type": "boolean",
-                        "description": "Treat warnings as errors",
+                        "description": "Optional path to a single bundle directory",
                     },
                 },
             },
-            handler=handle_okf_validate,
+            handler=handle_concept_validate,
+        )
+    )
+
+    api.register_spell(
+        SpellDefinition(
+            name="concept_write",
+            description=(
+                "Record durable knowledge as an OKF concept in the workspace "
+                "knowledge bundle. The concept is stamped with the writing "
+                "actor and held at unverified trust until a human verifies it "
+                "with concept_verify. New concepts default to search-only; "
+                "pass context 'auto' only for knowledge the model should see "
+                "on every turn. Pass your own agent actor name as 'by'; never "
+                "claim a human: actor."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "concept_id": {
+                        "type": "string",
+                        "description": "Concept ID, e.g. 'notes/my-note'",
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "Concept type (required by OKF v0.2)",
+                    },
+                    "title": {"type": "string"},
+                    "description": {
+                        "type": "string",
+                        "description": "One-line summary",
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "Markdown body carrying the knowledge",
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                    "context": {
+                        "type": "string",
+                        "enum": list(CONTEXT_VALUES),
+                        "description": "auto = injected every turn (budgeted); "
+                        "search-only = retrievable via search",
+                    },
+                    "stale_after": {
+                        "type": "string",
+                        "description": "ISO date after which the concept is stale",
+                    },
+                    "by": {
+                        "type": "string",
+                        "description": "Writing actor "
+                        f"(default {DEFAULT_GENERATED_BY})",
+                    },
+                },
+                "required": ["concept_id", "type"],
+            },
+            handler=handle_concept_write,
+        )
+    )
+
+    api.register_spell(
+        SpellDefinition(
+            name="concept_verify",
+            description=(
+                "Record verification of a concept, moving it up the trust "
+                "ladder: unverified -> machine-confirmed -> human-reviewed "
+                "(human-reviewed requires a 'human:' actor prefix)."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "concept_id": {
+                        "type": "string",
+                        "description": "Concept ID (relative path without .md)",
+                    },
+                    "by": {
+                        "type": "string",
+                        "description": "Verifying actor, e.g. 'human:malcom'",
+                    },
+                },
+                "required": ["concept_id", "by"],
+            },
+            handler=handle_concept_verify,
+        )
+    )
+
+    api.register_spell(
+        SpellDefinition(
+            name="concept_deprecate",
+            description=(
+                "Mark a concept deprecated. The file is preserved for links "
+                "and history; deprecated concepts are no longer injected."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "concept_id": {
+                        "type": "string",
+                        "description": "Concept ID (relative path without .md)",
+                    },
+                },
+                "required": ["concept_id"],
+            },
+            handler=handle_concept_deprecate,
+        )
+    )
+
+    api.register_spell(
+        SpellDefinition(
+            name="concept_set_context",
+            description=(
+                "Flip a concept between 'auto' (injected every turn, within "
+                f"the {WORKING_CONCEPTS_TOKEN_BUDGET}-token budget) and "
+                "'search-only' (retrievable via concept_search only)."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "concept_id": {
+                        "type": "string",
+                        "description": "Concept ID (relative path without .md)",
+                    },
+                    "context": {
+                        "type": "string",
+                        "enum": list(CONTEXT_VALUES),
+                    },
+                },
+                "required": ["concept_id", "context"],
+            },
+            handler=handle_concept_set_context,
         )
     )
 
@@ -239,8 +518,13 @@ def rune_factory(api: RuneAPI) -> None:
                 ", ".join(f"{k}: {v}" for k, v in sorted(graph.types_summary().items()))
                 or "None"
             )
+            layers_str = (
+                ", ".join(f"{graph.layer_label(p)}:{p}" for p in graph.bundle_layers)
+                or "none"
+            )
             return (
-                f"OKF Knowledge Bundle Status:\n"
+                "OKF Knowledge Bundle Status:\n"
+                f"  Layers:          {layers_str}\n"
                 f"  Directory:       {graph.bundle_root or 'MISSING: No bundle loaded'}\n"
                 f"  Total Concepts:  {len(graph.concepts)}\n"
                 f"  Types Breakdown: {types_str}\n"
@@ -261,19 +545,21 @@ def rune_factory(api: RuneAPI) -> None:
                 )
             return "\n".join(lines)
         if subcmd == "validate":
-            rep = validate_okf_bundle(graph.bundle_root or Path(".okf"))
+            merged = _merged_validation_report(graph)
             status_text = (
                 "OK: Bundle is conformant."
-                if rep.valid
+                if merged["valid"]
                 else "FAIL: Bundle is non-conformant."
             )
             return (
                 f"{status_text}\n"
-                f"  Concepts: {rep.concepts}, Errors: {len(rep.errors)}, Warnings: {len(rep.warnings)}"
+                f"  Concepts: {merged['concepts_checked']}, "
+                f"Errors: {len(merged['errors'])}, "
+                f"Warnings: {len(merged['warnings'])}"
             )
         if subcmd == "graph":
             html = generate_html_graph(graph)
-            out_file = (graph.bundle_root or Path(".okf")) / "viz.html"
+            out_file = (graph.bundle_root or Path(".")) / "viz.html"
             out_file.write_text(html, encoding="utf-8")
             return f"OK: Interactive graph rendered to {out_file}."
 

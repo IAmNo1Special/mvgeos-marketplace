@@ -9,10 +9,10 @@ from mvgeos_runes_okf_bridge.visualizer import generate_html_graph
 
 
 def test_generate_html_graph(tmp_path: Path) -> None:
-    okf_dir = tmp_path / ".okf"
-    okf_dir.mkdir()
+    kd = tmp_path / ".agents" / "knowledge"
+    kd.mkdir(parents=True)
 
-    (okf_dir / "c1.md").write_text(
+    (kd / "c1.md").write_text(
         "---\n"
         "type: Table\n"
         "title: Concept One\n"
@@ -21,7 +21,7 @@ def test_generate_html_graph(tmp_path: Path) -> None:
         "Links to [Concept Two](/c2.md).\n",
         encoding="utf-8",
     )
-    (okf_dir / "c2.md").write_text(
+    (kd / "c2.md").write_text(
         "---\n"
         "type: Attested Computation\n"
         "title: Concept Two\n"

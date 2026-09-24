@@ -5,10 +5,19 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from mvgeos_runes_okf_bridge.cli import app
+import pytest
 from typer.testing import CliRunner
 
+from mvgeos_runes_okf_bridge.cli import app
+
 runner = CliRunner()
+
+
+@pytest.fixture()
+def isolated_global(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    fake = tmp_path / "fake-global"
+    monkeypatch.setenv("MVGEOS_GLOBAL_DIR", str(fake))
+    return fake
 
 
 def test_cli_init_and_validate(tmp_path: Path) -> None:
@@ -111,9 +120,38 @@ def test_cli_init_collision(tmp_path: Path) -> None:
     assert "already contains OKF files" in res_collision.output
 
 
-def test_cli_search_no_results(tmp_path: Path) -> None:
+def test_cli_search_no_results(tmp_path: Path, isolated_global: Path) -> None:
     target = tmp_path / ".okf"
     runner.invoke(app, ["init", str(target)])
     res = runner.invoke(app, ["search", "nonexistentquery123", "--bundle", str(target)])
     assert res.exit_code == 0
     assert "MISSING: No concepts found" in res.output
+
+
+def test_cli_init_defaults_to_agents_knowledge(
+    tmp_path: Path, isolated_global: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    res = runner.invoke(app, ["init"])
+    assert res.exit_code == 0
+    target = tmp_path / ".agents" / "knowledge"
+    assert (target / "index.md").is_file()
+    assert (target / "getting-started.md").is_file()
+
+    # Default status/validate/search discover the workspace layer
+    res_status = runner.invoke(app, ["status"])
+    assert res_status.exit_code == 0
+    assert "Total Concepts:  1" in res_status.output
+
+    res_val = runner.invoke(app, ["validate"])
+    assert res_val.exit_code == 0
+    assert "OK: OKF bundle is fully conformant" in res_val.output
+
+
+def test_cli_no_bundle_anywhere(
+    tmp_path: Path, isolated_global: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    res = runner.invoke(app, ["status"])
+    assert res.exit_code != 0
+    assert "MISSING:" in res.output

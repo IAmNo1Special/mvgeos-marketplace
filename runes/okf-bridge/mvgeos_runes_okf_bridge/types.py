@@ -50,7 +50,13 @@ class AttestedComputation:
 
 @dataclass
 class Concept:
-    """A single OKF concept document, per OKF v0.2 §4."""
+    """A single OKF concept document, per OKF v0.2 §4.
+
+    `context` is the dotagents runtime-injection extension key
+    (`auto` | `search-only`); empty means unset. `origin` records which
+    bundle layer the concept was loaded from (`global`, `workspace`,
+    or `explicit` for a directly-passed bundle path).
+    """
 
     id: str
     path: Path
@@ -61,6 +67,8 @@ class Concept:
     tags: list[str] = field(default_factory=list)
     status: str = "stable"
     stale_after: str | None = None
+    context: str = ""
+    origin: str = ""
     generated: dict[str, str] = field(default_factory=dict)
     verified: list[dict[str, str]] = field(default_factory=list)
     sources: list[Source] = field(default_factory=list)

@@ -1,4 +1,11 @@
-"""In-memory Directed Acyclic Graph (DAG) for OKF concepts and backlinks."""
+"""In-memory Directed Acyclic Graph (DAG) for OKF concepts and backlinks.
+
+Bundles load from two dotagents layers (same convention as skills-bridge):
+  - global:    $MVGEOS_GLOBAL_DIR/knowledge (default ~/.agents/knowledge)
+  - workspace: <cwd>/.agents/knowledge
+
+Layers merge by concept id; the workspace layer wins collisions.
+"""
 
 from __future__ import annotations
 
@@ -11,14 +18,56 @@ from mvgeos_runes_okf_bridge.types import Concept, TrustTier
 
 RESERVED_FILENAMES = {"index.md", "log.md"}
 
+GLOBAL_LAYER = "global"
+WORKSPACE_LAYER = "workspace"
+EXPLICIT_LAYER = "explicit"
+
+
+def global_config_dir() -> Path:
+    """Resolve the global .agents config dir.
+
+    Mirrors skills-bridge: $MVGEOS_GLOBAL_DIR wins, else ~/.agents.
+    """
+    override = os.environ.get("MVGEOS_GLOBAL_DIR")
+    if override:
+        return Path(override)
+    return Path("~/.agents").expanduser()
+
+
+def global_knowledge_root() -> Path:
+    """Path of the global knowledge bundle layer."""
+    return global_config_dir() / "knowledge"
+
+
+def workspace_knowledge_root(cwd: Path) -> Path:
+    """Path of the workspace knowledge bundle layer."""
+    return cwd / ".agents" / "knowledge"
+
 
 class KnowledgeGraph:
-    """Represents a connected knowledge bundle with concept nodes and link edges."""
+    """Represents merged OKF bundle layers with concept nodes and link edges."""
 
-    def __init__(self, bundle_root: Path | None = None) -> None:
-        self.bundle_root = bundle_root
+    def __init__(self, layers: list[tuple[str, Path]] | None = None) -> None:
+        # Ordered (label, root); later layers win on concept-id collisions.
+        self._layers: list[tuple[str, Path]] = list(layers) if layers else []
         self.concepts: dict[str, Concept] = {}
         self._backlinks: dict[str, set[str]] = defaultdict(set)
+
+    @property
+    def bundle_root(self) -> Path | None:
+        """Primary bundle root: workspace layer wins, else global, else None."""
+        return self._layers[-1][1] if self._layers else None
+
+    @property
+    def bundle_layers(self) -> list[Path]:
+        """Loaded layer roots in merge order (global first)."""
+        return [root for _, root in self._layers]
+
+    def layer_label(self, root: Path) -> str:
+        for label, layer_root in self._layers:
+            if layer_root == root:
+                return label
+        return ""
 
     @classmethod
     def load(
@@ -26,48 +75,54 @@ class KnowledgeGraph:
         cwd: Path | None = None,
         bundle_path: Path | None = None,
     ) -> KnowledgeGraph:
-        """Discover and load an OKF bundle.
+        """Discover and load OKF bundle layers.
 
         Discovery order:
-        1. Explicit bundle_path
-        2. Workspace `<cwd>/.okf/` (canonical location)
-        3. Standalone knowledge repository (`<cwd>/` if root contains `index.md` or concept files)
+        1. Explicit bundle_path (single layer, origin "explicit")
+        2. Global + workspace .agents/knowledge layers, merged
+           (workspace wins collisions)
 
-        If bundle directory is missing or empty, returns an empty KnowledgeGraph.
+        If no layer directory exists, returns an empty KnowledgeGraph.
         """
-        target_dir = bundle_path
-        if target_dir is None and cwd is not None:
-            okf_dir = cwd / ".okf"
-            if okf_dir.is_dir():
-                target_dir = okf_dir
-            elif (cwd / "index.md").is_file():
-                # Standalone knowledge repository
-                target_dir = cwd
+        if bundle_path is not None:
+            if bundle_path.is_dir():
+                return cls.load_layers([(EXPLICIT_LAYER, bundle_path)])
+            return cls()
 
-        if target_dir is None or not target_dir.is_dir():
-            return cls(bundle_root=None)
+        layers: list[tuple[str, Path]] = []
+        if cwd is not None:
+            known_global = global_knowledge_root()
+            if known_global.is_dir():
+                layers.append((GLOBAL_LAYER, known_global))
+            workspace = workspace_knowledge_root(cwd)
+            if workspace.is_dir():
+                layers.append((WORKSPACE_LAYER, workspace))
+        return cls.load_layers(layers)
 
-        graph = cls(bundle_root=target_dir)
+    @classmethod
+    def load_layers(cls, layers: list[tuple[str, Path]]) -> KnowledgeGraph:
+        """Load and merge an explicit ordered list of (label, root) layers."""
+        graph = cls(layers=layers)
         graph.scan_and_index()
         return graph
 
     def scan_and_index(self) -> None:
-        """Scan the bundle directory and index all concept files."""
-        if self.bundle_root is None or not self.bundle_root.is_dir():
-            return
+        """Scan every layer and index all concept files (later layers win)."""
+        for label, layer_root in self._layers:
+            if not layer_root.is_dir():
+                continue
+            for root, _dirs, files in os.walk(layer_root):
+                root_path = Path(root)
+                for f in files:
+                    if not f.endswith(".md") or f in RESERVED_FILENAMES:
+                        continue
+                    full_path = root_path / f
+                    concept, _err = parse_concept_file(full_path, layer_root)
+                    if concept is not None:
+                        concept.origin = label
+                        self.concepts[concept.id] = concept
 
-        for root, _dirs, files in os.walk(self.bundle_root):
-            root_path = Path(root)
-            for f in files:
-                if not f.endswith(".md") or f in RESERVED_FILENAMES:
-                    continue
-
-                full_path = root_path / f
-                concept, _err = parse_concept_file(full_path, self.bundle_root)
-                if concept is not None:
-                    self.concepts[concept.id] = concept
-
-        # Compute backlinks
+        # Compute backlinks across the merged graph
         self._backlinks.clear()
         for cid, concept in self.concepts.items():
             for target in concept.links:

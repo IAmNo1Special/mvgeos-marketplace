@@ -7,25 +7,42 @@ from pathlib import Path
 
 import typer
 
-from mvgeos_runes_okf_bridge.graph import KnowledgeGraph
+from mvgeos_runes_okf_bridge.graph import (
+    KnowledgeGraph,
+    workspace_knowledge_root,
+)
 from mvgeos_runes_okf_bridge.migrator import migrate_bundle_in_place
+from mvgeos_runes_okf_bridge.types import ValidationIssue
 from mvgeos_runes_okf_bridge.validator import validate_okf_bundle
 from mvgeos_runes_okf_bridge.visualizer import generate_html_graph
 
 app = typer.Typer(name="okf", help="Open Knowledge Format (OKF v0.2) management")
 
 
+def _load_graph(bundle_dir: str | None) -> KnowledgeGraph:
+    """Load an explicit bundle dir, else the merged global+workspace layers."""
+    if bundle_dir:
+        target = Path(bundle_dir)
+        if not target.is_dir():
+            typer.echo(f"MISSING: OKF directory '{target}' does not exist.")
+            raise typer.Exit(1)
+        return KnowledgeGraph.load(bundle_path=target)
+    graph = KnowledgeGraph.load(cwd=Path.cwd())
+    if not graph.bundle_layers:
+        typer.echo(
+            "MISSING: No knowledge bundle found "
+            "(.agents/knowledge/ in cwd or $MVGEOS_GLOBAL_DIR)."
+        )
+        raise typer.Exit(1)
+    return graph
+
+
 @app.command("status")
 def okf_status(
-    bundle_dir: str = typer.Argument(None, help="Path to .okf directory"),
+    bundle_dir: str = typer.Argument(None, help="Path to OKF bundle directory"),
 ) -> None:
     """Display summary of OKF knowledge bundle."""
-    target = Path(bundle_dir) if bundle_dir else (Path.cwd() / ".okf")
-    if not target.is_dir():
-        typer.echo(f"MISSING: OKF directory '{target}' does not exist.")
-        raise typer.Exit(1)
-
-    graph = KnowledgeGraph.load(bundle_path=target)
+    graph = _load_graph(bundle_dir)
     trust = graph.trust_summary()
     stale = graph.stale_count()
     types_str = (
@@ -34,7 +51,7 @@ def okf_status(
     )
 
     typer.echo("OKF Knowledge Bundle Status:")
-    typer.echo(f"  Directory:       {target.resolve()}")
+    typer.echo(f"  Directory:       {graph.bundle_root}")
     typer.echo(f"  Total Concepts:  {len(graph.concepts)}")
     typer.echo(f"  Types Breakdown: {types_str}")
     typer.echo(f"  Human-Reviewed:  {trust['human-reviewed']}")
@@ -45,65 +62,68 @@ def okf_status(
 
 @app.command("validate")
 def okf_validate(
-    bundle_dir: str = typer.Argument(None, help="Path to .okf directory"),
+    bundle_dir: str = typer.Argument(None, help="Path to OKF bundle directory"),
     strict: bool = typer.Option(False, "--strict", help="Treat warnings as errors"),
     output_json: bool = typer.Option(False, "--json", help="Output results as JSON"),
 ) -> None:
     """Validate OKF bundle against v0.2 specification (§11)."""
-    target = Path(bundle_dir) if bundle_dir else (Path.cwd() / ".okf")
-    report = validate_okf_bundle(target, strict=strict)
+    graph = _load_graph(bundle_dir)
+
+    merged_valid = True
+    total_concepts = total_indexes = total_logs = 0
+    all_errors: list[ValidationIssue] = []
+    all_warnings: list[ValidationIssue] = []
+    for layer in graph.bundle_layers:
+        report = validate_okf_bundle(layer, strict=strict)
+        merged_valid = merged_valid and report.valid
+        total_concepts += report.concepts
+        total_indexes += report.indexes
+        total_logs += report.logs
+        all_errors.extend(report.errors)
+        all_warnings.extend(report.warnings)
 
     if output_json:
         data = {
-            "valid": report.valid,
-            "errors": [
-                {"path": e.rel_path, "message": e.message} for e in report.errors
-            ],
+            "valid": merged_valid,
+            "errors": [{"path": e.rel_path, "message": e.message} for e in all_errors],
             "warnings": [
-                {"path": w.rel_path, "message": w.message} for w in report.warnings
+                {"path": w.rel_path, "message": w.message} for w in all_warnings
             ],
-            "concepts": report.concepts,
-            "indexes": report.indexes,
-            "logs": report.logs,
+            "concepts": total_concepts,
+            "indexes": total_indexes,
+            "logs": total_logs,
         }
         typer.echo(json.dumps(data, indent=2))
-        if not report.valid:
+        if not merged_valid:
             raise typer.Exit(1)
         return
 
-    if not target.is_dir():
-        typer.echo(f"MISSING: OKF directory '{target}' does not exist.")
-        raise typer.Exit(1)
-
     typer.echo(
-        f"Validated {report.concepts} concepts, {report.indexes} indexes, {report.logs} logs."
+        f"Validated {total_concepts} concepts, {total_indexes} indexes, {total_logs} logs."
     )
-    for err in report.errors:
+    for err in all_errors:
         typer.echo(f"  FAIL: {err.rel_path}: {err.message}")
-    for warn in report.warnings:
+    for warn in all_warnings:
         typer.echo(f"  WARN: {warn.rel_path}: {warn.message}")
 
-    if report.valid:
+    if merged_valid:
         typer.echo("OK: OKF bundle is fully conformant.")
     else:
-        typer.echo(f"FAIL: OKF bundle has {len(report.errors)} conformance errors.")
+        typer.echo(f"FAIL: OKF bundle has {len(all_errors)} conformance errors.")
         raise typer.Exit(1)
 
 
 @app.command("graph")
 def okf_graph(
-    bundle_dir: str = typer.Argument(None, help="Path to .okf directory"),
+    bundle_dir: str = typer.Argument(None, help="Path to OKF bundle directory"),
     output_file: str = typer.Option(
         None, "-o", "--output", help="Output HTML file path"
     ),
 ) -> None:
     """Generate interactive Cytoscape.js HTML visualization of knowledge bundle."""
-    target = Path(bundle_dir) if bundle_dir else (Path.cwd() / ".okf")
-    if not target.is_dir():
-        typer.echo(f"MISSING: OKF directory '{target}' does not exist.")
-        raise typer.Exit(1)
+    graph = _load_graph(bundle_dir)
+    target = Path(bundle_dir) if bundle_dir else (graph.bundle_root or Path.cwd())
 
-    graph = KnowledgeGraph.load(bundle_path=target)
     html = generate_html_graph(graph, title=f"Knowledge Graph: {target.name}")
 
     out_path = Path(output_file) if output_file else (target / "viz.html")
@@ -113,13 +133,11 @@ def okf_graph(
 
 @app.command("migrate")
 def okf_migrate(
-    bundle_dir: str = typer.Argument(None, help="Path to .okf directory"),
+    bundle_dir: str = typer.Argument(None, help="Path to OKF bundle directory"),
 ) -> None:
     """Migrate an OKF v0.1 bundle to v0.2 in place (§13.1)."""
-    target = Path(bundle_dir) if bundle_dir else (Path.cwd() / ".okf")
-    if not target.is_dir():
-        typer.echo(f"MISSING: OKF directory '{target}' does not exist.")
-        raise typer.Exit(1)
+    graph = _load_graph(bundle_dir)
+    target = Path(bundle_dir) if bundle_dir else (graph.bundle_root or Path.cwd())
 
     modified = migrate_bundle_in_place(target)
     if modified:
@@ -133,17 +151,15 @@ def okf_migrate(
 @app.command("search")
 def okf_search_cmd(
     query: str = typer.Argument("", help="Search query string"),
-    bundle_dir: str = typer.Option(None, "--bundle", help="Path to .okf directory"),
+    bundle_dir: str = typer.Option(
+        None, "--bundle", help="Path to OKF bundle directory"
+    ),
     type_filter: str = typer.Option(None, "--type", help="Filter by concept type"),
     tag_filter: str = typer.Option(None, "--tag", help="Filter by tag"),
 ) -> None:
     """Search concepts in OKF knowledge bundle."""
-    target = Path(bundle_dir) if bundle_dir else (Path.cwd() / ".okf")
-    if not target.is_dir():
-        typer.echo(f"MISSING: OKF directory '{target}' does not exist.")
-        raise typer.Exit(1)
+    graph = _load_graph(bundle_dir)
 
-    graph = KnowledgeGraph.load(bundle_path=target)
     results = graph.search(query=query, type_filter=type_filter, tag_filter=tag_filter)
     if not results:
         typer.echo(f"MISSING: No concepts found matching query '{query}'.")
@@ -159,7 +175,7 @@ def okf_search_cmd(
 @app.command("init")
 def okf_init_cmd(
     bundle_dir: str = typer.Argument(
-        ".okf", help="Target directory for new OKF bundle"
+        None, help="Target directory for new OKF bundle (default .agents/knowledge)"
     ),
     title: str = typer.Option(
         "Project Knowledge Base", "--title", help="Title of knowledge bundle"
@@ -167,7 +183,7 @@ def okf_init_cmd(
     force: bool = typer.Option(False, "--force", help="Overwrite existing files"),
 ) -> None:
     """Initialize a brand-new conformant OKF v0.2 bundle (§3, §8, §9)."""
-    target = Path(bundle_dir)
+    target = Path(bundle_dir) if bundle_dir else workspace_knowledge_root(Path.cwd())
     target.mkdir(parents=True, exist_ok=True)
 
     root_index = target / "index.md"
@@ -197,7 +213,7 @@ def okf_init_cmd(
         encoding="utf-8",
     )
 
-    # Scaffolding starter concept
+    # Scaffolding starter concept (auto-injected working concept)
     sample_concept.write_text(
         f"---\n"
         f"type: Guide\n"
@@ -205,6 +221,7 @@ def okf_init_cmd(
         f"description: Overview and getting started guide for this project.\n"
         f"tags: [guide, onboarding]\n"
         f"status: stable\n"
+        f"context: auto\n"
         f"generated:\n"
         f"  by: human:mvgeos\n"
         f"  at: '{today}'\n"
