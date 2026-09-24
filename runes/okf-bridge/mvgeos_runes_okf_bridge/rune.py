@@ -401,7 +401,11 @@ def rune_factory(api: RuneAPI) -> None:
                     "title": {"type": "string"},
                     "description": {
                         "type": "string",
-                        "description": "One-line summary",
+                        "description": (
+                            "One-line summary. This is the relevance signal "
+                            "for future injection: write it so a future turn "
+                            "can judge relevance without opening the body."
+                        ),
                     },
                     "body": {
                         "type": "string",

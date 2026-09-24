@@ -64,7 +64,8 @@ def test_render_structure_and_escaping(tmp_path: Path) -> None:
     assert "5 &gt; 3" not in xml
     assert "<body>" not in xml
     assert "<title>" in xml and "<description>" in xml
-    assert "<instructions>" in xml
+    assert "<!--" in xml  # usage comment, skills-bridge style
+    assert "<instructions>" not in xml
 
 
 def test_render_includes_summary_counts(tmp_path: Path) -> None:

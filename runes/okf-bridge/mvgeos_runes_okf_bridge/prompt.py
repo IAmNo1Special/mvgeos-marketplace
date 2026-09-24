@@ -3,9 +3,11 @@
 Progressive disclosure (skills-bridge pattern): only concepts with explicit
 `context: auto` are injected, and only as id/title/description metadata —
 never full bodies. The model calls `concept_get` for a full body when a
-description signals relevance. `search-only` (and unset) concepts stay
-retrievable via `concept_search`. Concepts without a description are not
-injected (a bare title is a pointer to nothing).
+title or description signals relevance. Descriptions are rendered when
+present but never required: a concept without one is still injected as
+id/title, since the writer (often the model itself) must never have its
+own notes go dark silently. `search-only` (and unset) concepts stay
+retrievable via `concept_search`.
 
 Injection is capped at WORKING_CONCEPTS_TOKEN_BUDGET tokens (default 2000),
 newest generated.at first. The block is replaced in place each turn so
@@ -19,7 +21,7 @@ from typing import Any, cast
 from xml.sax.saxutils import escape
 
 from mvgeos_runes_okf_bridge.graph import KnowledgeGraph
-from mvgeos_runes_okf_bridge.types import Concept, TrustTier
+from mvgeos_runes_okf_bridge.types import Concept
 
 _BLOCK_RE = re.compile(r"<working_concepts.*?</working_concepts>", re.DOTALL)
 
@@ -69,7 +71,7 @@ def render_working_concepts(
     candidates = [
         c
         for c in graph.concepts.values()
-        if c.context == "auto" and c.status != "deprecated" and c.description.strip()
+        if c.context == "auto" and c.status != "deprecated"
     ]
     if not candidates:
         return ""
@@ -77,20 +79,17 @@ def render_working_concepts(
     # Newest generated.at first; concepts without a stamp sort last.
     candidates.sort(key=_generated_at, reverse=True)
 
-    header_open = "<working_concepts>"
-    instructions = (
-        "  <instructions>\n"
-        "    Working concepts are auto-loaded project knowledge (metadata only). "
-        "Trust rises unverified < machine-confirmed < human-reviewed; "
-        "stale concepts may be outdated.\n"
-        "    Use 'concept_get' for a concept's full body when its description "
-        "is relevant, 'concept_search' to find more concepts, and "
-        "'concept_write' to record durable knowledge (machine-written "
-        "concepts are stamped with the writing actor and held at unverified "
-        "trust until a human verifies them with 'concept_verify').\n"
-        "  </instructions>"
+    # Usage comment, skills-bridge style: what the block is plus the one
+    # key action. Spell descriptions carry the rest (trust ladder lives in
+    # concept_verify, the unverified-until-human rule in concept_write).
+    comment = (
+        "  <!-- Working concepts are auto-loaded project knowledge "
+        "(metadata only).\n"
+        "       When a concept's title or description is relevant, call the "
+        "concept_get tool with the concept's id to read its full body. -->"
     )
-    overhead = estimate_tokens(f"{header_open}\n{instructions}\n</working_concepts>")
+    header_open = "<working_concepts>"
+    overhead = estimate_tokens(f"{header_open}\n{comment}\n</working_concepts>")
 
     included: list[Concept] = []
     used = overhead
@@ -106,19 +105,9 @@ def render_working_concepts(
     if not included:
         return ""
 
-    trust = graph.trust_summary()
-    lines = [
-        (
-            f'<working_concepts budget_tokens="{token_budget}" '
-            f'used_tokens="{used}" total="{len(candidates)}" '
-            f'human_reviewed="{trust[TrustTier.HUMAN_REVIEWED.value]}" '
-            f'machine_confirmed="{trust[TrustTier.MACHINE_CONFIRMED.value]}" '
-            f'unverified="{trust[TrustTier.UNVERIFIED.value]}">'
-        )
-    ]
+    lines = [f'<working_concepts total="{len(candidates)}">', comment]
     for concept in included:
         lines.append(_render_concept_block(concept))
-    lines.append(instructions)
     lines.append("</working_concepts>")
     return "\n".join(lines)
 

@@ -2,11 +2,11 @@
 
 Only concepts with explicit `context: auto` are injected — as id/title/
 description metadata, never full bodies (the model calls `concept_get` for
-a body when a description signals relevance). Search-only and missing-context
-concepts stay retrievable via concept_search. Concepts without a description
-are not injected. Injection is capped at a token budget (default 2000),
-newest generated.at first. Every injected block carries its trust tier and
-stale state.
+a body when a title or description signals relevance). Descriptions are
+rendered when present but never required. Search-only and missing-context
+concepts stay retrievable via concept_search. Injection is capped at a token
+budget (default 2000), newest generated.at first. Every injected block
+carries its trust tier and stale state.
 """
 
 from __future__ import annotations
@@ -119,12 +119,18 @@ def test_bodies_are_never_injected_by_default(tmp_path: Path) -> None:
     assert "<body>" not in xml
 
 
-def test_concepts_without_description_are_not_injected(tmp_path: Path) -> None:
+def test_concepts_without_description_are_injected_as_id_and_title(
+    tmp_path: Path,
+) -> None:
+    # No description requirement: the writer (often the model itself) must
+    # never have its own notes go dark silently. concept_get delves deeper.
     (tmp_path / "nodesc.md").write_text(
         "---\ntype: Note\ntitle: NoDesc\ncontext: auto\n---\nBody",
         encoding="utf-8",
     )
-    assert render_working_concepts(_load_single(tmp_path)) == ""
+    xml = render_working_concepts(_load_single(tmp_path))
+    assert 'id="nodesc"' in xml
+    assert "<title>NoDesc</title>" in xml
 
 
 def test_trust_and_stale_annotations(tmp_path: Path) -> None:
@@ -140,11 +146,17 @@ def test_trust_and_stale_annotations(tmp_path: Path) -> None:
     assert 'stale="true"' in xml
 
 
-def test_block_names_spells_for_model(tmp_path: Path) -> None:
+def test_block_carries_usage_comment_not_instructions(tmp_path: Path) -> None:
+    # skills-bridge pattern: a short comment names the one key action;
+    # spell descriptions carry the rest. No <instructions> element.
     _concept(tmp_path, "note")
     xml = render_working_concepts(_load_single(tmp_path))
-    assert "concept_search" in xml
-    assert "concept_get" in xml
-    assert "concept_write" in xml
     assert "<working_concepts" in xml
     assert "</working_concepts>" in xml
+    assert "<instructions>" not in xml
+    assert "<!--" in xml
+    assert "concept_get" in xml
+    # lifecycle spells live in spell descriptions now, not in the block
+    assert "concept_search" not in xml
+    assert "concept_write" not in xml
+    assert "concept_verify" not in xml
