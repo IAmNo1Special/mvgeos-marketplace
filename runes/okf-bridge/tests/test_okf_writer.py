@@ -162,3 +162,65 @@ def test_lifecycle_preserves_body_text(bundle: Path) -> None:
     concept = KnowledgeGraph.load(bundle_path=bundle).get("note")
     assert concept is not None
     assert concept.body == body
+
+
+def test_write_concept_with_resource_and_sources(bundle: Path) -> None:
+    concept = write_concept(
+        bundle,
+        "notes/with-assets",
+        type="Note",
+        title="With Assets",
+        resource="references/diagram.png",
+        sources=[{"id": "s1", "resource": "references/paper.pdf", "title": "Paper"}],
+    )
+    assert concept.resource == "references/diagram.png"
+    assert len(concept.sources) == 1
+    assert concept.sources[0].id == "s1"
+    assert concept.sources[0].resource == "references/paper.pdf"
+
+    # round-trips through the graph
+    again = KnowledgeGraph.load(bundle_path=bundle).get("notes/with-assets")
+    assert again is not None
+    assert again.resource == "references/diagram.png"
+    assert again.sources[0].title == "Paper"
+
+    report = validate_okf_bundle(bundle)
+    assert report.valid, [e.message for e in report.errors]
+
+
+def test_write_preserves_resource_and_sources_on_rewrite(bundle: Path) -> None:
+    write_concept(
+        bundle,
+        "notes/n",
+        type="Note",
+        resource="references/a.png",
+        sources=[{"id": "s1", "resource": "references/b.pdf"}],
+    )
+    rewritten = write_concept(bundle, "notes/n", type="Note", title="T2")
+    assert rewritten.resource == "references/a.png"
+    assert rewritten.sources[0].resource == "references/b.pdf"
+
+    replaced = write_concept(
+        bundle, "notes/n", type="Note", resource="references/c.png", sources=[]
+    )
+    assert replaced.resource == "references/c.png"
+    assert replaced.sources == []
+
+
+def test_index_md_lists_concepts_after_write(bundle: Path) -> None:
+    write_concept(bundle, "notes/b-note", type="Note", title="B Note")
+    write_concept(bundle, "notes/a-note", type="Note", title="A Note")
+    text = (bundle / "index.md").read_text(encoding="utf-8")
+    assert 'okf_version: "0.2"' in text
+    assert "## Concepts" in text
+    assert "[A Note](notes/a-note.md)" in text
+    assert "[B Note](notes/b-note.md)" in text
+    assert text.index("notes/a-note") < text.index("notes/b-note")
+
+
+def test_index_md_marks_deprecated(bundle: Path) -> None:
+    write_concept(bundle, "notes/old", type="Note", title="Old")
+    deprecate_concept(bundle, "notes/old")
+    text = (bundle / "index.md").read_text(encoding="utf-8")
+    assert "[Old](notes/old.md)" in text
+    assert "deprecated" in text

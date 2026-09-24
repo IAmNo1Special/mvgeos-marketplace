@@ -20,6 +20,7 @@ from typing import Any
 
 import yaml
 
+from mvgeos_runes_okf_bridge.graph import RESERVED_FILENAMES
 from mvgeos_runes_okf_bridge.parser import (
     extract_frontmatter_and_body,
     parse_concept_file,
@@ -113,6 +114,63 @@ def _append_log(root: Path, kind: str, concept_id: str, detail: str) -> None:
     _atomic_write_text(log, text)
 
 
+def _refresh_index(root: Path) -> None:
+    """Rebuild the ``## Concepts`` listing in the bundle-root index.md.
+
+    Per OKF v0.2 §3.1 the bundle-root index.md is the directory listing;
+    it is regenerated (not patched) after every write/deprecate so it can
+    never drift from the files on disk. Unparseable files are skipped.
+    """
+    index = root / "index.md"
+    text = index.read_text(encoding="utf-8") if index.is_file() else ""
+
+    # Strip any existing Concepts section (up to the next ## heading).
+    kept: list[str] = []
+    skipping = False
+    for line in text.split("\n"):
+        if line.startswith("## Concepts"):
+            skipping = True
+            continue
+        if skipping and line.startswith("## "):
+            skipping = False
+        if not skipping:
+            kept.append(line)
+
+    entries: list[str] = []
+    for md in sorted(root.rglob("*.md")):
+        if md.name in RESERVED_FILENAMES:
+            continue
+        concept, _err = parse_concept_file(md, root)
+        if concept is None:
+            continue
+        rel = md.relative_to(root).as_posix()
+        label = concept.title or concept.id
+        marker = " (deprecated)" if concept.status == "deprecated" else ""
+        entries.append(f"- [{label}]({rel}){marker}")
+
+    body = "\n".join(kept).rstrip("\n")
+    section = "## Concepts\n\n" + "\n".join(entries) + "\n" if entries else ""
+    if body and section:
+        body += "\n\n"
+    _atomic_write_text(index, body + section)
+
+
+def _coerce_sources(
+    sources: list[dict[str, Any]] | tuple[dict[str, Any], ...] | None,
+) -> list[dict[str, Any]] | None:
+    """Validate source dicts against the OKF v0.2 §5.1 shape."""
+    if sources is None:
+        return None
+    coerced: list[dict[str, Any]] = []
+    for s in sources:
+        if not isinstance(s, dict) or "id" not in s or "resource" not in s:
+            raise ValueError(
+                "each source must be a dict with 'id' and 'resource' (OKF v0.2 §5.1)"
+            )
+        coerced.append(dict(s))
+    return coerced
+
+
 def _dump_concept_file(data: dict[str, Any], body: str) -> str:
     frontmatter = yaml.safe_dump(
         data, sort_keys=False, default_flow_style=False, allow_unicode=True
@@ -155,13 +213,17 @@ def write_concept(
     tags: list[str] | tuple[str, ...] = (),
     context: str | None = None,
     stale_after: str | None = None,
+    resource: str | None = None,
+    sources: list[dict[str, Any]] | tuple[dict[str, Any], ...] | None = None,
     generated_by: str = DEFAULT_GENERATED_BY,
 ) -> Concept:
     """Create or update a concept, stamping generated with the writing actor.
 
     New concepts default to `context: search-only`; updates preserve the
-    existing context unless explicitly passed. `verified` and `status`
-    are always preserved from the existing file.
+    existing context unless explicitly passed. `verified`, `status`,
+    `resource`, and `sources` are always preserved from the existing file
+    unless explicitly passed. `resource`/`sources` follow OKF v0.2 §6.3:
+    bundle-relative asset paths (each source needs `id` and `resource`).
     """
     if not type or not str(type).strip():
         raise ValueError("type is required and must be non-empty (OKF v0.2 §11)")
@@ -182,21 +244,31 @@ def write_concept(
     }
     if stale_after:
         data["stale_after"] = stale_after
+    coerced_sources = _coerce_sources(sources)
+    if resource is not None:
+        data["resource"] = resource
+    if coerced_sources is not None:
+        data["sources"] = coerced_sources
     data["generated"] = {"by": generated_by, "at": _utc_now()}
 
     if target.is_file():
         old_data, _old_body = _read_existing(root, target)
-        # Trust and lifecycle survive a rewrite; they change only via
-        # verify_concept / deprecate_concept.
+        # Trust, lifecycle, and asset references survive a rewrite; they
+        # change only via verify_concept / deprecate_concept or explicit args.
         if "verified" in old_data:
             data["verified"] = old_data["verified"]
         if "status" in old_data:
             data["status"] = old_data["status"]
         if context is None and "context" in old_data:
             data["context"] = old_data["context"]
+        if resource is None and "resource" in old_data:
+            data["resource"] = old_data["resource"]
+        if coerced_sources is None and "sources" in old_data:
+            data["sources"] = old_data["sources"]
 
     concept = _finish_write(root, cid, target, data, body)
     _append_log(root, "Update", cid, f"written by {generated_by}")
+    _refresh_index(root)
     return concept
 
 
@@ -232,6 +304,7 @@ def deprecate_concept(root: Path, concept_id: str) -> Concept:
     data["status"] = "deprecated"
     concept = _finish_write(root, cid, target, data, body)
     _append_log(root, "Deprecation", cid, "marked deprecated")
+    _refresh_index(root)
     return concept
 
 

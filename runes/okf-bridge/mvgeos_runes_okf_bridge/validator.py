@@ -58,7 +58,7 @@ def validate_okf_bundle(
 
         # Concept file (§4, §11)
         report.concepts += 1
-        _validate_concept_file(path, rel, report)
+        _validate_concept_file(path, rel, bundle_dir, report)
 
     # Apply warning gates
     if (
@@ -127,7 +127,9 @@ def _validate_log_file(path: Path, rel: str, report: ValidationReport) -> None:
         )
 
 
-def _validate_concept_file(path: Path, rel: str, report: ValidationReport) -> None:
+def _validate_concept_file(
+    path: Path, rel: str, bundle_dir: Path, report: ValidationReport
+) -> None:
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
@@ -205,6 +207,27 @@ def _validate_concept_file(path: Path, rel: str, report: ValidationReport) -> No
             report.add_warning(
                 rel, f"Footnote '[^{fn}]' names no matching source in 'sources' (§5.1)."
             )
+
+    # Asset reference checks (§6.3): warn on dangling references.
+    # Broken links are tolerated by consumers, so this never errors.
+    asset_refs: list[str] = []
+    resource = data.get("resource")
+    if isinstance(resource, str) and resource.strip():
+        asset_refs.append(resource.strip())
+    if isinstance(sources, list):
+        for s in sources:
+            if isinstance(s, dict):
+                res = s.get("resource")
+                if isinstance(res, str) and res.strip():
+                    asset_refs.append(res.strip())
+    for ref in asset_refs:
+        if ref.startswith(("http://", "https://", "data:")):
+            continue
+        target = ref.split("#")[0].split("?")[0].lstrip("/")
+        if not target:
+            continue
+        if not (bundle_dir / target).exists():
+            report.add_warning(rel, f"Resource '{ref}' not found in bundle (§6.3).")
 
     # Attested computation check (§10)
     if concept_type == "Attested Computation" and (

@@ -238,6 +238,8 @@ def rune_factory(api: RuneAPI) -> None:
                 tags=list(payload.get("tags", []) or []),
                 context=payload.get("context"),
                 stale_after=payload.get("stale_after"),
+                resource=payload.get("resource"),
+                sources=payload.get("sources"),
                 generated_by=str(payload.get("by", "") or DEFAULT_GENERATED_BY),
             )
         except (ValueError, FileNotFoundError, OSError) as exc:
@@ -424,6 +426,31 @@ def rune_factory(api: RuneAPI) -> None:
                     "stale_after": {
                         "type": "string",
                         "description": "ISO date after which the concept is stale",
+                    },
+                    "resource": {
+                        "type": "string",
+                        "description": (
+                            "Bundle-relative path of the asset this concept "
+                            "describes, e.g. 'references/diagram.png' "
+                            "(OKF v0.2 §6.3)"
+                        ),
+                    },
+                    "sources": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string"},
+                                "resource": {"type": "string"},
+                                "title": {"type": "string"},
+                                "author": {"type": "string"},
+                            },
+                            "required": ["id", "resource"],
+                        },
+                        "description": (
+                            "Provenance sources (OKF v0.2 §5.1); each needs "
+                            "an id and a bundle-relative resource path"
+                        ),
                     },
                     "by": {
                         "type": "string",

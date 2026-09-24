@@ -180,3 +180,51 @@ def test_validator_legacy_warnings_and_max_warnings(tmp_path: Path) -> None:
     assert any(
         "Legacy '# Citations' section detected" in w.message for w in report.warnings
     )
+
+
+def _bundle_with_concept(tmp_path: Path, name: str, frontmatter: str) -> Path:
+    bundle = tmp_path / name
+    bundle.mkdir()
+    (bundle / "c1.md").write_text(
+        f"---\ntype: Note\ntitle: C1\n{frontmatter}---\n# C1\n", encoding="utf-8"
+    )
+    return bundle
+
+
+def test_validator_dangling_resource_warns(tmp_path: Path) -> None:
+    bundle = _bundle_with_concept(
+        tmp_path, "b1", 'resource: "references/missing.png"\n'
+    )
+    report = validate_okf_bundle(bundle)
+    assert report.valid is True  # warnings only: consumers tolerate broken links
+    assert any(
+        "missing.png" in w.message and "resource" in w.message.lower()
+        for w in report.warnings
+    )
+
+
+def test_validator_existing_resource_no_warning(tmp_path: Path) -> None:
+    bundle = _bundle_with_concept(tmp_path, "b2", 'resource: "references/here.png"\n')
+    (bundle / "references").mkdir()
+    (bundle / "references" / "here.png").write_bytes(b"fake-png")
+    report = validate_okf_bundle(bundle)
+    assert not any("resource" in w.message for w in report.warnings)
+
+
+def test_validator_dangling_source_resource_warns(tmp_path: Path) -> None:
+    bundle = _bundle_with_concept(
+        tmp_path,
+        "b3",
+        "sources:\n  - id: s1\n    resource: references/gone.pdf\n",
+    )
+    report = validate_okf_bundle(bundle)
+    assert report.valid is True
+    assert any("gone.pdf" in w.message for w in report.warnings)
+
+
+def test_validator_external_url_resource_no_warning(tmp_path: Path) -> None:
+    bundle = _bundle_with_concept(
+        tmp_path, "b4", 'resource: "https://example.com/x.png"\n'
+    )
+    report = validate_okf_bundle(bundle)
+    assert not any("resource" in w.message for w in report.warnings)
