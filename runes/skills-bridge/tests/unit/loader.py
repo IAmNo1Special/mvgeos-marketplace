@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from mvgeos_runes_skills_bridge.loader import (
     clear_skill_manifest_cache,
     discover_plugin_skill_paths,
@@ -204,6 +205,10 @@ def test_load_cached_skill_manifest_uppercase_preferred(tmp_path: Path) -> None:
     """SKILL.md wins when both casings exist."""
     clear_skill_manifest_cache()
     s_dir = _create_skill(tmp_path, "both-skill", "Upper version")
+    if (s_dir / "SKILL.md").samefile(s_dir / "skill.md"):
+        pytest.skip(
+            "Filesystem is case-insensitive (cannot have distinct SKILL.md and skill.md)"
+        )
     (s_dir / "skill.md").write_text(
         "---\nname: both-skill\ndescription: Lower version\n---\nLower body",
         encoding="utf-8",

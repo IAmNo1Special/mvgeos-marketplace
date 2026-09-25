@@ -6,9 +6,8 @@ import json
 from pathlib import Path
 
 import pytest
-from typer.testing import CliRunner
-
 from mvgeos_runes_okf_bridge.cli import app
+from typer.testing import CliRunner
 
 runner = CliRunner()
 

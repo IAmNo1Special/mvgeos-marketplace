@@ -8,7 +8,6 @@ from unittest.mock import MagicMock
 
 import pytest
 from mvgeos_runes.types import BeforeMvgeStartData, SigilHook, SpellDefinition
-
 from mvgeos_runes_okf_bridge.rune import rune_factory
 
 
