@@ -13,7 +13,7 @@ The MvgeOS Marketplace hosts official and community-contributed extensions (rune
 | `coding_mvge` | `0.2.6` | Official coding agent with built-in development spells | `mvges/coding_mvge` |
 
 Install via MvgeOS CLI:
-```powershell
+```bash
 mvgeos mvge install coding_mvge
 ```
 
@@ -34,7 +34,7 @@ mvgeos mvge install coding_mvge
 | `steering-bridge` | `0.1.0` | Official repository steering (AGENTS.md, .agents protocol) bridge for MvgeOS | `runes/steering-bridge` |
 
 Install via MvgeOS CLI:
-```powershell
+```bash
 mvgeos rune install openrouter-realm
 ```
 
