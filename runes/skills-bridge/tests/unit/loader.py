@@ -205,14 +205,17 @@ def test_load_cached_skill_manifest_uppercase_preferred(tmp_path: Path) -> None:
     """SKILL.md wins when both casings exist."""
     clear_skill_manifest_cache()
     s_dir = _create_skill(tmp_path, "both-skill", "Upper version")
-    if (s_dir / "SKILL.md").samefile(s_dir / "skill.md"):
-        pytest.skip(
-            "Filesystem is case-insensitive (cannot have distinct SKILL.md and skill.md)"
-        )
+    # Write the lowercase variant first so both paths exist even on a
+    # case-insensitive filesystem; samefile() then reports whether the two
+    # casings collapse onto one file instead of raising FileNotFoundError.
     (s_dir / "skill.md").write_text(
         "---\nname: both-skill\ndescription: Lower version\n---\nLower body",
         encoding="utf-8",
     )
+    if (s_dir / "SKILL.md").samefile(s_dir / "skill.md"):
+        pytest.skip(
+            "Filesystem is case-insensitive (cannot have distinct SKILL.md and skill.md)"
+        )
 
     manifest = load_cached_skill_manifest(s_dir)
 
