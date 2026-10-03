@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from mvgeos_core.constants import DEFAULT_TOME_DIR
+from mvgeos_core.constants import sessions_dir
 from mvgeos_tome.handle import TomeHandleFactory
 from mvgeos_tome.types import TomeEntry, TomeEntryType
 
@@ -20,7 +20,6 @@ from mvgeos_runes_session_search.db import get_db_connection, init_db
 logger = logging.getLogger(__name__)
 
 DEFAULT_BRAIN_DIR = Path.home() / ".gemini" / "antigravity" / "brain"
-DEFAULT_DB_PATH = DEFAULT_TOME_DIR / ".session-search.db"
 MAX_CONTENT_CHARS = 10_000
 
 
@@ -29,15 +28,19 @@ def get_tome_dir() -> Path:
     env_dir = os.environ.get("SESSION_SEARCH_TOME_DIR")
     if env_dir:
         return Path(env_dir).expanduser().resolve()
-    return Path(DEFAULT_TOME_DIR).expanduser().resolve()
+    return sessions_dir().resolve()
 
 
 def get_db_path() -> Path:
-    """Index database path: explicit env override or the default file."""
+    """Index database path: explicit env override or the default file.
+
+    Derived at call time rather than module import so the index follows
+    $MVGEOS_GLOBAL_DIR when it is set after this module is loaded.
+    """
     env_path = os.environ.get("SESSION_SEARCH_DB_PATH")
     if env_path:
         return Path(env_path).expanduser().resolve()
-    return Path(DEFAULT_DB_PATH).expanduser().resolve()
+    return (sessions_dir() / ".session-search.db").resolve()
 
 
 def get_brain_dir() -> Path:

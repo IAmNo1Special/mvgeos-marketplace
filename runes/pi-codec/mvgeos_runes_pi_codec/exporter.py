@@ -17,7 +17,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from mvgeos_core.constants import DEFAULT_TOME_DIR
+from mvgeos_core.constants import sessions_dir
 from mvgeos_tome.handle import TomeHandleFactory
 from mvgeos_tome.types import TomeEntry, TomeEntryType
 
@@ -51,7 +51,7 @@ def export_tome_to_pi(
     force: bool = False,
 ) -> ExportReport:
     """Export a Tome v1 session to a new Pi-native v4 file."""
-    directory = Path(tome_dir).expanduser() if tome_dir else DEFAULT_TOME_DIR
+    directory = Path(tome_dir).expanduser() if tome_dir else sessions_dir()
     factory = TomeHandleFactory(directory)
     try:
         handle = factory.open_read(tome_id)
