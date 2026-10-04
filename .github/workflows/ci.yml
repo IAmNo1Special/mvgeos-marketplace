@@ -5,6 +5,15 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # This suite already builds against the engine's main branch, so a push
+  # there can break it without anything in this repository changing. The
+  # engine's own contract check catches the import-level version of that
+  # immediately; this catches everything else -- signature and behaviour
+  # changes the AST check cannot see -- within a day rather than at the
+  # next marketplace push.
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
 
 jobs:
   ci:
