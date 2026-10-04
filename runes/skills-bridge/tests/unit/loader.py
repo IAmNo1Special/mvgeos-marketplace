@@ -53,6 +53,33 @@ def test_get_prioritized_skill_search_paths(tmp_path: Path) -> None:
     ]
 
 
+def test_skill_search_paths_follow_the_global_dir_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The user and agent skill layers come from $MVGEOS_GLOBAL_DIR.
+
+    This used to be a second, hand-rolled copy of the precedence rule. It
+    drifted from the engine's, so a run with the override set searched the
+    real home for user and agent skills while everything else was isolated.
+    """
+    global_dir = tmp_path / "relocated_agents"
+    monkeypatch.setenv("MVGEOS_GLOBAL_DIR", str(global_dir))
+    (global_dir / "skills").mkdir(parents=True)
+    (global_dir / "agents" / "my_agent" / "skills").mkdir(parents=True)
+    cwd = tmp_path / "project"
+    cwd.mkdir()
+
+    paths = get_prioritized_skill_search_paths(
+        agent_name="my_agent",
+        cwd=cwd,
+        global_dir=None,
+    )
+
+    found = {scope: path for path, scope in paths}
+    assert found[SkillScope.USER] == global_dir / "skills"
+    assert found[SkillScope.AGENT] == global_dir / "agents" / "my_agent" / "skills"
+
+
 def test_load_cached_skill_manifest(tmp_path: Path) -> None:
     clear_skill_manifest_cache()
     s_dir = _create_skill(tmp_path, "cache-skill")

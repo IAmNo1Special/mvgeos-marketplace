@@ -29,7 +29,7 @@ from mvgeos_runes_session_search.indexer import (
     get_tome_dir,
     sync_index,
 )
-from mvgeos_runes_session_search.rune import rune_factory
+from mvgeos_runes_session_search.rune import _extension_dirs, rune_factory
 from mvgeos_tome.handle import TomeHandleFactory
 from mvgeos_tome.types import TomeEntry, TomeEntryType
 
@@ -69,6 +69,25 @@ def workspace(tmp_path: Path) -> dict[str, Path]:
     db_path = tmp_path / "search.db"
     brain_dir = tmp_path / "brain"
     return {"tome_dir": tome_dir, "db_path": db_path, "brain_dir": brain_dir}
+
+
+def test_extension_dirs_follow_the_global_dir_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Extension discovery honours the relocated global layer.
+
+    These were literal ``~/.agents`` paths, so an isolated run indexed
+    extensions out of the developer's real home.
+    """
+    global_dir = tmp_path / "relocated_agents"
+    monkeypatch.setenv("MVGEOS_GLOBAL_DIR", str(global_dir))
+    (global_dir / "extensions" / "some-rune").mkdir(parents=True)
+    (global_dir / "agents" / "my_agent" / "extensions").mkdir(parents=True)
+
+    found = _extension_dirs("my_agent", "")
+
+    assert global_dir / "extensions" in found
+    assert global_dir / "agents" / "my_agent" / "extensions" in found
 
 
 def test_sanitize_fts5_query() -> None:

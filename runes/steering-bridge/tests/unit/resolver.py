@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from mvgeos_runes_steering_bridge.resolver import (
     read_steering_text,
     resolve_global_agents_file,
@@ -86,6 +87,28 @@ def test_resolve_global_agents_file(tmp_path: Path) -> None:
     assert res_upper is not None
     assert res_upper[0] == upper_file
     assert res_upper[1] == upper_file.as_posix()
+
+
+def test_resolve_global_agents_file_defaults_to_the_global_dir_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With no explicit directory, steering reads the relocated layer.
+
+    Also pins the display string: the home-relative shorthand is only shown
+    when the file really is in the home layer, because under a relocated
+    global dir it would name a path that was never read.
+    """
+    global_dir = tmp_path / "relocated_agents"
+    monkeypatch.setenv("MVGEOS_GLOBAL_DIR", str(global_dir))
+    global_dir.mkdir()
+    steering_file = global_dir / "AGENTS.md"
+    steering_file.write_text("relocated steering", encoding="utf-8")
+
+    res = resolve_global_agents_file(None)
+
+    assert res is not None
+    assert res[0] == steering_file
+    assert res[1] == steering_file.as_posix()
 
 
 def test_resolve_scoped_agents_file(tmp_path: Path) -> None:
