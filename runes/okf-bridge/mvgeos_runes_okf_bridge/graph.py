@@ -13,6 +13,8 @@ import os
 from collections import defaultdict
 from pathlib import Path
 
+from mvgeos_core.constants import global_agents_dir
+
 from mvgeos_runes_okf_bridge.parser import parse_concept_file
 from mvgeos_runes_okf_bridge.types import Concept, TrustTier
 
@@ -26,12 +28,10 @@ EXPLICIT_LAYER = "explicit"
 def global_config_dir() -> Path:
     """Resolve the global .agents config dir.
 
-    Mirrors skills-bridge: $MVGEOS_GLOBAL_DIR wins, else ~/.agents.
+    Delegates to the engine resolver so the knowledge layer cannot land
+    somewhere other than the runes and skills it documents.
     """
-    override = os.environ.get("MVGEOS_GLOBAL_DIR")
-    if override:
-        return Path(override)
-    return Path("~/.agents").expanduser()
+    return global_agents_dir()
 
 
 def global_knowledge_root() -> Path:

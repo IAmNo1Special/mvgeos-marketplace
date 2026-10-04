@@ -31,6 +31,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
+from mvgeos_core.constants import global_agents_dir, skills_dir
+
 from mvgeos_runes_selfmod_bridge.state import SelfmodState
 from mvgeos_runes_selfmod_bridge.status import describe_extensions
 from mvgeos_runes_selfmod_bridge.templates import (
@@ -677,11 +679,7 @@ class SelfmodSpellsMixin:
                 "no runes paths configured — pass target_dir explicitly",
             )
         global_base: Path | None = None
-        override = os.environ.get("MVGEOS_GLOBAL_DIR")
-        if override:
-            global_base = Path(override).expanduser()
-        else:
-            global_base = Path("~/.agents").expanduser()
+        global_base = global_agents_dir()
 
         def scope(path: Path) -> int:
             resolved = path.resolve()
@@ -780,9 +778,7 @@ class SelfmodSpellsMixin:
                 expected=[str(c) for c in candidates],
             )
         if scope == "user":
-            override = os.environ.get("MVGEOS_GLOBAL_DIR")
-            base = Path(override).expanduser() if override else Path("~/.agents").expanduser()
-            root = base / "skills"
+            root = skills_dir()
         else:  # agent
             if state.config_dir is None:
                 return self._mutation_failure(

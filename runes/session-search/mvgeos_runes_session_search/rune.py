@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from mvgeos_core.constants import agent_extensions_dir, extensions_dir
 from mvgeos_runes.codecs import load_session_codecs
 from mvgeos_runes.rune_api import RuneAPI
 from mvgeos_runes.types import SigilHook, SpellDefinition
@@ -45,11 +46,9 @@ class SearchState:
 
 
 def _extension_dirs(agent_name: str, cwd: str) -> list[Path]:
-    candidates = [Path("~/.agents/extensions").expanduser()]
+    candidates = [extensions_dir()]
     if agent_name:
-        candidates.append(
-            Path(f"~/.agents/agents/{agent_name}/extensions").expanduser()
-        )
+        candidates.append(agent_extensions_dir(agent_name))
     if cwd:
         candidates.append(Path(cwd) / ".agents" / "extensions")
     return [d for d in candidates if d.exists()]

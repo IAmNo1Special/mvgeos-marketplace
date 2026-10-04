@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+from mvgeos_core.constants import global_agents_dir
+
 logger = logging.getLogger(__name__)
 
 
@@ -84,12 +86,12 @@ def resolve_global_agents_file(
     """Find global AGENTS.md per .agents Protocol.
 
     Precedence:
-    1. (global_dir or ~/.agents)/AGENTS.md
-    2. (global_dir or ~/.agents)/agents.md
+    1. (global_dir or <global>)/AGENTS.md
+    2. (global_dir or <global>)/agents.md
 
     Returns (resolved_path, display_path) or None if no valid non-empty file.
     """
-    g_dir = global_dir if global_dir is not None else Path("~/.agents").expanduser()
+    g_dir = global_dir if global_dir is not None else global_agents_dir()
     if not g_dir.is_dir():
         return None
 
@@ -105,9 +107,14 @@ def resolve_global_agents_file(
     for cand in candidates:
         content = read_steering_text(cand, strip_frontmatter=True)
         if content:
-            display = (
-                f"~/.agents/{cand.name}" if global_dir is None else cand.as_posix()
+            # The home-relative shorthand is only accurate when the file
+            # really is in the home layer; under a relocated global dir it
+            # would name a path that was never read.
+            in_home_layer = (
+                global_dir is None
+                and global_agents_dir() == Path("~/.agents").expanduser()
             )
+            display = f"~/.agents/{cand.name}" if in_home_layer else cand.as_posix()
             return (cand, display)
 
     return None

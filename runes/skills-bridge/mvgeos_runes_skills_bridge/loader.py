@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from pathlib import Path
 from typing import Any
+
+from mvgeos_core.constants import global_agents_dir
 
 from mvgeos_runes_skills_bridge.parser import (
     parse_skill_manifest,
@@ -47,17 +48,13 @@ def get_prioritized_skill_search_paths(
     if proj_skills.is_dir() and proj_skills != proj_dot_agents:
         paths.append((proj_skills, SkillScope.PROJECT))
 
-    # 2. User-level scope (~/.agents/skills/)
-    base_global = global_dir or (
-        Path(os.environ["MVGEOS_GLOBAL_DIR"])
-        if os.environ.get("MVGEOS_GLOBAL_DIR")
-        else Path("~/.agents").expanduser()
-    )
+    # 2. User-level scope (<global>/skills)
+    base_global = global_dir if global_dir is not None else global_agents_dir()
     user_skills = base_global / "skills"
     if user_skills.is_dir():
         paths.append((user_skills, SkillScope.USER))
 
-    # 3. Agent-specific scope (~/.agents/agents/<agent_name>/skills/)
+    # 3. Agent-specific scope (<global>/agents/<agent_name>/skills)
     if agent_name:
         agent_skills = base_global / "agents" / agent_name / "skills"
         if agent_skills.is_dir():
@@ -148,11 +145,7 @@ def discover_plugin_skill_paths(
     """Discover skill directories embedded in installed Agent Plugins."""
     discovered: list[tuple[Path, SkillScope]] = []
     base_cwd = cwd or Path.cwd()
-    base_global = global_dir or (
-        Path(os.environ["MVGEOS_GLOBAL_DIR"])
-        if os.environ.get("MVGEOS_GLOBAL_DIR")
-        else Path("~/.agents").expanduser()
-    )
+    base_global = global_dir if global_dir is not None else global_agents_dir()
 
     search_roots = [
         (base_cwd / ".agents" / "plugins", SkillScope.PROJECT),
