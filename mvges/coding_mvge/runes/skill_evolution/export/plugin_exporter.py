@@ -2,11 +2,15 @@ from __future__ import annotations
 
 import json
 import shutil
+from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from coding_mvge.runes.skill_evolution.queries import SkillEvolutionQueries
 from coding_mvge.runes.skill_evolution.store import SkillEvolutionStore
+
+if TYPE_CHECKING:
+    from mvgeos_runes.types import SkillManifest
 
 
 class SkillPluginExporter:
@@ -15,10 +19,20 @@ class SkillPluginExporter:
         store: SkillEvolutionStore,
         queries: SkillEvolutionQueries | None = None,
         agent_name: str = "coding_mvge",
+        skills_provider: Callable[[], Sequence[SkillManifest]] | None = None,
     ):
         self.store = store
         self.queries = queries
         self.agent_name = agent_name
+        # Skills are resolved through the RuneAPI at export time rather than
+        # by importing a loader. The engine moved skill discovery out of
+        # mvgeos_runes.loader when declarative skills became the
+        # skills-bridge rune, so the old import here had been a live
+        # ImportError that no test reached. Going via the API keeps this
+        # rune off the loader's internals and means skills simply do not
+        # exist when skills-bridge is not installed, which is correct
+        # rather than broken.
+        self.skills_provider = skills_provider or list
 
     async def export_skills(
         self,
@@ -28,24 +42,15 @@ class SkillPluginExporter:
         agent_name: str | None = None,
         include_evolution_refs: bool = True,
     ) -> dict[str, Any]:
-        actual_agent = agent_name or self.agent_name
-        from mvgeos_runes.loader import SKILL_SCOPES, load_skills_from_paths
-
-        paths = [(p, scope) for scope, p in SKILL_SCOPES]
-        expanded = [
-            (
-                Path(str(p).replace("{agent_name}", actual_agent)).expanduser(),
-                scope,
-            )
-            for p, scope in paths
-        ]
-        loads, _ = load_skills_from_paths(expanded, actual_agent)
-        by_name = {item.manifest.name: item for item in loads}
+        del agent_name  # Skills are already resolved against the right scope.
+        by_name = {
+            manifest.name: manifest for manifest in self.skills_provider()
+        }
         missing = [n for n in skill_names if n not in by_name]
         if missing:
             return {
                 "error": f"skills not found: {missing}",
-                "available": list(by_name.keys())[:20],
+                "available": sorted(by_name)[:20],
             }
 
         output_path = Path(output_dir).expanduser() / plugin_name
@@ -54,7 +59,7 @@ class SkillPluginExporter:
         skills_dir.mkdir(exist_ok=True)
         plugin_skills = []
         for name in skill_names:
-            src_dir = Path(by_name[name].manifest.path)
+            src_dir = Path(by_name[name].path)
             dst_dir = skills_dir / src_dir.name
             if dst_dir.exists():
                 shutil.rmtree(dst_dir)

@@ -135,7 +135,7 @@ def rune_factory(api: RuneAPI) -> None:
     hooks.bind_raw(raw_experience_dir)
     hooks.register(api)
     api.register_spell(make_consolidate_spell(consolidator))
-    api.register_spell(make_export_spell(store, agent_name))
+    api.register_spell(make_export_spell(store, agent_name, api.get_skills))
     api.register_command(
         name="skill-evolution-consolidate",
         description="Force skill evolution experience consolidation",

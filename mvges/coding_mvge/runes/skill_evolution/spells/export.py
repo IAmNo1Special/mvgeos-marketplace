@@ -9,8 +9,12 @@ from mvgeos_core.spells import ExecutionMode
 from mvgeos_runes.types import SpellDefinition
 
 
-def make_export_spell(store: Any, agent_name: str) -> SpellDefinition:
-    exporter = SkillPluginExporter(store=store, agent_name=agent_name)
+def make_export_spell(
+    store: Any, agent_name: str, skills_provider: Any = None
+) -> SpellDefinition:
+    exporter = SkillPluginExporter(
+        store=store, agent_name=agent_name, skills_provider=skills_provider
+    )
 
     async def execute(
         params: dict[str, Any], signal: Any = None, on_update: Any = None
