@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from mvgeos_agent import Mvge
+from mvgeos_core.constants import DEFAULT_AGENT_NAME, agent_dir
 
 from mvgeos_runes_skill_evolution.engine import SkillEvolutionEngine
 from mvgeos_runes_skill_evolution.proposer_mvge.spells.finish import (
@@ -32,6 +33,7 @@ def scoped_proposer_context(
     project_skills_dir: Path | None = None,
     available_skills: dict[str, Any] | list[Any] | None = None,
     auto_apply: bool = True,
+    agent_name: str = DEFAULT_AGENT_NAME,
     # Support legacy param names in tests for seamless migration
     knowledge_dir: Path | None = None,
     raw_knowledge_dir: Path | None = None,
@@ -40,14 +42,16 @@ def scoped_proposer_context(
     async context."""
     if engine is None:
         evo_dir = (
-            evolution_dir or knowledge_dir or Path(".agents/skill_evolution")
+            evolution_dir
+            or knowledge_dir
+            or agent_dir(agent_name) / "skill_evolution"
         )
         raw_dir = (
             raw_experience_dir
             or raw_knowledge_dir
-            or Path(".agents/raw_experience")
+            or agent_dir(agent_name) / "raw_experience"
         )
-        skills_dir = target_skills_dir or Path(".agents/skills")
+        skills_dir = target_skills_dir or agent_dir(agent_name) / "skills"
         engine = SkillEvolutionEngine(
             evolution_dir=evo_dir,
             raw_experience_dir=raw_dir,
@@ -113,6 +117,7 @@ async def run_proposer(
     project_skills_dir: Path | None = None,
     available_skills: dict[str, Any] | list[Any] | None = None,
     auto_apply: bool = True,
+    agent_name: str = DEFAULT_AGENT_NAME,
     user_prompt: str | None = None,
     # Legacy kwargs for compatibility
     knowledge_dir: Path | None = None,
@@ -134,14 +139,14 @@ async def run_proposer(
             evo_dir = (
                 evolution_dir
                 or knowledge_dir
-                or Path(".agents/skill_evolution")
+                or agent_dir(agent_name) / "skill_evolution"
             )
             raw_dir = (
                 raw_experience_dir
                 or raw_knowledge_dir
-                or Path(".agents/raw_experience")
+                or agent_dir(agent_name) / "raw_experience"
             )
-            skills_dir = target_skills_dir or Path(".agents/skills")
+            skills_dir = target_skills_dir or agent_dir(agent_name) / "skills"
             engine = SkillEvolutionEngine(
                 evolution_dir=evo_dir,
                 raw_experience_dir=raw_dir,

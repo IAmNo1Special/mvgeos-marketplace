@@ -12,3 +12,5 @@ coverage.xml
 # Installer-owned per-installation id; minted into rune dirs at install/load time.
 .install-id
 .kilo/
+# Test/scratch output that lands in the working directory.
+.agents/
