@@ -6,15 +6,16 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from coding_mvge.runes.skill_evolution.consolidator.consolidator import (
+from mvgeos_provider.registry import get_registry
+
+from mvgeos_runes_skill_evolution.consolidator.consolidator import (
     ExperienceConsolidator,
 )
-from coding_mvge.runes.skill_evolution.consolidator.harvester import (
+from mvgeos_runes_skill_evolution.consolidator.harvester import (
     ExperienceHarvester,
 )
-from coding_mvge.runes.skill_evolution.queries import SkillEvolutionQueries
-from coding_mvge.runes.skill_evolution.store import SkillEvolutionStore
-from mvgeos_provider.registry import get_registry
+from mvgeos_runes_skill_evolution.queries import SkillEvolutionQueries
+from mvgeos_runes_skill_evolution.store import SkillEvolutionStore
 
 
 @pytest.fixture

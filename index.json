@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "0.2.0",
   "name": "mvgeos-marketplace",
   "description": "Official extension marketplace for MvgeOS runes and mvges",
   "runes": {
@@ -363,6 +363,29 @@
         "session_sync"
       ],
       "python_deps": []
+    },
+    "skill-evolution": {
+      "name": "skill-evolution",
+      "version": "0.3.0",
+      "description": "Persistent experience consolidation and autonomous skill evolution: harvests raw experience, consolidates durable patterns, and proposes or applies agent-scoped skills",
+      "types": [
+        "Rune"
+      ],
+      "runtime": "python",
+      "git": "https://github.com/IAmNo1Special/mvgeos-marketplace.git",
+      "path": "runes/skill-evolution",
+      "created_at": "2026-10-03T00:00:00Z",
+      "updated_at": "2026-10-03T00:00:00Z",
+      "hooks": [
+        "after_invocation",
+        "turn_end",
+        "session_shutdown",
+        "session_start"
+      ],
+      "python_deps": [
+        "pydantic>=2.13.4",
+        "pyyaml>=6.0"
+      ]
     }
   },
   "mvges": {

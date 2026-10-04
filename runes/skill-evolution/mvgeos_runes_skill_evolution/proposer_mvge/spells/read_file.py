@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 
-from coding_mvge.runes.skill_evolution.engine import SkillEvolutionEngine
-from coding_mvge.runes.skill_evolution.proposer_mvge.spells.finish import (
-    get_active_engine,
-)
 from mvgeos_core.spells import (
     SpellResult,
     SpellStatus,
+)
+
+from mvgeos_runes_skill_evolution.engine import SkillEvolutionEngine
+from mvgeos_runes_skill_evolution.proposer_mvge.spells.finish import (
+    get_active_engine,
 )
 
 

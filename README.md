@@ -32,6 +32,7 @@ mvgeos mvge install coding_mvge
 | `pi-codec` | `0.1.0` | Native Pi session codec (JSONL v3/v4): resume, append, fork, validate | `runes/pi-codec` |
 | `skills-bridge` | `0.1.0` | Official Agent Skills (agentskills.io) and Agent Plugins bridge for MvgeOS | `runes/skills-bridge` |
 | `steering-bridge` | `0.1.0` | Official repository steering (AGENTS.md, .agents protocol) bridge for MvgeOS | `runes/steering-bridge` |
+| `skill-evolution` | `0.3.0` | Persistent experience consolidation and autonomous skill evolution | `runes/skill-evolution` |
 
 Install via MvgeOS CLI:
 ```bash
@@ -63,5 +64,6 @@ mvgeos-marketplace/
     |-- adr-bridge/
     |-- pi-codec/
     |-- skills-bridge/
-    `-- steering-bridge/
+    |-- steering-bridge/
+    `-- skill-evolution/
 ```

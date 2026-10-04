@@ -7,16 +7,17 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-from coding_mvge.runes.skill_evolution.engine import SkillEvolutionEngine
-from coding_mvge.runes.skill_evolution.proposer_mvge.spells.finish import (
+from mvgeos_agent import Mvge
+
+from mvgeos_runes_skill_evolution.engine import SkillEvolutionEngine
+from mvgeos_runes_skill_evolution.proposer_mvge.spells.finish import (
     get_active_engine,
     make_finish_spell,
     set_active_engine,
 )
-from coding_mvge.runes.skill_evolution.proposer_mvge.spells.read_file import (
+from mvgeos_runes_skill_evolution.proposer_mvge.spells.read_file import (
     make_read_file_spell,
 )
-from mvgeos_agent import Mvge
 
 PROPOSER_DIR = Path(__file__).resolve().parent
 
@@ -83,7 +84,23 @@ def create_proposer_mvge(
     )
 
 
-proposer_mvge = create_proposer_mvge()
+_proposer_mvge: Mvge | None = None
+
+
+def get_proposer_mvge() -> Mvge:
+    """The shared proposer Mvge, created on first use.
+
+    Constructing an Mvge discovers spells from disk, which imports and
+    reflects on the proposer spells. Doing that at module import made this
+    module -- and therefore the whole rune -- unimportable whenever that
+    discovery failed, and it also meant merely importing the package built
+    an agent, read an API key, and scanned directories. Deferring keeps
+    import cheap and side-effect free.
+    """
+    global _proposer_mvge
+    if _proposer_mvge is None:
+        _proposer_mvge = create_proposer_mvge()
+    return _proposer_mvge
 
 
 async def run_proposer(
@@ -102,7 +119,7 @@ async def run_proposer(
     raw_knowledge_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Execute the Proposer Mvge to generate a skill proposal."""
-    agent = mvge or proposer_mvge
+    agent = mvge or get_proposer_mvge()
 
     if engine is None:
         active = get_active_engine()
@@ -223,7 +240,7 @@ async def run_proposer(
 __all__ = [
     "PROPOSER_DIR",
     "create_proposer_mvge",
-    "proposer_mvge",
+    "get_proposer_mvge",
     "run_proposer",
     "scoped_proposer_context",
 ]

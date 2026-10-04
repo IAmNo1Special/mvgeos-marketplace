@@ -7,11 +7,12 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from coding_mvge.runes.skill_evolution.models import SkillEvolutionResult
 from mvgeos_core.spells import (
     SpellResult,
     SpellStatus,
 )
+
+from mvgeos_runes_skill_evolution.models import SkillEvolutionResult
 
 NAME_REGEX = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 

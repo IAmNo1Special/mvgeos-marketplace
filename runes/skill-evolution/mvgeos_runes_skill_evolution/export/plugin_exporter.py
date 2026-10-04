@@ -6,8 +6,8 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from coding_mvge.runes.skill_evolution.queries import SkillEvolutionQueries
-from coding_mvge.runes.skill_evolution.store import SkillEvolutionStore
+from mvgeos_runes_skill_evolution.queries import SkillEvolutionQueries
+from mvgeos_runes_skill_evolution.store import SkillEvolutionStore
 
 if TYPE_CHECKING:
     from mvgeos_runes.types import SkillManifest

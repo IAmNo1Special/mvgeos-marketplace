@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from coding_mvge.runes.skill_evolution.export.plugin_exporter import (
-    SkillPluginExporter,
-)
 from mvgeos_core.spells import ExecutionMode
 from mvgeos_runes.types import SpellDefinition
+
+from mvgeos_runes_skill_evolution.export.plugin_exporter import (
+    SkillPluginExporter,
+)
 
 
 def make_export_spell(

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from coding_mvge.runes.skill_evolution.store import SkillEvolutionStore
+    from mvgeos_runes_skill_evolution.store import SkillEvolutionStore
 
 
 class SkillEvolutionQueries:

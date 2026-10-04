@@ -9,30 +9,31 @@ import re
 from pathlib import Path
 from typing import Any
 
-from coding_mvge.runes.skill_evolution.consolidator.consolidator import (
-    ExperienceConsolidator,
-)
-from coding_mvge.runes.skill_evolution.consolidator.harvester import (
-    ExperienceHarvester,
-)
-from coding_mvge.runes.skill_evolution.engine import SkillEvolutionEngine
-from coding_mvge.runes.skill_evolution.hooks.handlers import SkillEvolutionHooks
-from coding_mvge.runes.skill_evolution.proposer_mvge import (
-    create_proposer_mvge,
-    run_proposer,
-)
-from coding_mvge.runes.skill_evolution.queries import SkillEvolutionQueries
-from coding_mvge.runes.skill_evolution.spells import (
-    make_consolidate_spell,
-    make_export_spell,
-)
-from coding_mvge.runes.skill_evolution.store import SkillEvolutionStore
 from mvgeos_agent import Mvge
 from mvgeos_runes.rune_api import RuneAPI
 from mvgeos_runes.types import (
     RuneContext,
     SigilHook,
 )
+
+from mvgeos_runes_skill_evolution.consolidator.consolidator import (
+    ExperienceConsolidator,
+)
+from mvgeos_runes_skill_evolution.consolidator.harvester import (
+    ExperienceHarvester,
+)
+from mvgeos_runes_skill_evolution.engine import SkillEvolutionEngine
+from mvgeos_runes_skill_evolution.hooks.handlers import SkillEvolutionHooks
+from mvgeos_runes_skill_evolution.proposer_mvge import (
+    create_proposer_mvge,
+    run_proposer,
+)
+from mvgeos_runes_skill_evolution.queries import SkillEvolutionQueries
+from mvgeos_runes_skill_evolution.spells import (
+    make_consolidate_spell,
+    make_export_spell,
+)
+from mvgeos_runes_skill_evolution.store import SkillEvolutionStore
 
 
 def rune_factory(api: RuneAPI) -> None:

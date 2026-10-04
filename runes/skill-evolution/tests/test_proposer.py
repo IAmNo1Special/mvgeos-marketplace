@@ -5,22 +5,23 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from coding_mvge.runes.skill_evolution.proposer_mvge import (
-    create_proposer_mvge,
-    proposer_mvge,
-    run_proposer,
-    scoped_proposer_context,
-)
-from coding_mvge.runes.skill_evolution.proposer_mvge.spells.finish import finish
-from coding_mvge.runes.skill_evolution.proposer_mvge.spells.read_file import (
-    read_file,
-)
 from mvgeos_agent import Mvge
 from mvgeos_core.events import MvgeEventType
 from mvgeos_core.spells import SpellStatus
 from mvgeos_runes.types import (
     SkillManifest,
     SkillScope,
+)
+
+from mvgeos_runes_skill_evolution.proposer_mvge import (
+    create_proposer_mvge,
+    get_proposer_mvge,
+    run_proposer,
+    scoped_proposer_context,
+)
+from mvgeos_runes_skill_evolution.proposer_mvge.spells.finish import finish
+from mvgeos_runes_skill_evolution.proposer_mvge.spells.read_file import (
+    read_file,
 )
 
 
@@ -40,6 +41,9 @@ def tmp_evolution_env(tmp_path: Path):
         auto_apply=True,
     ):
         yield tmp_path, edir, rdir, skills_dir
+
+
+proposer_mvge = get_proposer_mvge()
 
 
 class TestProposerFileBasedConstruction:

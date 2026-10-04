@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coding_mvge.runes.skill_evolution.models import (
+from mvgeos_runes_skill_evolution.models import (
     ConsolidationLogEntry,
     SkillEvolutionMetadata,
 )

@@ -4,8 +4,9 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from coding_mvge.runes.skill_evolution.queries import SkillEvolutionQueries
-from coding_mvge.runes.skill_evolution.store import SkillEvolutionStore
+
+from mvgeos_runes_skill_evolution.queries import SkillEvolutionQueries
+from mvgeos_runes_skill_evolution.store import SkillEvolutionStore
 
 
 @pytest.fixture

@@ -4,13 +4,14 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from coding_mvge.runes.skill_evolution.hooks.handlers import SkillEvolutionHooks
 from mvgeos_runes.types import (
     AfterInvocationData,
     SessionShutdownData,
     SessionStartData,
     TurnEndData,
 )
+
+from mvgeos_runes_skill_evolution.hooks.handlers import SkillEvolutionHooks
 
 
 @pytest.mark.asyncio

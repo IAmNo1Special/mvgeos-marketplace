@@ -7,16 +7,6 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
-from coding_mvge.runes.skill_evolution.consolidator.harvester import (
-    ExperienceHarvester,
-)
-from coding_mvge.runes.skill_evolution.consolidator.prompts import (
-    SKILL_EVOLUTION_MAINTAINER_SYSTEM,
-    build_consolidation_user_prompt,
-)
-from coding_mvge.runes.skill_evolution.models import ConsolidationLogEntry
-from coding_mvge.runes.skill_evolution.queries import SkillEvolutionQueries
-from coding_mvge.runes.skill_evolution.store import SkillEvolutionStore
 from mvgeos_core.abort import AbortSignal
 from mvgeos_core.channel import (
     ChannelConfig,
@@ -24,6 +14,17 @@ from mvgeos_core.channel import (
 )
 from mvgeos_provider.base import NoRealmRegisteredError
 from mvgeos_provider.registry import get_registry
+
+from mvgeos_runes_skill_evolution.consolidator.harvester import (
+    ExperienceHarvester,
+)
+from mvgeos_runes_skill_evolution.consolidator.prompts import (
+    SKILL_EVOLUTION_MAINTAINER_SYSTEM,
+    build_consolidation_user_prompt,
+)
+from mvgeos_runes_skill_evolution.models import ConsolidationLogEntry
+from mvgeos_runes_skill_evolution.queries import SkillEvolutionQueries
+from mvgeos_runes_skill_evolution.store import SkillEvolutionStore
 
 logger = logging.getLogger(__name__)
 
