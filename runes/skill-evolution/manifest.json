@@ -1,0 +1,23 @@
+{
+  "name": "skill-evolution",
+  "version": "0.3.0",
+  "description": "MvgeOS implementation of WikiSkill (arxiv:2608.27454) \u2014 persistent experience consolidation and autonomous skill evolution (pure markdown, agent-scoped raw_experience/skill_evolution/skills).",
+  "types": [
+    "Sigil",
+    "Spell",
+    "Command"
+  ],
+  "entry_point": "rune.py",
+  "hooks": [
+    "after_invocation",
+    "turn_end",
+    "session_shutdown",
+    "session_start"
+  ],
+  "python_deps": [
+    "pydantic",
+    "yaml"
+  ],
+  "execution_mode": "parallel",
+  "enabled": true
+}

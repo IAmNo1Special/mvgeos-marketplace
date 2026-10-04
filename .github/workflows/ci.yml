@@ -35,7 +35,13 @@ jobs:
       #
       # --with notes:
       # - pytest-asyncio: heal-my-goap's test suite has async tests,
-      #   and `pytest runes/` collects them like the rest.
+      #   and the `tests/` + `runes/` collection picks them up like the rest.
+      #
+      # No test path arguments: pytest reads `testpaths` from the root
+      # pyproject.toml, so CI and a local `pytest` run the same set. The
+      # consistency tests in tests/ assert that testpaths still covers every
+      # artifact in index.json, so a new rune cannot be added without its
+      # tests being collected.
       test-commands: |
         WITH_ARGS=""
         for py in runes/*/pyproject.toml; do
@@ -49,4 +55,4 @@ jobs:
             esac
           done < <(python3 -c "import sys,tomllib; print('\n'.join(tomllib.load(open(sys.argv[1],'rb')).get('project',{}).get('dependencies',[])))" "$py")
         done
-        uv run --project mvgeos $WITH_ARGS --with pytest-asyncio python -m pytest runes/ mvges/ -q
+        uv run --project mvgeos $WITH_ARGS --with pytest-asyncio python -m pytest -q

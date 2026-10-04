@@ -43,9 +43,11 @@ mvgeos rune install openrouter-realm
 
 ```
 mvgeos-marketplace/
-|-- index.json
-|-- README.md
-|-- mvges/
+|-- index.json          # single source of truth: what we publish, and what kind
+|-- marketplace_index.py # reads index.json; the only place the index is parsed
+|-- conftest.py         # pins first-party imports to this checkout (index-driven)
+|-- tests/              # index <-> filesystem <-> pytest config consistency
+|-- mvges/              # agents: installed to ~/.agents/agents/<name>
 |   `-- coding_mvge/
 |       |-- manifest.json
 |       |-- agent.md
@@ -53,7 +55,7 @@ mvgeos-marketplace/
 |       |-- spells/
 |       |-- system_prompt/
 |       `-- runes/
-`-- runes/
+`-- runes/              # extensions: installed to ~/.agents/extensions/<name>
     |-- openrouter-realm/
     |-- heal-my-goap/
     |-- seeker/
@@ -67,3 +69,32 @@ mvgeos-marketplace/
     |-- steering-bridge/
     `-- skill-evolution/
 ```
+
+### Runes and mvges are different things
+
+`index.json` has two sections, and the distinction is real rather than
+cosmetic:
+
+| | rune | mvge |
+|---|---|---|
+| installed to | `~/.agents/extensions/<name>` | `~/.agents/agents/<name>` |
+| manifest marker | `types` | `spells` |
+| loaded by | `RuneRunner` — a `rune_factory(api)` plus sigil `hooks` | resolved *by name*; spells found by directory convention |
+| CLI | `mvgeos rune install` | `mvgeos mvge install` |
+
+An mvge never passes through the rune lifecycle and registers no sigils, so it
+is not "a rune of the mvge type" — it is an agent package. The sections keep
+them apart, and the consistency tests fail if an artifact carries the other
+kind's marker key.
+
+`index.json` is the only place that fact is recorded. `conftest.py` derives its
+`sys.path` roots and pinned module names from it, so publishing a new artifact
+cannot leave the test harness silently behind. `pyproject.toml` has to spell
+out `testpaths` and `pythonpath` literally — TOML cannot call into Python — so
+`tests/test_index_consistency.py` asserts those lists still cover every indexed
+artifact. CI runs bare `pytest` and so uses `testpaths`, making a local run and
+a CI run the same set of tests.
+
+Two layout shapes exist and both are supported: `runes/skills-bridge` keeps its
+manifest beside the `mvgeos_runes_skills_bridge` package, while
+`mvges/coding_mvge` *is* the package with the manifest inside it.

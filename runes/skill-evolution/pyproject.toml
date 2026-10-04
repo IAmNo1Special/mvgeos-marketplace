@@ -17,6 +17,7 @@ build-backend = "hatchling.build"
 include = [
     "mvgeos_runes_skill_evolution/",
     "manifest.json",
+    "rune.py",
 ]
 
 [tool.pytest.ini_options]

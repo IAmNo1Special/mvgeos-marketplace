@@ -22,6 +22,7 @@ dependencies = [
 
 [tool.pytest.ini_options]
 testpaths = [
+    "tests",
     "runes/approval-rune/tests",
     "runes/openrouter-realm/tests",
     "runes/seeker/tests",
