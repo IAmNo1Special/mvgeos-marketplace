@@ -24,7 +24,7 @@ def runner():
 
 @pytest.fixture
 def skill_evolution_rune_loaded(runner):
-    from coding_mvge.runes.skill_evolution import rune_factory
+    from mvgeos_runes_skill_evolution import rune_factory
 
     api = runner.create_api("skill_evolution")
     rune_factory(api)
@@ -134,13 +134,14 @@ class TestSkillEvolutionRuneIntegration:
         import shutil
         from pathlib import Path
 
-        from coding_mvge.runes.skill_evolution.proposer_mvge.mvge import (
+        from mvgeos_core.spells import SpellStatus
+
+        from mvgeos_runes_skill_evolution.proposer_mvge.mvge import (
             scoped_proposer_context,
         )
-        from coding_mvge.runes.skill_evolution.proposer_mvge.spells.finish import (
+        from mvgeos_runes_skill_evolution.proposer_mvge.spells.finish import (
             finish,
         )
-        from mvgeos_core.spells import SpellStatus
 
         agent_skills = (
             Path.home()
@@ -195,50 +196,50 @@ class TestSkillEvolutionRuneIntegration:
     async def test_export_skill_plugin(
         self, skill_evolution_rune_loaded, tmp_path
     ):
-        from pathlib import Path
+        """The export spell packages a registered skill as an Agent Plugin.
 
-        agent_skills = (
-            Path.home()
-            / ".agents"
-            / "agents"
-            / "coding_mvge"
-            / "skills"
-            / "export-me"
-        )
-        agent_skills.mkdir(parents=True, exist_ok=True)
-        (agent_skills / "SKILL.md").write_text(
+        The skill is registered on the runner rather than written into
+        ~/.agents. The exporter reads skills through RuneAPI.get_skills(),
+        which is what a skill-producing rune populates, so registering one is
+        both hermetic and a truer exercise of the seam than dropping a
+        directory into the developer's home.
+        """
+        from mvgeos_runes.types import SkillManifest
+
+        skill_dir = tmp_path / "source-skills" / "export-me"
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(
             "---\nname: export-me\ndescription: export test skill\n---\n\n# Export\n",
             encoding="utf-8",
         )
-        try:
-            spells = {
-                s.name: s
-                for s in skill_evolution_rune_loaded.get_all_registered_spells()
-            }
-            spell = spells["skill_evolution_export"]
-            result = await spell.execute(
-                spell_cast_id="t5",
-                params={
-                    "skill_names": ["export-me"],
-                    "output_dir": str(tmp_path),
-                    "plugin_name": "test-plugin",
-                },
-                signal=None,
-                on_update=None,
+        skill_evolution_rune_loaded.register_skill(
+            SkillManifest(
+                name="export-me",
+                description="export test skill",
+                path=str(skill_dir),
             )
-            assert "plugin_path" in result
-            assert (Path(result["plugin_path"]) / "plugin.json").exists()
-            assert (
-                Path(result["plugin_path"])
-                / "skills"
-                / "export-me"
-                / "SKILL.md"
-            ).exists()
-        finally:
-            import shutil
+        )
 
-            if agent_skills.exists():
-                shutil.rmtree(agent_skills)
+        spells = {
+            s.name: s
+            for s in skill_evolution_rune_loaded.get_all_registered_spells()
+        }
+        spell = spells["skill_evolution_export"]
+        result = await spell.execute(
+            spell_cast_id="t5",
+            params={
+                "skill_names": ["export-me"],
+                "output_dir": str(tmp_path / "out"),
+                "plugin_name": "test-plugin",
+            },
+            signal=None,
+            on_update=None,
+        )
+        assert "plugin_path" in result, result
+        assert (Path(result["plugin_path"]) / "plugin.json").exists()
+        assert (
+            Path(result["plugin_path"]) / "skills" / "export-me" / "SKILL.md"
+        ).exists()
 
     @pytest.mark.asyncio
     async def test_rune_command_handlers(self, skill_evolution_rune_loaded):
@@ -293,7 +294,7 @@ class TestSkillEvolutionRuneIntegration:
     ):
         from unittest.mock import AsyncMock, patch
 
-        from coding_mvge.runes.skill_evolution.rune_factory import (
+        from mvgeos_runes_skill_evolution.rune_factory import (
             set_llm_client,
         )
 
@@ -323,7 +324,7 @@ class TestSkillEvolutionRuneIntegration:
 
         # Subagent runner run method
         with patch(
-            "coding_mvge.runes.skill_evolution.rune_factory.run_proposer",
+            "mvgeos_runes_skill_evolution.rune_factory.run_proposer",
             AsyncMock(return_value={"success": True}),
         ):
             sub = skill_evolution_rune_loaded._skill_proposer_subagent
@@ -331,7 +332,7 @@ class TestSkillEvolutionRuneIntegration:
             assert res == {"success": True}
 
     def test_rune_partitions_evolution_by_workspace(self, runner, tmp_path):
-        from coding_mvge.runes.skill_evolution import rune_factory
+        from mvgeos_runes_skill_evolution import rune_factory
 
         ws = tmp_path / "my_project"
         ws.mkdir()
@@ -354,7 +355,7 @@ class TestSkillEvolutionRuneIntegration:
         assert "my_project" in str(store.evolution_dir)
 
     def test_rune_standalone_no_workspace(self, runner):
-        from coding_mvge.runes.skill_evolution import rune_factory
+        from mvgeos_runes_skill_evolution import rune_factory
 
         runner.bind_context(
             RuneContext(

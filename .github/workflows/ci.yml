@@ -49,4 +49,4 @@ jobs:
             esac
           done < <(python3 -c "import sys,tomllib; print('\n'.join(tomllib.load(open(sys.argv[1],'rb')).get('project',{}).get('dependencies',[])))" "$py")
         done
-        uv run --project mvgeos $WITH_ARGS --with pytest-asyncio python -m pytest runes/ -q
+        uv run --project mvgeos $WITH_ARGS --with pytest-asyncio python -m pytest runes/ mvges/ -q

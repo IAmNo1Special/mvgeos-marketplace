@@ -35,10 +35,12 @@ testpaths = [
     "runes/steering-bridge/tests",
     "runes/selfmod-bridge/tests",
     "runes/skill-evolution/tests",
+    "mvges/coding_mvge/tests",
     "runes/session-search/tests",
 ]
 python_files = "*.py"
 pythonpath = [
+    "mvges",
     "runes/openrouter-realm",
     "runes/seeker",
     "runes/heal-my-goap",

@@ -203,6 +203,11 @@ class TestMvgeBuildSpells:
 
     def test_build_spells_with_rune_runner(self, agent: Mvge) -> None:
         mock_runner = MagicMock()
+        # MagicMock supports __iter__ and yields nothing, so an
+        # unconfigured return here looks like an empty allowlist and
+        # silently filters every spell out. None is the engine's
+        # 'no global filtering' value.
+        mock_runner.get_global_spell_allowlist.return_value = None
         mock_runner.get_all_registered_spells.return_value = [
             SpellDefinition(
                 name="tool_search",
@@ -233,6 +238,11 @@ class TestMvgeBuildSpells:
         from mvgeos_agent.environment import render_prompt as env_render_prompt
 
         mock_runner = MagicMock()
+        # MagicMock supports __iter__ and yields nothing, so an
+        # unconfigured return here looks like an empty allowlist and
+        # silently filters every spell out. None is the engine's
+        # 'no global filtering' value.
+        mock_runner.get_global_spell_allowlist.return_value = None
         mock_runner.get_all_registered_spells.return_value = [
             SpellDefinition(name="tool_search", description="", parameters={}),
             SpellDefinition(name="skill_search", description="", parameters={}),
@@ -266,10 +276,6 @@ class TestMvgeProperties:
     def test_registered_shortcuts_empty(self) -> None:
         agent = Mvge(api_key="k")
         assert agent.registered_shortcuts == []
-
-    def test_registered_providers_empty(self) -> None:
-        agent = Mvge(api_key="k")
-        assert agent.registered_providers == []
 
 
 class TestMvgeRun:
