@@ -12,6 +12,33 @@ that stops working is worse than no documentation at all. Where something is not
 yet true, or is true only intermittently, it says so; see
 [What is not verified yet](#what-is-not-verified-yet).
 
+## Which version this page describes
+
+`v0.6.6`, installed as `mvgeos-cli v0.6.6`. There is no `mvgeos --version` yet —
+the flag does not exist, so this is how you check:
+
+```console
+$ uv tool list | grep mvgeos-cli
+mvgeos-cli v0.6.6
+- mvgeos
+```
+
+The install command below points at the **default branch**, not a tag, so it
+gives you the newest code rather than the newest release. That is deliberate
+while the project is pre-1.0 and the command surface is still moving, and it has
+a consequence worth stating plainly: **you cannot end up reading these
+instructions against code they do not match.** Whatever you install and these
+instructions are the same tree at the moment you run them.
+
+If a command on this page is missing when you run it, you have something older
+than `v0.6.6`. The newest command here, `mvge install --confirm-python-deps` in
+step 3, landed in `v0.6.6`.
+
+This page is not version-pinned yet, and there is a reason: the install is not
+pinned either, so there are no versions to choose between. Once the install
+becomes a released package, this page is what gets versioned per release, and
+the version selector appears here.
+
 !!! warning "Steps 1-4 always work. Step 5 depends on someone else's free tier."
     The install is yours and takes seconds. The model call in step 5 goes
     through OpenRouter's free tier, which allows **50 requests a day per
@@ -412,7 +439,7 @@ step 5. What remains true:
 - The `read` Spell bug described in step 5 is open (SOM-23). Until it is fixed,
   expect one extra model round-trip whenever a Mvge checks its own work.
 
-- MvgeOS is pre-1.0 (`v0.6.5`). The command surface moves.
+- MvgeOS is pre-1.0 (`v0.6.6`). The command surface moves.
 
 - Rune code runs **in-process** via `importlib`. A Rune is Python that executes
   inside the engine with your permissions. Read manifests before installing
