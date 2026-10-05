@@ -187,9 +187,14 @@ class OpenCodeRealm(SSEStreamingRealm):
 
     @property
     def is_router(self) -> bool:
-        # Zen fronts many upstream providers behind one endpoint and one key, so
-        # a single ``opencode/<model-id>`` slug can resolve to different vendors.
-        return True
+        # False, and the reason is the shape of the API rather than the number of
+        # vendors behind it. Zen does front many upstreams, but it presents every
+        # model as a flat id: there is no provider tier to pick from. `is_router`
+        # is what the CLI and the GUI read to decide whether to ask for one, so
+        # answering True here would put a one-option provider prompt in front of
+        # every Summoner on the default model and claim a choice that does not
+        # exist.
+        return False
 
     def __init__(
         self,

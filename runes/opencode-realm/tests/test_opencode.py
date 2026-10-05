@@ -154,7 +154,17 @@ def test_factory_falls_back_to_zen_when_the_base_url_is_empty() -> None:
     realm = opencode_realm_factory(api_key="k", base_url="")
     assert isinstance(realm, OpenCodeRealm)
     assert realm.realm_name == "opencode"
-    assert realm.is_router is True
+
+
+def test_zen_is_not_reported_as_a_router() -> None:
+    """Zen fronts many vendors, but it does not expose a provider tier.
+
+    ``is_router`` is what the CLI and the GUI read to decide whether to ask the
+    Summoner to choose a provider. Claiming it here would put a one-option
+    provider prompt in front of every user of the default model and assert a
+    choice Zen's API does not offer.
+    """
+    assert opencode_realm_factory(api_key="k").is_router is False
 
 
 # ---------------------------------------------------------------------------
