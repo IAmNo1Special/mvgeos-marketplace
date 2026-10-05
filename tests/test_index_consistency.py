@@ -3,7 +3,8 @@
 ``index.json`` is the single source of truth for what this marketplace
 publishes and what kind of thing each artifact is. Everything else -- the
 ``sys.path`` roots in ``conftest.py``, the ``testpaths`` and ``pythonpath``
-lists in ``pyproject.toml``, the directories CI runs -- is downstream of it.
+lists in ``pyproject.toml``, the apt packages in the CI workflow, the
+directories CI runs -- is downstream of it.
 
 TOML and YAML cannot call into Python, so parts of that downstream config has
 to restate the index literally. Restating is fine; *drifting* is not. These
@@ -31,6 +32,7 @@ from marketplace_index import (
     artifact_dirs_on_disk,
     artifacts,
     as_repo_paths,
+    ci_provisioned_packages,
     load_index,
     pytest_config,
 )
@@ -151,6 +153,57 @@ def test_index_and_manifest_declare_the_same_system_deps(artifact: Artifact) -> 
         f"system_deps={declared or 'none'}. Each is read by a different "
         f"caller, so a mismatch means at least one of them is lying about "
         f"what the artifact needs to run."
+    )
+
+
+def test_every_declared_system_dep_is_provisioned_in_ci() -> None:
+    """A ``system_deps`` entry that CI does not install is a declaration no one reads.
+
+    ``index.json`` and ``manifest.json`` are read by the engine, which can only
+    *report* a missing binary. The workflow is the third consumer: it is the only
+    thing in this repository that can put one on ``PATH``, and it is where a clean
+    runner acquires the dependency for a Rune nobody has installed by hand yet.
+
+    That third reader is a literal restatement, because a YAML workflow cannot call
+    into Python to read the index. Restating is fine; restating *only for the Rune
+    that happened to need it first* is not. Seeker got its ``rg`` provision added by
+    hand when ``rg`` was missing from the runner, and a sixteenth Rune declaring
+    ``system_deps: ["fd"]`` would get no provision at all -- the suite would then go
+    red with three tests saying ``rg not found on PATH``, a message that points at
+    the tool subprocess rather than at the line that is missing from the workflow.
+    The same diagnostic trap, again, on the next Rune.
+
+    So this asserts the direction that nothing else covers: every entry declared
+    in either artifact has to be named by an ``apt-get install`` in a workflow. A
+    new declaration now fails here, at PR time, naming the artifact and the tool.
+    """
+    index = load_index()
+    declared: dict[str, set[str]] = {}
+    for artifact in ALL_ARTIFACTS:
+        entry = index[artifact.kind][artifact.name]
+        declared[f"{artifact.kind}/{artifact.name}"] = set(
+            artifact.manifest.get("system_deps") or []
+        ) | set(entry.get("system_deps") or [])
+
+    provisioned = ci_provisioned_packages()
+    gaps = [
+        (label, tool)
+        for label, tools in sorted(declared.items())
+        for tool in sorted(tools)
+        if tool not in provisioned
+    ]
+    where = (
+        ", ".join(sorted({w for where in provisioned.values() for w in where}))
+        or ".github/workflows/ci.yml"
+    )
+
+    assert not gaps, (
+        "These artifacts declare a system dependency that CI never installs:\n"
+        + "\n".join(f"  {label} declares {tool!r}" for label, tool in gaps)
+        + f"\nAdd the package to the apt-get install line in {where}. Without it a "
+        "clean runner reports the failure much later, from the tool subprocess, as "
+        "'<tool> not found on PATH' -- which names the spell rather than the "
+        "missing provision."
     )
 
 
