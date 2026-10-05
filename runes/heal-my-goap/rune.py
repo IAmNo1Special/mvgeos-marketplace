@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-from pathlib import Path
 from typing import Any
 
 from mvgeos_runes.rune_api import RuneAPI
@@ -19,6 +18,7 @@ from mvgeos_runes_heal_my_goap.models import (
     WorldState,
     world_state_from_sensors,
 )
+from mvgeos_runes_heal_my_goap.paths import openrouter_auth_path
 from mvgeos_runes_heal_my_goap.sensors import SystemSensors
 
 logger = logging.getLogger(__name__)
@@ -284,9 +284,10 @@ def rune_factory(api: RuneAPI) -> None:
     Args:
         api: MvgeOS RuneAPI instance.
     """
-    # Load OpenRouter API Key from ~/.agents/.mvgeos/credentials/openrouter.json
-    home_dir = Path.home()
-    auth_file = home_dir / ".agents" / ".mvgeos" / "auth" / "openrouter.json"
+    # Load the OpenRouter API key from the global layer's credential file.
+    # Resolved through paths.openrouter_auth_path so $MVGEOS_GLOBAL_DIR is
+    # honoured; see that function for why the .mvgeos segment is preserved.
+    auth_file = openrouter_auth_path()
     if auth_file.exists():
         try:
             with auth_file.open("r", encoding="utf-8") as f:

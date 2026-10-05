@@ -4,6 +4,8 @@ import json
 import os
 from pathlib import Path
 
+from mvgeos_core import global_agents_dir
+
 from mvgeos_runes_opentelemetry_bridge.types import OTelConfig
 
 
@@ -17,8 +19,11 @@ def load_otel_config(
     """
     config = OTelConfig()
 
-    # 1. Global config (~/.agents/otel.json or global_dir / "otel.json")
-    g_dir = global_dir or (Path.home() / ".agents")
+    # 1. Global config: the given directory, else the global layer. Resolved
+    #    through global_agents_dir() rather than spelled out from home, so a
+    #    relocated global layer ($MVGEOS_GLOBAL_DIR) is honoured by callers
+    #    that omit the argument -- which is every production caller.
+    g_dir = global_dir if global_dir is not None else global_agents_dir()
     global_file = g_dir / "otel.json"
     if global_file.is_file():
         try:

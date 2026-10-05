@@ -29,6 +29,7 @@ try:
 except ImportError:  # pragma: no cover - Windows
     fcntl = None  # type: ignore[assignment]
 
+from mvgeos_core import approval_dir
 from mvgeos_core.approval import (
     ApprovalDecision as CoreApprovalDecision,
 )
@@ -68,8 +69,30 @@ from mvgeos_runes_approval_rune.policy import (
     load_policy,
 )
 
-DEFAULT_DATA_DIR = Path.home() / ".agents" / "approval"
 LAST_USED_FILENAME = "last-used.json"
+
+
+def default_data_dir() -> Path:
+    """The gate's user-owned data directory: ``<global>/approval``.
+
+    A function, not a module constant. The global layer is relocatable via
+    ``$MVGEOS_GLOBAL_DIR``, so the override has to be read when the directory
+    is needed; freezing it at import reinstates the divergence for any
+    process that sets the variable after loading the rune.
+
+    Resolved through ``mvgeos_core.approval_dir`` so the gate and the
+    engine's uninstall path -- which purges
+    ``global_agents_dir()/approval/policy.toml`` -- cannot disagree. When
+    they did, ``mvgeos rune uninstall approval-rune`` deleted a policy file
+    the gate had never written, and the real grants survived the operation
+    meant to revoke them.
+
+    Imported from the ``mvgeos_core`` package root rather than
+    ``mvgeos_core.constants``: the root is the public surface, and it
+    re-exports the resolvers whether they live in ``constants`` or in the
+    newer ``layers`` module.
+    """
+    return approval_dir()
 
 
 @dataclass
@@ -213,10 +236,10 @@ class ApprovalGate:
             resolved_install = candidate if isinstance(candidate, str) else None
         self._install_id = resolved_install
         self._store = PolicyStore(
-            data_dir or DEFAULT_DATA_DIR, self._install_id
+            data_dir or default_data_dir(), self._install_id
         )
         self.policy: Policy = load_policy(self._store)
-        self.audit = AuditLog(data_dir or DEFAULT_DATA_DIR)
+        self.audit = AuditLog(data_dir or default_data_dir())
         self._session_id: str | None = None
         self._session_approved = False
         self._suppressed: set[tuple[tuple[str, ...], str]] = set()

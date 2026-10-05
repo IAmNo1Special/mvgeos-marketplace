@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from mvgeos_core import skills_dir
+
 # rg exit codes
 _RG_OK = 0
 _RG_NO_MATCH = 1
@@ -236,11 +238,20 @@ async def _reap_process_skills(proc: asyncio.subprocess.Process) -> None:
 
 
 def _get_skill_roots(custom_roots: list[Path] | None = None) -> list[Path]:
-    """Return list of existing skill directories."""
+    """Return list of existing skill directories.
+
+    The user-scope root comes from ``mvgeos_core.skills_dir()``
+    rather than ``~/.agents/skills`` spelled out, so it moves with
+    ``$MVGEOS_GLOBAL_DIR`` and cannot drift from where skills are installed.
+
+    ``~/.claude/skills`` stays home-relative on purpose: it is a third-party
+    convention, not our layer, and relocating our own directory does not
+    relocate it.
+    """
     if custom_roots:
         return [p.expanduser().resolve() for p in custom_roots]
     roots = [
-        (Path.home() / ".agents" / "skills").resolve(),
+        skills_dir().resolve(),
         (Path.home() / ".claude" / "skills").resolve(),
         Path(".agents/skills").resolve(),
     ]

@@ -8,6 +8,8 @@ import re
 from collections.abc import Mapping
 from pathlib import Path
 
+from mvgeos_core import global_agents_dir
+
 try:
     from .types import (
         MCPDiagnostic,
@@ -261,6 +263,34 @@ def _parse_mcp_json(
     return configs
 
 
+def _global_mcp_config_path(global_dir: Path | None) -> Path:
+    """The user-scope ``mcp.json``, inside the global ``.agents`` layer.
+
+    Resolved through ``mvgeos_core.global_agents_dir`` rather than spelled
+    out from ``Path.home()`` so a relocated global layer
+    (``$MVGEOS_GLOBAL_DIR``) is honoured by callers that omit the argument
+    -- which is every production caller.
+
+    Note the layer root *is* ``.agents``, so with no explicit directory the
+    file is ``<layer>/mcp.json``. Joining a second ``.agents`` onto it would
+    look under ``<layer>/.agents/mcp.json``, find nothing, and report an
+    empty configuration while the file sits right there.
+
+    An explicit ``global_dir`` keeps the exact lookup it has always had: a
+    base containing the layer, or the layer itself (recognised by name).
+    Widening that to any directory would change which paths are consulted,
+    which is a separate decision from which layer is authoritative.
+    """
+    if global_dir is None:
+        return global_agents_dir() / "mcp.json"
+    nested = global_dir / ".agents" / "mcp.json"
+    if nested.is_file():
+        return nested
+    if global_dir.name == ".agents":
+        return global_dir / "mcp.json"
+    return nested
+
+
 def get_prioritized_mcp_configs(
     cwd: Path | None = None,
     global_dir: Path | None = None,
@@ -268,27 +298,22 @@ def get_prioritized_mcp_configs(
 ) -> dict[str, MCPServerConfig]:
     """Loads USER and PROJECT MCP configurations with precedence.
 
-    Loads USER config from global_dir/.agents/mcp.json (or ~/.agents/mcp.json),
-    then PROJECT config from cwd/.agents/mcp.json. PROJECT overrides USER
-    (same server name). Disabled servers are excluded.
+    Loads USER config from the global ``.agents`` layer (default
+    ``$MVGEOS_GLOBAL_DIR`` or ``~/.agents``), then PROJECT config from
+    ``cwd/.agents/mcp.json``. PROJECT overrides USER (same server name).
+    Disabled servers are excluded.
 
     Args:
         cwd: Project root directory containing .agents/mcp.json. Defaults to
             Path.cwd().
-        global_dir: Global agents directory containing .agents/mcp.json.
-            Defaults to Path.home().
+        global_dir: Global agents directory, or a base containing one.
+            Defaults to the resolved global layer.
         diagnostics: Optional list to append diagnostics to on parse errors.
 
     Returns:
         Dict mapping active server names to their MCPServerConfig.
     """
-    user_base = global_dir if global_dir is not None else Path.home()
-    if (user_base / ".agents" / "mcp.json").is_file():
-        user_path = user_base / ".agents" / "mcp.json"
-    elif (user_base / "mcp.json").is_file() and user_base.name == ".agents":
-        user_path = user_base / "mcp.json"
-    else:
-        user_path = user_base / ".agents" / "mcp.json"
+    user_path = _global_mcp_config_path(global_dir)
 
     user_configs: dict[str, MCPServerConfig] = {}
     if user_path.is_file():
