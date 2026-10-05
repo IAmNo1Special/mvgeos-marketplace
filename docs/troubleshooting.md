@@ -40,7 +40,7 @@ uv tool list
 
 ```text
 $ uv tool list | grep mvgeos-cli
-mvgeos-cli v0.6.8      # whatever version you installed
+mvgeos-cli vX.Y.Z      # whatever version you installed
 - mvgeos
 ```
 

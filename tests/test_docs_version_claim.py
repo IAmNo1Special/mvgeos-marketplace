@@ -73,7 +73,7 @@ def test_only_one_page_names_the_current_version(page: str) -> None:
     current = f"v{DECLARED}"
     assert current not in versions, (
         f"{page} states {current}, the current version, outside "
-        f"{OWNS_THE_VERSION}.md; link its version section instead so there is "
+        f"{OWNS_THE_VERSION}; link its version section instead so there is "
         "one place to update"
     )
 
