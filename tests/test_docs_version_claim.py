@@ -30,9 +30,22 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DOCS = REPO_ROOT / "docs"
-# CI clones the engine as ./mvgeos next to this repository and syncs it
-# before pytest runs; conftest.py puts the same tree on sys.path.
-ENGINE_PYPROJECT = REPO_ROOT.parent / "mvgeos" / "pyproject.toml"
+# The engine checkout, in both of the places it can be. CI runs its pre-commands
+# with the working directory at this repository's root, so `git clone ... mvgeos`
+# lands at ./mvgeos -- INSIDE the repo. A developer workspace holds the two
+# repositories side by side instead, one level up.
+#
+# Both are checked because a guard that silently finds neither disables itself,
+# and the symptom is a green build rather than a red one. This file looked only at
+# the sibling path, which is correct on a developer machine and never true in CI.
+# The first time it ran in CI it skipped all 6 of its tests and the job was green,
+# so the guard reported nothing about drift while appearing to pass. Only the
+# arithmetic showed it: 1209 passed / 3 skipped locally against 1204 / 8 in CI, a
+# difference of exactly the 5 tests this file adds.
+ENGINE_PYPROJECT_CANDIDATES = (
+    REPO_ROOT / "mvgeos" / "pyproject.toml",
+    REPO_ROOT.parent / "mvgeos" / "pyproject.toml",
+)
 
 ANY_VERSION = re.compile(r"v\d+\.\d+\.\d+")
 VERSION_SECTION = re.compile(
@@ -44,10 +57,18 @@ OWNS_THE_VERSION = "quickstart.md"
 VERSION_SECTION_ANCHOR = "which-version-this-page-describes"
 
 
+def _engine_pyproject() -> Path | None:
+    for candidate in ENGINE_PYPROJECT_CANDIDATES:
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def _declared_version() -> str | None:
-    if not ENGINE_PYPROJECT.is_file():
+    engine = _engine_pyproject()
+    if engine is None:
         return None
-    with ENGINE_PYPROJECT.open("rb") as fh:
+    with engine.open("rb") as fh:
         return tomllib.load(fh)["project"]["version"]
 
 
@@ -55,7 +76,11 @@ DECLARED = _declared_version()
 
 needs_engine = pytest.mark.skipif(
     DECLARED is None,
-    reason=f"no engine clone at {ENGINE_PYPROJECT}; cannot check the version claim",
+    reason=(
+        "no engine checkout at "
+        f"{' or '.join(str(p) for p in ENGINE_PYPROJECT_CANDIDATES)}; "
+        "cannot check the version claim"
+    ),
 )
 
 
