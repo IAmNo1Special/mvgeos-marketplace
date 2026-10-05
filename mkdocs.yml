@@ -84,6 +84,10 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Quickstart: quickstart.md
+  - Concepts: concepts.md
+  - Troubleshooting: troubleshooting.md
+  - FAQ: faq.md
   - Runes:
       - ADR Bridge: runes/adr-bridge.md
       - Approval Rune: runes/approval-rune.md
@@ -94,8 +98,9 @@ nav:
       - OpenTelemetry Bridge: runes/opentelemetry-bridge.md
       - Pi Codec: runes/pi-codec.md
       - Seeker: runes/seeker.md
-      - Skill Evolution: runes/skill-evolution.md
+      - Self-Mod Bridge: runes/selfmod-bridge.md
       - Session Search: runes/session-search.md
       - Session Title: runes/session-title.md
+      - Skill Evolution: runes/skill-evolution.md
       - Skills Bridge: runes/skills-bridge.md
       - Steering Bridge: runes/steering-bridge.md
