@@ -130,19 +130,24 @@ ls -l hello.txt && cat hello.txt
 On a clean-machine check of the default free model
 (`nvidia/nemotron-3-ultra-550b-a55b:free`, the system-wide default in
 [`CONTEXT.md`](https://github.com/IAmNo1Special/mvgeos/blob/main/CONTEXT.md)),
-three consecutive runs of the exact quickstart task all ended this way — twice
-with the correct 17-byte file already on disk, once with no file at all. Free
-tier capacity is the most likely reason; retried immediately, it did not clear.
+eight consecutive runs of the exact quickstart task split four and four: four
+ended this way, four completed and wrote the correct 17-byte file. Free tier
+capacity is the most likely reason. The engine's own retry gives up before the
+provider recovers, so **run the command again yourself** — an immediate retry is
+usually enough, and usually costs nothing, because the failed run wrote nothing:
 
-Retry, and if it keeps failing, name a different model:
+```bash
+ls -l hello.txt && cat hello.txt || mvgeos --agent-name coding_mvge "..."
+```
+
+If it keeps failing, name a different model:
 
 ```bash
 mvgeos -m nvidia/nemotron-3-super-120b-a12b:free --agent-name coding_mvge \
   "Create a file named hello.txt containing exactly the text: hello from mvgeos"
 ```
 
-That model completed the same task on the same clean machine, exit 0. To see
-what you can choose from before you are stuck, see
+To see what you can choose from before you are stuck, see
 [`Error: Unknown model`](#error-unknown-model) — the list is not "every model
 OpenRouter serves".
 

@@ -25,6 +25,16 @@ You need three things:
 You do not need a Python environment, a virtualenv, or a clone of this
 repository.
 
+## The whole thing, recorded
+
+The steps below as one continuous take on a machine with an empty `$HOME` — no
+cuts, no re-run, 23 seconds:
+
+![Terminal recording: installing mvgeos from git, installing the openrouter-realm Rune and the coding_mvge Mvge, writing the credential, then running one task that creates hello.txt and verifying it with od -c](images/mvgeos-demo.gif)
+
+The recording pipes `yes` into the prompt that step 3 asks, so it can run
+unattended. Interactively you will be asked, and the answer that works is `y`.
+
 ## 1. Install the CLI
 
 Pick one. The first is for trying it; the second gives you a persistent
@@ -97,6 +107,13 @@ ships nine built-in Spells: `bash`, `edit`, `find`, `grep`, `list_files`,
 ```bash
 mvgeos mvge install coding_mvge
 ```
+
+!!! warning "It asks before fetching, in a real terminal"
+    Unlike `rune install`, `mvge install` has no `--confirm-python-deps` flag.
+    When stdin is a TTY it prompts before fetching its `python_deps`. Answer
+    `y`. Answering `n` skips the fetch and leaves the Mvge without the Spells it
+    needs. When stdin is not a TTY — a script, or CI — it does not prompt, and
+    the fetch is skipped with a warning, so read the output instead of assuming.
 
 ```text
 Non-interactive session: skipping install of unreviewed python dependencies
@@ -252,15 +269,31 @@ mvgeos info --agent-name coding_mvge
 Agent: coding_mvge
 Model: nvidia/nemotron-3-ultra-550b-a55b:free
 
-                    Spells
-┏━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Name       ┃ Source  ┃ Source Rune ┃ Description                               ┃
-┡━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ bash       │ builtin │ -           │ Execute a shell command with working dir…  │
-│ read       │ builtin │ -           │ Read a file from the workspace…           │
-│ write      │ builtin │ -           │ Create or overwrite a file…               │
-└────────────┴─────────┴─────────────┴───────────────────────────────────────────┘
+Spells
+  bash        builtin
+  edit        builtin
+  find        builtin
+  grep        builtin
+  list_files  builtin
+  read        builtin
+  read_url    builtin
+  search_web  builtin
+  write       builtin
 ```
+
+The real table has a Description column several paragraphs long per Spell, and
+is followed by the Rune, Config, Prompt, Skills, and Diagnostics tables. All
+elided here for width. For the full parameter schemas as JSON:
+
+```bash
+mvgeos build --agent-name coding_mvge
+```
+
+!!! warning "`mvge install` has no non-interactive flag"
+    Answering `y` at the prompt in step 2 is what makes the Spells available.
+    There is no `--confirm-python-deps` to script it with, so in a script or CI
+    job — where stdin is not a TTY and nothing is prompted — the fetch is skipped
+    with a warning. Read the output rather than assuming.
 
 !!! warning "Put `--agent-name` after the subcommand"
     `mvgeos --agent-name coding_mvge info` silently ignores the flag and reports
