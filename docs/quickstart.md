@@ -45,7 +45,7 @@ the version selector appears here.
     account** and resets at 00:00 UTC. If that allowance is spent — yours, or
     shared with anything else on the account — step 5 fails and it is not your
     setup. That is the most common reason this page appears broken on day one,
-    and [here is how to tell](troubleshooting.md#upstream-provider-overloaded-provider-returned-error).
+    and [here is how to tell](troubleshooting.md#daily-free-model-quota-exhausted-5050-requests).
     Everything below step 5 still works.
 
 ## Before you start
@@ -414,9 +414,9 @@ step 5. What remains true:
   model has failed this task on every clean-machine re-verification since. Two
   separate causes, each measured 3 of 3, and they need different fixes:
   endpoint saturation (`Upstream error from Nvidia: Service temporarily
-  overloaded`) and an exhausted account-wide free allowance (`429
-  free-models-per-day`, see
-  [Troubleshooting](troubleshooting.md#upstream-provider-overloaded-provider-returned-error)).
+  overloaded`) and an exhausted account-wide free allowance (`Daily free-model
+  quota exhausted`, see
+  [Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted-5050-requests)).
   Treat "install and configure in five minutes" as the promise, and expect step 5
   to need a retry or a different model. A run can also exit non-zero after the
   file it created is already correct.
@@ -428,13 +428,14 @@ step 5. What remains true:
   `nvidia/nemotron-3-*:free` ids have been run end to end. Other Realms and models
   are unverified here.
 
-- When the free allowance is spent, MvgeOS reports it as `Upstream provider
-  overloaded: Provider returned error` — a transient-sounding message for a
-  condition that lasts until 00:00 UTC. It has a correct message for this and
-  does not reach it. In interactive mode it is worse: a live 60-second
-  countdown for a limit that resets up to 24 hours later. Both are tracked as
-  separate defects; [Troubleshooting](troubleshooting.md#upstream-provider-overloaded-provider-returned-error)
-  tells you to ignore the message and read the response headers instead.
+- When the free allowance is spent, MvgeOS reports it as `Daily free-model quota
+  exhausted (50/50 requests). Resets at 00:00 UTC.` and names the reset time
+  rather than suggesting a retry, because that is what a limit lasting until
+  00:00 UTC needs. In interactive mode it prints that message once instead of
+  counting down seconds against a window measured in hours. Endpoint saturation
+  is a separate condition with its own message;
+  [Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted-5050-requests)
+  tells the two apart.
 
 - The `read` Spell bug described in step 5 is open (SOM-23). Until it is fixed,
   expect one extra model round-trip whenever a Mvge checks its own work.
