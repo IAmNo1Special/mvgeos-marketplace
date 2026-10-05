@@ -177,10 +177,57 @@ def test_sandbox_allowlist_does_not_contain_os_or_subprocess() -> None:
     assert "sys" not in HEAL_MY_GOAP_ALLOWED_MODULES
 
 
+def test_sandbox_allowlist_grants_no_write_or_egress() -> None:
+    """The two irreversible capabilities stay out of the action privilege set.
+
+    Command execution and credential theft are closed at the visitor. These
+    two were open by design of the list: a file written outlives the run, and
+    an exfiltration leaves nothing to notice. Neither is recoverable after the
+    fact, which is what separates them from what is already refused.
+    """
+    assert "pathlib" not in HEAL_MY_GOAP_ALLOWED_MODULES
+    assert "urllib" not in HEAL_MY_GOAP_ALLOWED_MODULES
+
+
+def test_sandbox_allowlist_refuses_a_pathlib_write() -> None:
+    """Prove the narrowed list refuses the write, not merely omits the name."""
+    executor = SandboxExecutor()
+    with pytest.raises(ValueError, match="Forbidden"):
+        executor.validate_ast(
+            "import pathlib\npathlib.Path('x').write_text('pwned')",
+            allowed_modules=HEAL_MY_GOAP_ALLOWED_MODULES,
+        )
+
+
+def test_sandbox_allowlist_refuses_urllib_egress() -> None:
+    """Same for network egress."""
+    executor = SandboxExecutor()
+    with pytest.raises(ValueError, match="Forbidden"):
+        executor.validate_ast(
+            "import urllib.request\nurllib.request.urlopen('http://example.invalid')",
+            allowed_modules=HEAL_MY_GOAP_ALLOWED_MODULES,
+        )
+
+
+def test_sandbox_visitor_rejects_forbidden_module_in_allowlist() -> None:
+    """The import policy refuses a forbidden name at the import.
+
+    The shipped allow-list cannot contain one, so this is the backstop for a
+    future edit that adds it back: the import fails outright rather than
+    parsing and failing later at every use.
+    """
+    executor = SandboxExecutor()
+    for code in ("import os", "import subprocess", "from os import path"):
+        with pytest.raises(ValueError, match="Forbidden"):
+            executor.validate_ast(
+                code, allowed_modules={"os", "subprocess", "json"}
+            )
+
+
 def test_sandbox_allowlist_still_permits_planned_action_surface() -> None:
     """Narrowing must not break the imports the GOAP action surface needs."""
     executor = SandboxExecutor()
-    code = "import json\nimport re\nimport pathlib\np = pathlib.Path('a.json')"
+    code = "import json\nimport re\nhit = re.match('a', 'ab') is not None"
     executor.validate_ast(code, allowed_modules=HEAL_MY_GOAP_ALLOWED_MODULES)
 
 
