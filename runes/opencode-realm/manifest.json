@@ -1,0 +1,19 @@
+{
+  "name": "opencode-realm",
+  "version": "0.1.0",
+  "description": "Official OpenCode Zen provider realm for MvgeOS",
+  "types": [
+    "RealmProvider"
+  ],
+  "entry_point": "rune.py",
+  "runtime": "python",
+  "python_deps": [
+    "httpx>=0.27"
+  ],
+  "hooks": [
+    "before_provider_request",
+    "after_provider_response"
+  ],
+  "execution_mode": "parallel",
+  "enabled": true
+}
