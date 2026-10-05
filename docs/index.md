@@ -70,8 +70,10 @@ Model: nvidia/nemotron-3-ultra-550b-a55b:free
 └────────────┴─────────┴─────────────┴───────────────────────────────────────────┘
 ```
 
-- **Coding Mvge.** `bash`, `read`, `write`, `edit`, `find`, `list`, `grep`, and
-  more — installed as a package, so you can read exactly what your agent can do.
+- **Coding Mvge.** Nine built-in Spells — `bash`, `edit`, `find`, `grep`,
+  `list_files`, `read`, `read_url`, `search_web`, `write` — installed as a
+  package, so you can read exactly what your agent can do. Run
+  `mvgeos info --agent-name coding_mvge` to see the list yourself.
 - **Tomes.** Every conversation is an append-only JSONL file you can read, diff,
   fork, and export. Not a chat log locked in a database.
 - **Runes.** Mount MCP servers as Spells, trace with OpenTelemetry, wire in

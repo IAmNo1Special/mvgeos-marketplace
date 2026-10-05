@@ -91,8 +91,8 @@ required. See [Runes](runes/openrouter-realm.md) for what it registers.
 ## 3. Install a Mvge
 
 An engine with no Mvge has no Spells. `coding_mvge` is the coding Mvge — it
-ships the development Spells (`bash`, `read`, `write`, `edit`, `find`, `list`,
-`grep`).
+ships nine built-in Spells: `bash`, `edit`, `find`, `grep`, `list_files`,
+`read`, `read_url`, `search_web`, `write`.
 
 ```bash
 mvgeos mvge install coding_mvge

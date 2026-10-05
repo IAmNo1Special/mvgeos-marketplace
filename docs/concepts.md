@@ -32,8 +32,8 @@ The three that matter on day one.
 A **Mvge** is not the engine. The engine is `mvgeos-agent` plus `mvgeos-core`.
 A Mvge is a configured instance of it: a name, a model, a set of enabled
 Spells, a system prompt. `coding_mvge` is the one shipped in the marketplace,
-and it carries the development Spells — `bash`, `read`, `write`, `edit`,
-`find`, `list`, `grep`.
+and it carries the nine built-in development Spells — `bash`, `edit`, `find`,
+`grep`, `list_files`, `read`, `read_url`, `search_web`, `write`.
 
 A **Spell** is a tool the Mvge casts. Spells come from three places:
 
