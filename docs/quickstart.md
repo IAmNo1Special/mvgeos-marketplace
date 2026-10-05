@@ -1,12 +1,16 @@
 # Quickstart
 
 From nothing to a Mvge running a real task. Budget five minutes; on a warm
-network cache it takes about forty seconds.
+network cache it takes about forty seconds — plus however long you spend
+retrying the model call, which is the step that is not reliable yet.
 
 Every command below was run end to end on a clean machine — an empty `$HOME`,
 empty `XDG` directories, a private `uv` cache, and nothing preinstalled on
-`PATH` — before being written here, including the model call in step 5. Where
-something is not yet true, it says so.
+`PATH` — before being written here, including the model call in step 5. Each
+command is re-run on a clean machine on a schedule, because a documented command
+that stops working is worse than no documentation at all. Where something is not
+yet true, or is true only intermittently, it says so; see
+[What is not verified yet](#what-is-not-verified-yet).
 
 ## Before you start
 
@@ -159,6 +163,37 @@ asked for *exactly* that text and did precisely that.
 
 It took about 30 seconds against the default free model.
 
+!!! warning "The default free model is the fragile part of this page"
+    Everything above this warning was verified on a clean machine. The model
+    call was verified on a different day than the install, and on a later
+    re-verification **three consecutive runs of this exact task failed** against
+    the default free model:
+
+    ```text
+    Error: Upstream error from Nvidia: Service temporarily overloaded
+    ```
+
+    Twice the correct 17-byte `hello.txt` was already on disk when the run
+    exited non-zero; once nothing was. Retrying immediately did not clear it.
+
+    So expect step 5 to fail the first time or two, and check the file before
+    you assume you lost the work:
+
+    ```bash
+    ls -l hello.txt && cat hello.txt
+    ```
+
+    Naming a different model made the same task succeed, exit 0:
+
+    ```bash
+    mvgeos -m nvidia/nemotron-3-super-120b-a12b:free --agent-name coding_mvge \
+      "Create a file named hello.txt containing exactly the text: hello from mvgeos"
+    ```
+
+    `-m` only accepts ids from the model list shipped in the repository, so read
+    it before reaching for an arbitrary OpenRouter model. See
+    [Troubleshooting](troubleshooting.md#error-unknown-model).
+
 ### What actually happened underneath
 
 The Mvge verified its own work rather than assuming it, which is the behaviour
@@ -261,9 +296,9 @@ Tome.
 
 ## What is not verified yet
 
-Stated plainly, because this page is meant to be trustworthy. Every step above,
-including the model call in step 5, has now been run end to end on a clean
-machine. What remains true:
+Stated plainly, because this page is meant to be trustworthy. Every command
+above has been run end to end on a clean machine, including the model call in
+step 5. What remains true:
 
 - The install line is a `git+` URL, not a package name. `uvx mvgeos` does **not**
   resolve yet, because the distribution has not reached PyPI:
@@ -283,7 +318,20 @@ machine. What remains true:
   for the task itself. A genuinely cold machine is slower. The budget is
   dominated by the model call, not the install.
 
-- Only the default free OpenRouter model was exercised end to end. Other Realms
+- **Step 5 is not reliable on the default free model.** It failed on three of
+  three consecutive clean-machine re-verifications with `Upstream error from
+  Nvidia: Service temporarily overloaded`, and a run can exit non-zero after the
+  file it created is already correct. The transcript above is real output from a
+  run that succeeded; treat the model call as the unreliable step, not the
+  install. Budget for a retry, and see
+  [Troubleshooting](troubleshooting.md#upstream-error-from-provider-service-temporarily-overloaded).
+
+- Model choice is narrower than OpenRouter's catalog. `-m` resolves against a
+  static list shipped in the repository, that list is a drifting snapshot, and no
+  `mvgeos` subcommand refreshes it. Two real failures are documented under
+  [`Error: Unknown model`](troubleshooting.md#error-unknown-model). Only
+  `nvidia/nemotron-3-ultra-550b-a55b:free` and
+  `nvidia/nemotron-3-super-120b-a12b:free` have been run end to end. Other Realms
   and models are unverified here.
 
 - The `read` Spell bug described in step 5 is open (SOM-23). Until it is fixed,

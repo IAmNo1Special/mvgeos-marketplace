@@ -110,6 +110,72 @@ Interactively, `mvgeos` offers to install it for you and then retries. That
 prompt is skipped when stdout is not a terminal — in a script or a CI job you
 must run the install yourself first.
 
+### `Upstream error from <provider>: Service temporarily overloaded`
+
+```text
+Error: Upstream error from Nvidia: Service temporarily overloaded
+```
+
+The provider refused the request. Your install is fine, your key is fine, and
+this is not a MvgeOS bug — it is the model endpoint being full.
+
+**Check whether the work already landed before you retry.** The engine writes
+each Spell result to disk as it happens, so a run that dies on the model call
+*after* a `write` can leave a correct file behind and still exit non-zero:
+
+```bash
+ls -l hello.txt && cat hello.txt
+```
+
+On a clean-machine check of the default free model
+(`nvidia/nemotron-3-ultra-550b-a55b:free`, the system-wide default in
+[`CONTEXT.md`](https://github.com/IAmNo1Special/mvgeos/blob/main/CONTEXT.md)),
+three consecutive runs of the exact quickstart task all ended this way — twice
+with the correct 17-byte file already on disk, once with no file at all. Free
+tier capacity is the most likely reason; retried immediately, it did not clear.
+
+Retry, and if it keeps failing, name a different model:
+
+```bash
+mvgeos -m nvidia/nemotron-3-super-120b-a12b:free --agent-name coding_mvge \
+  "Create a file named hello.txt containing exactly the text: hello from mvgeos"
+```
+
+That model completed the same task on the same clean machine, exit 0. To see
+what you can choose from before you are stuck, see
+[`Error: Unknown model`](#error-unknown-model) — the list is not "every model
+OpenRouter serves".
+
+### `Error: Unknown model`
+
+```text
+$ mvgeos -m qwen/qwen3.8-27b:free --agent-name coding_mvge "say hi"
+Error: Unknown model: qwen/qwen3.8-27b:free
+```
+
+That model genuinely exists on OpenRouter today. `-m` does not accept it because
+on a clean machine the model list is the **static baseline shipped in the
+repository**, at `mvgeos-provider/src/mvgeos_provider/models.json` — 19 `:free`
+entries and 391 paid ones. Nothing in the CLI refreshes it: the live-catalog
+refresh exists in `mvgeos_provider.refresh_models()` but no `mvgeos` subcommand
+calls it, so `~/.agents/models.json` stays absent unless something else writes
+it.
+
+The list is also a snapshot and drifts. One baseline entry,
+`openai/gpt-oss-20b:free`, resolves but then fails:
+
+```text
+Error: This model is unavailable for free. The paid version is available now -
+use this slug instead: openai/gpt-oss-20b
+```
+
+So a baseline `:free` id is a starting point, not a promise. Read the list, pick
+one, and be ready for the next one:
+
+```bash
+python3 -c "import json;print('\n'.join(e[0] for e in json.load(open('mvgeos-provider/src/mvgeos_provider/models.json'))['free']))"
+```
+
 ## The wrong Mvge loaded
 
 ### `Agent: default-mvge`, and every Spell is `(none)`
@@ -170,6 +236,24 @@ source and actually need them pulled in, re-run with confirmation.
 
 The same message on `mvgeos rune install` means the Rune has a dependency you
 have not approved. Pass `--confirm-python-deps` when you trust it.
+
+### `Could not parse manifest in .venv` in the Diagnostics table
+
+```text
+Kind          │ Target │ Name  │ Scope │ Message
+parse_warning │ rune   │ .venv │ user  │ Could not parse manifest in .venv
+```
+
+Cosmetic, and you will see it on a correct install. `mvgeos rune install`
+creates `~/.agents/extensions/.venv` to hold a Rune's Python dependencies. The
+Rune loader scans everything under `~/.agents/extensions/` looking for
+`manifest.json`, finds the virtualenv directory instead, and reports it as an
+unparseable Rune.
+
+Nothing is broken — the `openrouter-realm` Rune alongside it loaded correctly,
+which is why `mvgeos info --agent-name coding_mvge` shows `Model:` and a full
+Spell table in the same run. Ignore the row, or delete `~/.agents/extensions/.venv`
+if you want it gone; the next `rune install` recreates it.
 
 ### A Rune installed but its Spells are missing
 
