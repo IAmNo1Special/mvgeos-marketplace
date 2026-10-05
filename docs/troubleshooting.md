@@ -82,16 +82,16 @@ The format check in `validate_api_key` is a prefix check, not a validity check:
 keys must start with `sk-or-` (OpenRouter) or `AIza` (Google). A key with the
 right prefix but no credit still produces this 401.
 
-### `Upstream provider overloaded: Provider returned error`
+### `Daily free-model quota exhausted (50/50 requests)`
 
 ```text
 $ mvgeos --agent-name coding_mvge "say hi"
-Upstream provider overloaded: Provider returned error
+Daily free-model quota exhausted (50/50 requests). Resets at 00:00 UTC.
+Hint: Add credits to your OpenRouter account, switch to a paid model, or wait for the daily reset.
 ```
 
-**Read this one carefully, because the message is misleading.** It says the
-provider is overloaded, which is a transient condition you should retry. On the
-free tier that is usually not what happened.
+**This one is a spent allowance, not a fault.** Nothing is wrong with your
+install, your key, or the tool. Retry will not help until the reset time.
 
 OpenRouter gives every account a **daily allowance of 50 free-model requests**,
 counted across the whole account — not per model, not per app. When it is spent,
@@ -104,29 +104,45 @@ X-RateLimit-Remaining: 0
 X-RateLimit-Reset: 1791244800000     # milliseconds since epoch
 ```
 
-`X-RateLimit-Reset` is a Unix timestamp in **milliseconds**. `1791244800000` is
-`2026-10-06T00:00:00Z` — the allowance resets at **00:00 UTC**, so the wait can
-be anywhere from a minute to most of a day. To read it yourself:
+MvgeOS reads those headers, so the message names the exhaustion and the reset
+time instead of guessing. `X-RateLimit-Reset` is a Unix timestamp in
+**milliseconds**. `1791244800000` is `2026-10-06T00:00:00Z` — the allowance
+resets at **00:00 UTC**, so the wait can be anywhere from a minute to most of a
+day. To read it yourself:
 
 ```bash
 python3 -c 'import datetime,sys; print(datetime.datetime.fromtimestamp(int(sys.argv[1])/1000, datetime.UTC))' 1791244800000
 ```
 
-So, in order of likelihood:
+Your options are: wait for the reset, add credit to raise the cap, or pass a paid
+model with `-m`. In interactive mode MvgeOS prints this message once and stops —
+it does not count down, because a countdown is only honest when the window is
+measured in seconds.
 
-1. **Your daily free allowance is spent.** Check the reset timestamp above and
-   wait for it, add credit to raise the cap, or pass a paid model with `-m`.
-2. **The provider really is saturated.** Some free endpoints return
-   "Service temporarily overloaded" under load. This one clears on its own; retry.
-3. **Your own key is rate-limited below the free tier.** If you topped up, you
+### `Upstream provider overloaded: Provider returned error`
+
+```text
+$ mvgeos --agent-name coding_mvge "say hi"
+Upstream provider overloaded: Provider returned error
+```
+
+This is the retry case. The provider reports capacity pressure rather than a
+drained allowance, and it clears on its own, so run the command again.
+
+Two shapes are worth recognising:
+
+1. **The upstream endpoint is full.** Some free endpoints return
+   "Service temporarily overloaded" under load.
+2. **Your own key is rate-limited below the free tier.** If you topped up, you
    may be hitting a per-key request-per-minute limit instead.
 
-To tell 1 from 2, read the `X-RateLimit-Remaining` header. `0` means the
-allowance is gone; anything above `0` means you are being throttled per-minute or
-the provider is busy.
+To tell a spent allowance from a saturated endpoint, read the
+`X-RateLimit-Remaining` header on the 429: `0` means the allowance is gone and
+you will get the quota message above; anything above `0` means you are being
+throttled per-minute or the provider is busy.
 
-There is a second shape of the same problem, worth recognising because it names
-a provider you did not choose:
+There is a third shape of the same exhaustion problem, worth recognising because
+it names a provider you did not choose:
 
 ```text
 HTTP 402 :: is_byok=true, provider_name="Google AI Studio"
@@ -138,14 +154,6 @@ That is the OpenRouter **Free Models Router** walking its list of free endpoints
 getting a 429 from each one, and finally falling through to a bring-your-own-key
 provider whose credits are also empty. Nine 429s then one 402 is one exhausted
 allowance, reported twice. Fix the allowance, not the provider.
-
-> **Known defect.** MvgeOS has a specific, correct message for this case —
-> `Daily free-model quota exhausted (50/50 requests). Resets at 00:00 UTC.` —
-> and it is unreachable, because the field that selects it is never populated
-> from a real provider response. So you get the wrong diagnosis above, and in
-> interactive mode a live 60-second countdown for a limit that resets up to 24
-> hours later. Both are tracked; neither is something you can fix. Until they
-> land, use the headers above as the source of truth.
 
 ### A run fails but the file it wrote is correct
 
