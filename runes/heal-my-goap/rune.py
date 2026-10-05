@@ -19,6 +19,7 @@ from mvgeos_runes_heal_my_goap.models import (
     world_state_from_sensors,
 )
 from mvgeos_runes_heal_my_goap.paths import openrouter_auth_path
+from mvgeos_runes_heal_my_goap.sandbox import HEAL_MY_GOAP_ALLOWED_MODULES
 from mvgeos_runes_heal_my_goap.sensors import SystemSensors
 
 logger = logging.getLogger(__name__)
@@ -250,12 +251,11 @@ class SynthesizedRuneSpell(SpellDefinition):
         Returns:
             Dictionary containing sandbox execution output.
         """
-        allowed = {"pathlib", "subprocess", "os", "urllib", "json", "re"}
         if getattr(self._action, "code", None):
             return self._engine.sandbox.execute_code(
                 self._action.code,
                 context_globals=params,
-                allowed_modules=allowed,
+                allowed_modules=set(HEAL_MY_GOAP_ALLOWED_MODULES),
             )
         return {"status": "executed", "action_name": self._action.name}
 

@@ -1,6 +1,7 @@
 """AST safety visitor and process isolation sandbox executor."""
 
 import ast
+import builtins
 import multiprocessing
 import types
 from typing import Any, Protocol, cast, runtime_checkable
@@ -17,6 +18,45 @@ FORBIDDEN_NAMES = {
     "__import__",
     "builtins",
 }
+
+#: Modules no allowlist may re-grant.
+ALWAYS_FORBIDDEN_MODULES = frozenset({"sys"})
+
+#: Imports an LLM-synthesized GOAP action may reach. This is the whole
+#: privilege set of untrusted action code, so it is kept to the modules a
+#: planning action actually needs. ``os`` and ``subprocess`` were listed here
+#: and, with the visitor inspecting only bare ``ast.Name`` call targets, that
+#: list granted command execution outright. The visitor now refuses attribute
+#: access rooted at a forbidden module, so keeping these off the list is the
+#: second of two independent barriers, not the only one. Do not widen this
+#: without deciding what the action surface is allowed to do.
+HEAL_MY_GOAP_ALLOWED_MODULES = frozenset(
+    {
+        "pathlib",
+        "urllib",
+        "json",
+        "re",
+    }
+)
+
+
+def _attribute_root(node: ast.expr) -> str | None:
+    """Resolves the root binding of a dotted expression.
+
+    ``os.system`` and ``os.environ`` both resolve to ``"os"``. Returns None
+    when the chain does not bottom out in a plain name (``factory().attr``),
+    which cannot be attributed to a module.
+
+    Args:
+        node: Expression node to resolve.
+
+    Returns:
+        The root name, or None if the chain does not root at a Name node.
+    """
+    current: ast.expr = node
+    while isinstance(current, ast.Attribute):
+        current = current.value
+    return current.id if isinstance(current, ast.Name) else None
 
 
 @runtime_checkable
@@ -55,7 +95,9 @@ class ASTSafetyVisitor(ast.NodeVisitor):
         """Initializes ASTSafetyVisitor.
 
         Args:
-            allowed_modules: Optional set of allowed module names.
+            allowed_modules: Optional set of allowed module names. An entry
+                never makes a forbidden module usable: the allowlist narrows
+                the import surface, it does not grant the host.
         """
         self.allowed_modules = allowed_modules or set()
 
@@ -70,7 +112,7 @@ class ASTSafetyVisitor(ast.NodeVisitor):
         """
         for alias in node.names:
             base_mod = alias.name.split(".")[0]
-            if base_mod == "sys" or (
+            if base_mod in ALWAYS_FORBIDDEN_MODULES or (
                 base_mod in FORBIDDEN_NAMES
                 and base_mod not in self.allowed_modules
             ):
@@ -88,13 +130,35 @@ class ASTSafetyVisitor(ast.NodeVisitor):
         """
         if node.module:
             base_mod = node.module.split(".")[0]
-            if base_mod == "sys" or (
+            if base_mod in ALWAYS_FORBIDDEN_MODULES or (
                 base_mod in FORBIDDEN_NAMES
                 and base_mod not in self.allowed_modules
             ):
                 raise ValueError(
                     f"Forbidden AST node: from {node.module} import ..."
                 )
+        self.generic_visit(node)
+
+    def visit_Attribute(self, node: ast.Attribute) -> None:
+        """Blocks dunder access and attribute access on forbidden modules.
+
+        Reaching a capability through an attribute - ``os.system``,
+        ``subprocess.run``, ``os.environ`` - is the same capability as calling
+        it directly. Reading ``os.environ[...]`` needs no call at all, so this
+        cannot live in ``visit_Call`` alone.
+
+        Args:
+            node: AST attribute node.
+
+        Raises:
+            ValueError: If the attribute is a dunder or is reached through a
+                forbidden module.
+        """
+        if node.attr.startswith("__") and node.attr.endswith("__"):
+            raise ValueError(f"Forbidden dunder attribute access: {node.attr}")
+        root = _attribute_root(node)
+        if root is not None and root in FORBIDDEN_NAMES:
+            raise ValueError(f"Forbidden attribute access: {root}.{node.attr}")
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
@@ -183,14 +247,13 @@ class SandboxExecutor(BaseSandboxExecutor):
 
         def safe_import(name: str, *args: Any, **kwargs: Any) -> Any:
             base_mod = name.split(".")[0]
-            if base_mod == "sys" or (
-                allowed_modules is not None
-                and base_mod not in allowed_modules
-                and base_mod in FORBIDDEN_NAMES
-            ):
+            if base_mod in ALWAYS_FORBIDDEN_MODULES:
                 raise ValueError(f"Import of module '{name}' is forbidden.")
-            import builtins
-
+            if allowed_modules is not None:
+                if base_mod not in allowed_modules:
+                    raise ValueError(f"Import of module '{name}' is forbidden.")
+            elif base_mod in FORBIDDEN_NAMES:
+                raise ValueError(f"Import of module '{name}' is forbidden.")
             return builtins.__import__(name, *args, **kwargs)
 
         safe_builtins = {
