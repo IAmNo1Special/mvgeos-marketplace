@@ -1,7 +1,7 @@
 [project]
 name = "mvgeos-marketplace"
 version = "0.1.0"
-description = "Official MvgeOS extension marketplace"
+description = "Official MvgeOS catalog of Runes (extensions) and Mvges (agents)"
 requires-python = ">=3.13"
 dependencies = [
     "pytest>=8.0",
@@ -19,6 +19,10 @@ dependencies = [
     "typer>=0.12",
     "tomli-w>=1.0.0",
 ]
+
+[project.urls]
+Repository = "https://github.com/IAmNo1Special/mvgeos-marketplace"
+Documentation = "https://iamno1special.github.io/mvgeos-marketplace/"
 
 [tool.pytest.ini_options]
 testpaths = [
