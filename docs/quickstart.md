@@ -14,12 +14,12 @@ yet true, or is true only intermittently, it says so; see
 
 ## Which version this page describes
 
-`v0.6.7`, installed as `mvgeos-cli v0.6.7`. There is no `mvgeos --version` yet —
+`v0.6.8`, installed as `mvgeos-cli v0.6.8`. There is no `mvgeos --version` yet —
 the flag does not exist, so this is how you check:
 
 ```console
 $ uv tool list | grep mvgeos-cli
-mvgeos-cli v0.6.7
+mvgeos-cli v0.6.8
 - mvgeos
 ```
 
@@ -31,7 +31,7 @@ instructions against code they do not match.** Whatever you install and these
 instructions are the same tree at the moment you run them.
 
 If a command on this page is missing when you run it, you have something older
-than `v0.6.7`. The newest command here, `mvge install --confirm-python-deps` in
+than `v0.6.8`. The newest command here, `mvge install --confirm-python-deps` in
 step 3, landed in `v0.6.7` — it is not in `v0.6.6`.
 
 This page is not version-pinned yet, and there is a reason: the install is not
@@ -444,7 +444,7 @@ step 5. What remains true:
 - The `read` Spell bug described in step 5 is open (SOM-23). Until it is fixed,
   expect one extra model round-trip whenever a Mvge checks its own work.
 
-- MvgeOS is pre-1.0 (`v0.6.7`). The command surface moves.
+- MvgeOS is pre-1.0 (`v0.6.8`). The command surface moves.
 
 - Rune code runs **in-process** via `importlib`. A Rune is Python that executes
   inside the engine with your permissions. Read manifests before installing
