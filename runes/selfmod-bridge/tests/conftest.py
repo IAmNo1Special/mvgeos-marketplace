@@ -1,11 +1,36 @@
-"""Shared test doubles for the selfmod-bridge rune."""
+"""Shared test doubles for the selfmod-bridge rune.
+
+``read_skill_frontmatter`` is a local reimplementation of the SKILL.md frontmatter
+contract, and it is deliberately local. The obvious assertion for "the file
+``scaffold_skill`` writes is loadable" is to call the skills-bridge parser, and
+this suite used to do exactly that -- which put a sibling Rune on this Rune's
+import path. Two consequences, both bad:
+
+- The standalone suite could not run. ``pytest runes/selfmod-bridge/tests``
+  resolved rootdir to this Rune, whose ``pythonpath`` is ``["."]``, so the
+  sibling import failed at collection with two errors.
+- Making it pass meant adding ``runes/skills-bridge`` to this Rune's
+  ``pythonpath``. That is the boundary violation this gate exists to prevent:
+  it makes the standalone suite depend on a sibling's presence, so a Rune
+  extracted to ``~/.agents/extensions/`` no longer carries a suite that runs.
+
+So the contract is asserted here instead, from the published schema rather than
+from a sibling implementation. ``skillspec`` documents the four conditions a
+SKILL.md must satisfy, and those four conditions are what selfmod is on the hook
+for producing. Whether a *particular* loader honours them is that loader's test,
+in that loader's suite.
+"""
 
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+import yaml
 
 from mvgeos_runes_selfmod_bridge.rune import SelfmodBridgeRune
 from mvgeos_runes_selfmod_bridge.state import SelfmodState
@@ -104,6 +129,64 @@ def make_rune(tmp_path: Path, *, with_state: bool = True) -> tuple[Any, FakeApi]
     if with_state:
         rune.state = make_state(tmp_path)
     return rune, api
+
+
+#: The ``name`` frontmatter grammar, per the .agents protocol / skillspec.
+SKILL_NAME_REGEX = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+
+#: Frontmatter is delimited by ``---`` lines around the YAML mapping.
+_FRONTMATTER_REGEX = re.compile(r"^---\r?\n(.*?)\r?\n---(?:\r?\n(.*))?$", re.DOTALL)
+
+
+@dataclass(frozen=True)
+class SkillFrontmatter:
+    """The fields a SKILL.md must carry for a loader to accept the skill."""
+
+    name: str
+    description: str
+    body: str
+
+
+def read_skill_frontmatter(skill_dir: Path) -> SkillFrontmatter:
+    """Read ``<skill_dir>/SKILL.md`` and assert the published frontmatter contract.
+
+    Asserts rather than returns ``None`` on failure: a manifest this Rune
+    generated is never going to be valid for some other reason, so every
+    violation here is a defect in ``skill_markdown`` or ``scaffold_skill``, and
+    the assertion message should say which one.
+    """
+    skill_md = skill_dir / "SKILL.md"
+    assert skill_md.is_file(), f"scaffold did not write {skill_md}"
+
+    text = skill_md.read_text(encoding="utf-8")
+    match = _FRONTMATTER_REGEX.match(text)
+    assert match is not None, f"{skill_md} has no '---' frontmatter delimiters"
+    raw_yaml, body = match.group(1), (match.group(2) or "").strip()
+
+    frontmatter = yaml.safe_load(raw_yaml)
+    assert isinstance(frontmatter, dict), (
+        f"{skill_md} frontmatter is not a YAML mapping: {type(frontmatter).__name__}"
+    )
+
+    name = frontmatter.get("name")
+    assert isinstance(name, str) and name.strip(), f"{skill_md} frontmatter has no 'name'"
+    name = name.strip()
+    # A loader validates the name and warns when it disagrees with the
+    # directory; selfmod derives the directory from the same value, so a
+    # mismatch is a selfmod defect, never a tolerated warning.
+    assert SKILL_NAME_REGEX.match(name), (
+        f"name {name!r} does not match {SKILL_NAME_REGEX.pattern}"
+    )
+    assert name == skill_dir.name, (
+        f"frontmatter name {name!r} does not match directory {skill_dir.name!r}"
+    )
+
+    raw_description = frontmatter.get("description")
+    # Loaders strip before comparing, so the stripped form is the contract.
+    description = raw_description.strip() if isinstance(raw_description, str) else ""
+    assert description, f"{skill_md} frontmatter has no non-empty 'description'"
+
+    return SkillFrontmatter(name=name, description=description, body=body)
 
 
 def load_root_module(name: str) -> Any:

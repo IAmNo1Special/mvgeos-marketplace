@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 from mvgeos_agent.function_spell import discover_spells_from_dir
-from mvgeos_runes_skills_bridge.parser import parse_skill_manifest
+from selfmod_bridge_conftest import read_skill_frontmatter
 
 from mvgeos_runes_selfmod_bridge.templates import (
     rune_tree,
@@ -167,28 +167,36 @@ def test_rune_tree_adversarial_roundtrip(tmp_path: Path, description: str) -> No
 
 
 def test_skill_markdown_frontmatter_schema(tmp_path: Path) -> None:
-    """The skills-bridge loader's parser reads back the stripped description."""
+    """The generated frontmatter satisfies the published schema on its own terms."""
 
     text = skill_markdown("myskill", "  Does skill things.  ")
     skill_dir = tmp_path / "myskill"
     skill_dir.mkdir()
     (skill_dir / "SKILL.md").write_text(text, encoding="utf-8")
-    manifest = parse_skill_manifest(skill_dir)
-    assert manifest is not None
+    manifest = read_skill_frontmatter(skill_dir)
     assert manifest.name == "myskill"
-    # The parser does raw_desc.strip() — assert against the STRIPPED input.
+    # Loaders compare the STRIPPED description -- assert against that form.
     assert manifest.description == "Does skill things."
+    assert manifest.body.startswith("# myskill")
 
 
 @pytest.mark.parametrize("description", [ADVERSARIAL, '"""', "a: b # c"])
 def test_skill_markdown_adversarial(tmp_path: Path, description: str) -> None:
+    """Adversarial descriptions survive YAML quoting, not just Python escaping.
+
+    The description is embedded as a ``json.dumps`` double-quoted scalar, and
+    JSON and YAML double-quoted scalars agree on the escape sequences this can
+    produce -- so it round-trips through ``yaml.safe_load`` back to the exact
+    input, trailing backslash and all. Asserting that here is stronger than
+    asserting a sibling loader accepted it: a lenient loader that repairs or
+    skips would have masked the defect.
+    """
 
     text = skill_markdown("myskill", description)
     skill_dir = tmp_path / "myskill"
     skill_dir.mkdir()
     (skill_dir / "SKILL.md").write_text(text, encoding="utf-8")
-    manifest = parse_skill_manifest(skill_dir)
-    assert manifest is not None, f"loader skipped adversarial description: {description!r}"
+    manifest = read_skill_frontmatter(skill_dir)
     assert manifest.description == description.strip()
 
 

@@ -6,6 +6,7 @@ import pytest
 
 from mvgeos_runes_heal_my_goap.models import SandboxTimeoutError
 from mvgeos_runes_heal_my_goap.sandbox import (
+    HEAL_MY_GOAP_ALLOWED_MODULES,
     SandboxExecutor,
     _sandbox_process_target,
 )
@@ -138,3 +139,87 @@ def test_sandbox_safe_import_unallowed_forbidden_module_raises() -> None:
     with patch.object(executor, "validate_ast"):
         with pytest.raises(ValueError, match=msg):
             executor._execute_sync("import os", None, allowed_modules={"json"})
+
+
+def test_sandbox_allowlist_grants_no_command_execution() -> None:
+    """The GOAP action sandbox must not be able to reach a shell.
+
+    This is the escape this Rune shipped: listing os and subprocess handed
+    back command execution, because the visitor only matched bare ``ast.Name``
+    call targets and an allowlist entry exempted the module from inspection.
+    """
+    executor = SandboxExecutor()
+    for code in (
+        "import os\nos.system('echo x')",
+        "import subprocess\nsubprocess.run(['echo', 'x'])",
+        "import os\nos.popen('echo x')",
+    ):
+        with pytest.raises(ValueError, match="Forbidden"):
+            executor.validate_ast(
+                code, allowed_modules=HEAL_MY_GOAP_ALLOWED_MODULES
+            )
+
+
+def test_sandbox_allowlist_grants_no_credential_read() -> None:
+    """Reading os.environ needs no call, so a Subscript is enough to steal."""
+    executor = SandboxExecutor()
+    code = "import os\nleaked = os.environ['OPENROUTER_API_KEY']"
+    with pytest.raises(ValueError, match="Forbidden"):
+        executor.validate_ast(
+            code, allowed_modules=HEAL_MY_GOAP_ALLOWED_MODULES
+        )
+
+
+def test_sandbox_allowlist_does_not_contain_os_or_subprocess() -> None:
+    """The grant itself is the defect; the visitor fix is the backstop."""
+    assert "os" not in HEAL_MY_GOAP_ALLOWED_MODULES
+    assert "subprocess" not in HEAL_MY_GOAP_ALLOWED_MODULES
+    assert "sys" not in HEAL_MY_GOAP_ALLOWED_MODULES
+
+
+def test_sandbox_allowlist_still_permits_planned_action_surface() -> None:
+    """Narrowing must not break the imports the GOAP action surface needs."""
+    executor = SandboxExecutor()
+    code = "import json\nimport re\nimport pathlib\np = pathlib.Path('a.json')"
+    executor.validate_ast(code, allowed_modules=HEAL_MY_GOAP_ALLOWED_MODULES)
+
+
+def test_sandbox_action_execution_rejects_escape() -> None:
+    """End to end through execute_code, the escape must fail before it runs."""
+    executor = SandboxExecutor()
+    with pytest.raises(ValueError, match="Forbidden"):
+        executor.execute_code(
+            "import subprocess\nsubprocess.run(['echo', 'x'])",
+            allowed_modules=HEAL_MY_GOAP_ALLOWED_MODULES,
+            timeout_seconds=5.0,
+        )
+
+
+def test_sandbox_visitor_rejects_escape_even_when_allowlist_grants_it() -> None:
+    """The visitor is a backstop independent of the shipped allow-list.
+
+    heal-my-goap's original allow-list listed os and subprocess. If a future
+    edit lists them again, the import policy alone is not the last line: the
+    visitor must refuse the capability no matter what the allow-list says.
+    """
+    executor = SandboxExecutor()
+    hostile = {"pathlib", "subprocess", "os", "urllib", "json", "re"}
+    for code in (
+        "import os\nos.system('echo x')",
+        "import subprocess\nsubprocess.run(['echo', 'x'])",
+        "import os\nos.popen('echo x')",
+        "import os\nos.remove('/tmp/x')",
+        "import os\nleaked = os.environ['OPENROUTER_API_KEY']",
+    ):
+        with pytest.raises(ValueError, match="Forbidden"):
+            executor.validate_ast(code, allowed_modules=hostile)
+
+
+def test_sandbox_visitor_still_permits_allowlisted_attribute_calls() -> None:
+    """The backstop must not become a blanket ban on attribute access."""
+    executor = SandboxExecutor()
+    executor.validate_ast(
+        "import json\nimport re\nimport pathlib\n"
+        "p = pathlib.Path('a.json')\nhit = re.match('a', 'ab') is not None",
+        allowed_modules={"pathlib", "json", "re"},
+    )

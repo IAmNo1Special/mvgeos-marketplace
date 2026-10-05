@@ -18,8 +18,7 @@ from typing import Any
 
 import pytest
 from mvgeos_agent.function_spell import discover_spells_from_dir
-from mvgeos_runes_skills_bridge.parser import parse_skill_manifest
-from selfmod_bridge_conftest import FakeApi, make_rune
+from selfmod_bridge_conftest import FakeApi, make_rune, read_skill_frontmatter
 
 SPELL_NAMES = [
     "scaffold_spell",
@@ -257,11 +256,16 @@ async def test_scaffold_rune_no_runes_paths(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_scaffold_skill_agent_scope_and_parser_roundtrip(
+async def test_scaffold_skill_agent_scope_and_frontmatter_roundtrip(
     tmp_path: Path, monkeypatch: Any
 ) -> None:
-    """The scaffolded SKILL.md parses through the REAL skills-bridge
-    parser — description round-trips after the parser's strip."""
+    """The scaffolded SKILL.md satisfies the published frontmatter schema.
+
+    Asserted against the schema in ``selfmod_bridge_conftest`` rather than by
+    calling the skills-bridge parser: a sibling Rune's package is not on this
+    Rune's import path, and it is not this Rune's job to prove that one loader
+    in particular reads the file.
+    """
 
     rune, _api = make_rune(tmp_path)
     state = rune.state
@@ -274,9 +278,7 @@ async def test_scaffold_skill_agent_scope_and_parser_roundtrip(
     assert result["ok"] is True
     skill_md = Path(result["path"]) / "SKILL.md"
     assert skill_md.is_file()
-    # parse_skill_manifest takes the skill DIRECTORY (it appends SKILL.md).
-    parsed = parse_skill_manifest(Path(result["path"]))
-    assert parsed is not None
+    parsed = read_skill_frontmatter(Path(result["path"]))
     assert parsed.name == "demoskill"
     assert parsed.description == description.strip()
     assert result["effective_after"] == "reload"

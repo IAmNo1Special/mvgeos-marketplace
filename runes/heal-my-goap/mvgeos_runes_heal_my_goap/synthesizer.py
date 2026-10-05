@@ -17,8 +17,6 @@ from mvgeos_runes_heal_my_goap.models import (
     SynthesizedActionSchema,
 )
 
-load_dotenv()
-
 
 class BaseSynthesizer(ABC):
     """Abstract interface for GOAP action synthesizers."""
@@ -64,6 +62,15 @@ class LLMSynthesizer(BaseSynthesizer):
             model: Optional OpenRouter target model string.
             base_url: Base URL for OpenRouter API endpoints.
         """
+        # Read here rather than at module import: a Rune is imported by the
+        # loader long before it is asked to do anything, and mutating the
+        # process environment as an import side effect reaches every other
+        # Rune and the host process alike. Constructing a synthesizer is the
+        # point at which this module actually needs the environment.
+        #
+        # Does not override what is already set, so a credential the engine
+        # resolved is not displaced by a local .env file.
+        load_dotenv()
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY", "")
         self.model = model or os.getenv(
             "DEFAULT_LLM_MODEL", "nvidia/nemotron-3-550b-a55b:free"

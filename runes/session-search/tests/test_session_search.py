@@ -1,7 +1,16 @@
-"""Tests for session-search rune: FTS5 search over Tome/Pi sessions.
+"""Tests for session-search rune: FTS5 search over Tome sessions.
 
-TDD: written before the implementation. Covers the SQLite FTS5 engine,
-the Tome v1 + Pi + Antigravity indexers, and the rune factory wiring.
+TDD: written before the implementation. Covers the SQLite FTS5 engine, the
+Tome v1 and Antigravity indexers, and the rune factory wiring.
+
+The Pi codec test is NOT here. It imports ``mvgeos_runes_pi_codec``, a sibling
+Rune, and it used to reach it through ``pytest.importorskip`` -- which does not
+fail when the sibling is absent, it just stops running. That is a boundary
+violation wearing a skip marker: nothing goes red, and the coverage quietly
+disappears on any install that does not happen to carry pi-codec. Session-search
+indexing a Pi session is a genuine two-Rune fact, so it lives at the one tier
+allowed to make it, in ``tests/test_cross_rune_integration.py``, where it
+asserts instead of skipping.
 """
 
 from __future__ import annotations
@@ -228,65 +237,6 @@ def test_init_db_is_idempotent(tmp_path: Path) -> None:
     try:
         init_db(conn)
         init_db(conn)
-    finally:
-        conn.close()
-
-
-def test_pi_session_indexed(workspace: dict[str, Path]) -> None:
-    pi_codec_mod = pytest.importorskip("mvgeos_runes_pi_codec.codec")
-    codec = pi_codec_mod.PiSessionCodec()
-    header = {
-        "kind": "header",
-        "v": 4,
-        "id": "pi-sess-1",
-        "cwd": "/tmp/proj",
-        "storageVersion": 1,
-        "createdAt": 1750000000000,
-    }
-    lines = [
-        json.dumps(header),
-        json.dumps(
-            {
-                "kind": "entry",
-                "id": "m1",
-                "parentId": None,
-                "seq": 1,
-                "timestamp": 1750000001000,
-                "type": "message",
-                "message": {
-                    "role": "user",
-                    "content": "pi says hello sqlite",
-                    "timestamp": 1750000001000,
-                },
-            }
-        ),
-        json.dumps(
-            {
-                "kind": "value",
-                "op": "set",
-                "seq": 2,
-                "namespace": "pi.branch.tip",
-                "key": "main",
-                "value": "m1",
-            }
-        ),
-    ]
-    (workspace["tome_dir"] / "2026-09-20-pi.jsonl").write_text(
-        "\n".join(lines) + "\n", encoding="utf-8"
-    )
-    stats = sync_index(
-        tome_dir=workspace["tome_dir"],
-        brain_dir=workspace["brain_dir"],
-        db_path=workspace["db_path"],
-        codecs=[codec],
-    )
-    assert stats["indexed_new"] == 1
-
-    conn = get_db_connection(workspace["db_path"])
-    try:
-        results = search_messages(conn, "sqlite")
-        assert len(results) == 1
-        assert results[0]["source"] == "pi"
     finally:
         conn.close()
 
