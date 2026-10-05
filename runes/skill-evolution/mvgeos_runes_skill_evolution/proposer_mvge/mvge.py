@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from mvgeos_agent import Mvge
-from mvgeos_core.constants import DEFAULT_AGENT_NAME, agent_dir
+from mvgeos_core import DEFAULT_AGENT_NAME, agent_dir
 
 from mvgeos_runes_skill_evolution.engine import SkillEvolutionEngine
 from mvgeos_runes_skill_evolution.proposer_mvge.spells.finish import (

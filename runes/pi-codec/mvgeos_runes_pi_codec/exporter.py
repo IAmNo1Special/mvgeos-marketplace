@@ -17,7 +17,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from mvgeos_core.constants import sessions_dir
+from mvgeos_core import sessions_dir
 from mvgeos_tome.handle import TomeHandleFactory
 from mvgeos_tome.types import TomeEntry, TomeEntryType
 

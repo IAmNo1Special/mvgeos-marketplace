@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from mvgeos_core.constants import global_agents_dir
+from mvgeos_core import global_agents_dir
 
 logger = logging.getLogger(__name__)
 

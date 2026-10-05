@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from mvgeos_core.constants import agent_extensions_dir, extensions_dir
+from mvgeos_core import agent_extensions_dir, extensions_dir
 from mvgeos_runes.codecs import load_session_codecs
 from mvgeos_runes.rune_api import RuneAPI
 from mvgeos_runes.types import SigilHook, SpellDefinition
