@@ -21,14 +21,17 @@ the build if the index, the filesystem, and the static pytest config ever
 disagree.
 
 TOML cannot call into Python, so ``pyproject.toml`` still has to spell out
-``testpaths``/``pythonpath`` literally. Rather than pretend otherwise, the
-consistency test asserts those literal lists cover every indexed artifact, so
-the duplication is checked rather than trusted.
+``testpaths``/``pythonpath`` literally, and a GitHub workflow cannot either, so
+a declared ``system_deps`` entry still has to be named in the ``apt-get
+install`` line that provisions it. Rather than pretend otherwise, the
+consistency test asserts those literal restatements cover every indexed
+artifact, so the duplication is checked rather than trusted.
 """
 
 from __future__ import annotations
 
 import json
+import re
 import tomllib
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -37,6 +40,13 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent
 INDEX_PATH = REPO_ROOT / "index.json"
 PYPROJECT_PATH = REPO_ROOT / "pyproject.toml"
+WORKFLOWS_DIR = REPO_ROOT / ".github" / "workflows"
+
+#: An ``apt-get install`` invocation in a CI workflow, up to the end of its line.
+#: The tail is captured rather than a package list because ``sudo apt-get install``
+#: accepts options in any position (``-y``, ``--no-install-recommends``) before and
+#: between package names.
+APT_INSTALL_RE = re.compile(r"apt-get\s+install\b(?P<args>[^\n]*)")
 
 #: Index section name -> the manifest keys that kind of artifact must declare.
 #:
@@ -187,6 +197,49 @@ def pytest_config() -> dict[str, object]:
     data = tomllib.loads(PYPROJECT_PATH.read_text(encoding="utf-8"))
     pytest_table = data.get("tool", {}).get("pytest", {}).get("ini_options", {})
     return pytest_table
+
+
+def ci_workflows() -> list[Path]:
+    """Every workflow under ``.github/workflows``, sorted by filename.
+
+    The whole directory is scanned rather than one named file so that splitting
+    the CI job across several workflows does not silently stop provisioning.
+    """
+    if not WORKFLOWS_DIR.is_dir():
+        return []
+    workflows = {*WORKFLOWS_DIR.glob("*.yml"), *WORKFLOWS_DIR.glob("*.yaml")}
+    return sorted(workflows)
+
+
+def ci_provisioned_packages() -> dict[str, set[str]]:
+    """Apt package name -> the workflow files that install it.
+
+    A declared ``system_deps`` entry is a tool name, not an apt package name,
+    and the workflow is the only place in this repository that can put a binary
+    on ``PATH``. The mapping is many-to-many so the caller can say *where* a
+    dependency should be added when it is missing: naming the package alone
+    would leave the reader to grep for the line that has to change.
+
+    Comments are stripped before matching. A commented-out provision must not
+    count as one -- that would turn the check into a test that passes on a line
+    nobody executes, which is the failure this exists to prevent.
+
+    Deliberately not evaluated: a step or job whose ``if:`` condition is false
+    still counts as provisioning. Deciding that needs a YAML parser and a view of
+    the workflow's own semantics; the honest scope here is "the line exists".
+    """
+    provisioned: dict[str, set[str]] = {}
+    for workflow in ci_workflows():
+        relative = workflow.relative_to(REPO_ROOT).as_posix()
+        text = workflow.read_text(encoding="utf-8")
+        for line in text.splitlines():
+            code = line.split("#", 1)[0]
+            for match in APT_INSTALL_RE.finditer(code):
+                for token in match.group("args").split():
+                    if token.startswith("-"):
+                        continue
+                    provisioned.setdefault(token, set()).add(relative)
+    return provisioned
 
 
 def as_repo_paths(paths: list[Path]) -> set[str]:
