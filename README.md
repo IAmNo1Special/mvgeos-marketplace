@@ -98,3 +98,10 @@ a CI run the same set of tests.
 Two layout shapes exist and both are supported: `runes/skills-bridge` keeps its
 manifest beside the `mvgeos_runes_skills_bridge` package, while
 `mvges/coding_mvge` *is* the package with the manifest inside it.
+
+---
+
+## License
+
+MIT — same terms as the [MvgeOS engine](https://github.com/IAmNo1Special/mvgeos/blob/main/LICENSE).
+See [LICENSE](LICENSE).
