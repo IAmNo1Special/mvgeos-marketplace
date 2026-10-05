@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 from typing import Any
@@ -18,7 +17,7 @@ from mvgeos_runes_heal_my_goap.models import (
     WorldState,
     world_state_from_sensors,
 )
-from mvgeos_runes_heal_my_goap.paths import openrouter_auth_path
+from mvgeos_runes_heal_my_goap.paths import load_openrouter_credentials
 from mvgeos_runes_heal_my_goap.sensors import SystemSensors
 
 logger = logging.getLogger(__name__)
@@ -284,22 +283,16 @@ def rune_factory(api: RuneAPI) -> None:
     Args:
         api: MvgeOS RuneAPI instance.
     """
-    # Load the OpenRouter API key from the global layer's credential file.
-    # Resolved through paths.openrouter_auth_path so $MVGEOS_GLOBAL_DIR is
-    # honoured; see that function for why the .mvgeos segment is preserved.
-    auth_file = openrouter_auth_path()
-    if auth_file.exists():
-        try:
-            with auth_file.open("r", encoding="utf-8") as f:
-                creds = json.load(f)
-            api_key = creds.get("api_key") or creds.get("token")
-            model_name = creds.get("model")
-            if api_key and "OPENROUTER_API_KEY" not in os.environ:
-                os.environ["OPENROUTER_API_KEY"] = api_key
-            if model_name and "DEFAULT_LLM_MODEL" not in os.environ:
-                os.environ["DEFAULT_LLM_MODEL"] = model_name
-        except Exception:
-            logger.warning("Failed to load OpenRouter Relic from %s", auth_file)
+    # Load the OpenRouter credential from the engine's credential store.
+    # The path comes from the engine's own resolver (see paths), so a
+    # relocated global layer is honoured and no path is spelled out here.
+    creds = load_openrouter_credentials()
+    api_key = creds.get("api_key") or creds.get("token")
+    model_name = creds.get("model")
+    if api_key and "OPENROUTER_API_KEY" not in os.environ:
+        os.environ["OPENROUTER_API_KEY"] = api_key
+    if model_name and "DEFAULT_LLM_MODEL" not in os.environ:
+        os.environ["DEFAULT_LLM_MODEL"] = model_name
 
     engine = GoapEngine(sandbox=api.sandbox)
 
