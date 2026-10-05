@@ -119,6 +119,15 @@ model with `-m`. In interactive mode MvgeOS prints this message once and stops �
 it does not count down, because a countdown is only honest when the window is
 measured in seconds.
 
+!!! warning "Which message you get depends on your version"
+    This message requires an MvgeOS build that reads the quota headers. Builds
+    before it name the same condition differently — see
+    [`Upstream provider overloaded`](#upstream-provider-overloaded-provider-returned-error),
+    which is what you get from a released `v0.6.6`. Both mean the same thing;
+    only the wording differs. If you are on `main` via the git install line and
+    you see the overloaded message, read that entry — the advice there is
+    correct for the message you actually received.
+
 ### `Upstream provider overloaded: Provider returned error`
 
 ```text
@@ -126,23 +135,27 @@ $ mvgeos --agent-name coding_mvge "say hi"
 Upstream provider overloaded: Provider returned error
 ```
 
-This is the retry case. The provider reports capacity pressure rather than a
-drained allowance, and it clears on its own, so run the command again.
+**Read the cause before you retry.** This message is the catch-all for "the
+provider would not serve this request", and it covers two problems that need
+opposite responses. Retrying helps one and cannot help the other.
 
-Two shapes are worth recognising:
+1. **The provider is genuinely saturated.** Some free endpoints return
+   "Service temporarily overloaded" under load. This clears on its own — run the
+   command again.
+2. **Your daily free allowance is spent.** OpenRouter allows 50 free-model
+   requests per account per day, resetting at **00:00 UTC**. Nothing about your
+   setup changes this, and no number of retries will get past it.
 
-1. **The upstream endpoint is full.** Some free endpoints return
-   "Service temporarily overloaded" under load.
-2. **Your own key is rate-limited below the free tier.** If you topped up, you
-   may be hitting a per-key request-per-minute limit instead.
+To tell them apart, read `X-RateLimit-Remaining` on the 429 response. `0` means
+the allowance is gone and retrying is pointless until the reset; anything above
+`0` means you are being throttled per-minute or the provider is busy, and a
+retry is reasonable. Builds that name the exhaustion properly print
+[`Daily free-model quota exhausted`](#daily-free-model-quota-exhausted-5050-requests)
+instead of this message, so if you got that one, use its entry.
 
-To tell a spent allowance from a saturated endpoint, read the
-`X-RateLimit-Remaining` header on the 429: `0` means the allowance is gone and
-you will get the quota message above; anything above `0` means you are being
-throttled per-minute or the provider is busy.
+### The same exhaustion, reported as HTTP 402
 
-There is a third shape of the same exhaustion problem, worth recognising because
-it names a provider you did not choose:
+Worth recognising because it names a provider you did not choose:
 
 ```text
 HTTP 402 :: is_byok=true, provider_name="Google AI Studio"
@@ -154,6 +167,15 @@ That is the OpenRouter **Free Models Router** walking its list of free endpoints
 getting a 429 from each one, and finally falling through to a bring-your-own-key
 provider whose credits are also empty. Nine 429s then one 402 is one exhausted
 allowance, reported twice. Fix the allowance, not the provider.
+
+You may see this one as a bare error rather than a rate-limit message, because
+the 402 carries no rate-limit headers for MvgeOS to read:
+
+```text
+Error: Your prepayment credits are depleted
+```
+
+Same cause, same fix. The allowance is gone; retrying will not change that.
 
 ### A run fails but the file it wrote is correct
 
@@ -212,19 +234,6 @@ each Spell result to disk as it happens, so a run that dies on the model call
 
 ```bash
 ls -l hello.txt && cat hello.txt
-```
-
-On a clean-machine check of the default free model
-(`nvidia/nemotron-3-ultra-550b-a55b:free`, the system-wide default in
-[`CONTEXT.md`](https://github.com/IAmNo1Special/mvgeos/blob/main/CONTEXT.md)),
-eight consecutive runs of the exact quickstart task split four and four: four
-ended this way, four completed and wrote the correct 17-byte file. Free tier
-capacity is the most likely reason. The engine's own retry gives up before the
-provider recovers, so **run the command again yourself** — an immediate retry is
-usually enough, and usually costs nothing, because the failed run wrote nothing:
-
-```bash
-ls -l hello.txt && cat hello.txt || mvgeos --agent-name coding_mvge "..."
 ```
 
 If it keeps failing, name a different model:

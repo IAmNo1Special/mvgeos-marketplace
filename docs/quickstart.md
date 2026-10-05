@@ -428,14 +428,16 @@ step 5. What remains true:
   `nvidia/nemotron-3-*:free` ids have been run end to end. Other Realms and models
   are unverified here.
 
-- When the free allowance is spent, MvgeOS reports it as `Daily free-model quota
-  exhausted (50/50 requests). Resets at 00:00 UTC.` and names the reset time
-  rather than suggesting a retry, because that is what a limit lasting until
-  00:00 UTC needs. In interactive mode it prints that message once instead of
-  counting down seconds against a window measured in hours. Endpoint saturation
-  is a separate condition with its own message;
-  [Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted-5050-requests)
-  tells the two apart.
+- A spent free allowance is reported as `Daily free-model quota exhausted
+  (50/50 requests). Resets at 00:00 UTC.` on builds that read the quota headers,
+  naming the reset time instead of suggesting a retry — which is what a limit
+  lasting until 00:00 UTC needs. Earlier builds report the same condition as
+  `Upstream provider overloaded: Provider returned error`, and in interactive
+  mode count 60 seconds down against a window measured in hours. Which wording
+  you get depends on your version; the fix for it is the same either way, and
+  [Troubleshooting](troubleshooting.md#upstream-provider-overloaded-provider-returned-error)
+  tells the two apart. Endpoint saturation is a separate condition with its own
+  message.
 
 - The `read` Spell bug described in step 5 is open (SOM-23). Until it is fixed,
   expect one extra model round-trip whenever a Mvge checks its own work.

@@ -74,20 +74,25 @@ free-model requests per day per account**, shared across every model and every
 app on that account, resetting at **00:00 UTC**. A single Mvge turn spends
 several of them, because verifying a result means a second model call.
 
-When the allowance is gone, every free model returns `429 free-models-per-day`
-and MvgeOS reports it as `Daily free-model quota exhausted (50/50 requests).
-Resets at 00:00 UTC.` — a spent allowance, not a transient fault. It reads those
-headers itself, so the reset time is already in the message. The raw values are:
+When the allowance is gone, every free model returns `429 free-models-per-day`.
+Recent builds report it as `Daily free-model quota exhausted (50/50 requests).
+Resets at 00:00 UTC.` — a spent allowance, not a transient fault — because they
+read the quota headers themselves, so the reset time is already in the message.
+Older builds say `Upstream provider overloaded: Provider returned error` for the
+same condition, which reads like a temporary blip and is not. The headers do not
+lie either way:
 
 ```text
 X-RateLimit-Remaining: 0
 X-RateLimit-Reset: 1791244800000     # Unix milliseconds; 00:00 UTC
 ```
 
+`X-RateLimit-Remaining: 0` is the tell. If you see it, no retry will help.
+
 Three ways out, in order of how little they cost you: wait for 00:00 UTC, pass a
 different free model with `-m` hoping a different endpoint has headroom, or pass
 a paid one. See
-[Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted-5050-requests)
+[Troubleshooting](troubleshooting.md#upstream-provider-overloaded-provider-returned-error)
 for how to tell a spent allowance from a busy provider.
 
 This is the single most common reason the quickstart appears broken on day one.
