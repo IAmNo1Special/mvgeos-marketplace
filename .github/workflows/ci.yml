@@ -19,10 +19,25 @@ jobs:
   ci:
     uses: IAmNo1Special/actions/.github/workflows/python-ci.yml@v1
     with:
-      # The rune tests import the MvgeOS engine packages, which live in the
-      # main mvgeos repo (not on PyPI). Clone it and sync its workspace so
-      # every engine dependency (pydantic, httpx, ...) is installed.
+      # Two things have to exist before the suite can mean anything.
+      #
+      # ripgrep: Seeker shells out to the `rg` program and `tool_search` has
+      # no non-`rg` fallback, so CI has to provide ripgrep or the spell
+      # discovery path is never exercised at all. ubuntu-latest does not ship
+      # it, and that is not cosmetic: a machine that happens to have ripgrep
+      # passes either way, which is exactly why a missing install can go
+      # unnoticed until a clean runner hits it. `rg --version` fails this step
+      # loudly instead of leaving three tests to report 'rg not found on
+      # PATH' much later, from a place that has nothing to do with the cause.
+      #
+      # the engine: the rune tests import the MvgeOS engine packages, which
+      # live in the main mvgeos repo (not on PyPI). Clone it and sync its
+      # workspace so every engine dependency (pydantic, httpx, ...) is
+      # installed.
       pre-commands: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends ripgrep
+        rg --version
         git clone --depth 1 https://github.com/IAmNo1Special/mvgeos mvgeos
       install-command: |
         cd mvgeos && uv sync --all-packages
