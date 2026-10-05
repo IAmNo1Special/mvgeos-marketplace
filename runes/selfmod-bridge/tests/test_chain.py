@@ -1,16 +1,23 @@
-"""End-to-end: real engine payload + real emit_chain with steering-bridge.
+"""End-to-end: real engine payload + real emit_chain, in this Rune's suite.
 
-Spec §5.8: chain ordering — both sections append in load (registration)
-order; dict round-trip — an earlier rune returning a dict passes through
-``emit_chain``/``create_sigil_data`` with the new optional fields intact.
-Uses the real ``BeforeMvgeStartData``, ``create_sigil_data``, and
-``RuneRunner.emit_chain`` — no simulations.
+Spec §5.8: chain ordering — sections append in load (registration) order; dict
+round-trip — an earlier rune returning a dict passes through ``emit_chain`` /
+``create_sigil_data`` with the new optional fields intact. Uses the real
+``BeforeMvgeStartData``, ``create_sigil_data``, and ``RuneRunner.emit_chain`` —
+no simulations.
+
+The peer handler is a local stand-in, not steering-bridge. This suite used to
+reach into the sibling's directory on ``sys.path`` to instantiate it, which is
+the one thing a Rune's own suite must never do: it made ``pytest
+runes/selfmod-bridge/tests`` unrunnable standalone, and the only reason it ever
+ran was the repo-root ini putting every sibling Rune on the path. What these
+tests actually assert is ``RuneRunner``'s ordering contract, and the peer only
+has to append a distinguishable section. Whether two *real* marketplace Runes
+compose is a marketplace-tier fact, asserted in ``tests/test_cross_rune_integration.py``.
 """
 
 from __future__ import annotations
 
-import importlib
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -18,25 +25,24 @@ import pytest
 from mvgeos_runes import SigilHook
 from mvgeos_runes.rune_runner import RuneRunner
 from mvgeos_runes.types import create_sigil_data
-from selfmod_bridge_conftest import FakeApi, make_rune
+from selfmod_bridge_conftest import make_rune
 
-_STEERING_BRIDGE_ROOT = Path(__file__).resolve().parent.parent.parent / "steering-bridge"
+#: Marker the peer appends, so ordering is readable from the prompt alone.
+PEER_HEADING = "Peer Rune Section:"
 
 
-def _load_steering_rune() -> Any:
-    """Instantiate the real steering-bridge rune (sibling marketplace rune).
+def _peer_hook(payload: Any) -> Any:
+    """A second Rune's BEFORE_MVGE_START handler, kept in this suite.
 
-    The steering root is added to ``sys.path`` only for the import itself —
-    leaving it there would let steering's top-level ``rune.py`` shadow this
-    rune's own ``rune`` module in later tests.
+    Appends its own section to ``base_prompt`` in place and returns the
+    payload, which is what a real rune hook does.
     """
-
-    sys.path.insert(0, str(_STEERING_BRIDGE_ROOT))
-    try:
-        mod = importlib.import_module("mvgeos_runes_steering_bridge.rune")
-    finally:
-        sys.path.remove(str(_STEERING_BRIDGE_ROOT))
-    return mod.rune_factory(FakeApi())
+    if isinstance(payload, dict):
+        base = payload.get("base_prompt", "")
+        payload["base_prompt"] = f"{base}\n\n{PEER_HEADING} peer"
+    else:
+        payload.base_prompt = f"{payload.base_prompt}\n\n{PEER_HEADING} peer"
+    return payload
 
 
 def _payload_dict(tmp_path: Path) -> dict[str, Any]:
@@ -68,44 +74,40 @@ async def test_real_payload_section_lands_in_base_prompt(
 
 
 @pytest.mark.asyncio
-async def test_chain_order_with_steering_bridge(tmp_path: Path) -> None:
-    """Both runes' sections append in handler registration order through
+async def test_chain_order_with_peer_handler(tmp_path: Path) -> None:
+    """Both handlers' sections append in handler registration order through
     the real RuneRunner.emit_chain."""
-    (tmp_path / "AGENTS.md").write_text("# Workspace rules\n\nBe kind.\n", encoding="utf-8")
     selfmod_rune, _api = make_rune(tmp_path)
-    steering_rune = _load_steering_rune()
 
     runner = RuneRunner()
-    runner.register_handler(SigilHook.BEFORE_MVGE_START, steering_rune.on_before_mvge_start)
+    runner.register_handler(SigilHook.BEFORE_MVGE_START, _peer_hook)
     runner.register_handler(SigilHook.BEFORE_MVGE_START, selfmod_rune._on_before_mvge_start)
 
     result = await runner.emit_chain(SigilHook.BEFORE_MVGE_START, _payload_dict(tmp_path))
     prompt = result.base_prompt
     assert "engine base" in prompt
-    steering_idx = prompt.find("Steering")
+    peer_idx = prompt.find(PEER_HEADING)
     selfmod_idx = prompt.find("Self-Modification & Customization:")
-    assert steering_idx != -1, "steering section missing"
+    assert peer_idx != -1, "peer section missing"
     assert selfmod_idx != -1, "selfmod section missing"
-    assert steering_idx < selfmod_idx, "sections out of registration order"
+    assert peer_idx < selfmod_idx, "sections out of registration order"
 
 
 @pytest.mark.asyncio
 async def test_chain_order_reversed_registration(tmp_path: Path) -> None:
     """Registration order decides append order, not rune identity."""
-    (tmp_path / "AGENTS.md").write_text("# Workspace rules\n\nBe kind.\n", encoding="utf-8")
     selfmod_rune, _api = make_rune(tmp_path)
-    steering_rune = _load_steering_rune()
 
     runner = RuneRunner()
     runner.register_handler(SigilHook.BEFORE_MVGE_START, selfmod_rune._on_before_mvge_start)
-    runner.register_handler(SigilHook.BEFORE_MVGE_START, steering_rune.on_before_mvge_start)
+    runner.register_handler(SigilHook.BEFORE_MVGE_START, _peer_hook)
 
     result = await runner.emit_chain(SigilHook.BEFORE_MVGE_START, _payload_dict(tmp_path))
     prompt = result.base_prompt
     selfmod_idx = prompt.find("Self-Modification & Customization:")
-    steering_idx = prompt.find("Steering")
-    assert selfmod_idx != -1 and steering_idx != -1
-    assert selfmod_idx < steering_idx, "sections out of registration order"
+    peer_idx = prompt.find(PEER_HEADING)
+    assert selfmod_idx != -1 and peer_idx != -1
+    assert selfmod_idx < peer_idx, "sections out of registration order"
 
 
 @pytest.mark.asyncio
