@@ -201,6 +201,9 @@ Stated plainly, because this page is meant to be trustworthy:
 - The steps above were run on a clean machine through step 4. The final
   model call depends on a working API key; if yours is wrong or expired you
   will see `Authentication failed (401)` and nothing else will help.
+- The `uv tool install` line takes about 24 seconds end to end with a warm `uv`
+  cache, measured on an empty `$HOME`. A cold cache is slower but stays well
+  inside five minutes.
 - MvgeOS is pre-1.0 (`v0.6.5`). The command surface moves.
 - Rune code runs **in-process** via `importlib`. A Rune is Python that executes
   inside the engine with your permissions. Read manifests before installing

@@ -14,8 +14,9 @@ $ uvx mvgeos --help
       mvgeos, we can conclude that your requirements are unsatisfiable.
 ```
 
-There is no `mvgeos` package on PyPI yet, so the short form does not exist. Use
-the git form:
+The `mvgeos` console script exists on the root distribution, but no release has
+been published to PyPI yet — so the short form has nothing to resolve against
+until one ships. Use the git form:
 
 ```bash
 uvx --from "git+https://github.com/IAmNo1Special/mvgeos#subdirectory=mvgeos-cli" mvgeos --help
