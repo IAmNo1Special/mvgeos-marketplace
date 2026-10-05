@@ -315,11 +315,21 @@ Successfully installed mvge 'coding_mvge' to ~/.agents/agents/coding_mvge
 ```
 
 Not an error, and for `mvgeos mvge install` the correct outcome: those are the
-engine packages you already installed in step 1. If you are installing from
-source and actually need them pulled in, re-run with confirmation.
+engine packages you already installed in step 1. Re-running with confirmation
+changes nothing measurable — the resolved Spell set is the same nine either way.
 
-The same message on `mvgeos rune install` means the Rune has a dependency you
-have not approved. Pass `--confirm-python-deps` when you trust it.
+Both install commands take the same flag since `v0.6.6`, and it matters only
+when the dependency is *not* already covered by the engine:
+
+```bash
+mvgeos mvge install --confirm-python-deps coding_mvge
+mvgeos rune install openrouter-realm --confirm-python-deps
+```
+
+On `mvge install` the same message means the Mvge has a dependency you have not
+approved. On `rune install` it means the Rune does. Pass the flag when you trust
+the manifest — and read the manifest first, because a dependency is an
+instruction to fetch and run code.
 
 ### `Could not parse manifest in .venv` in the Diagnostics table
 

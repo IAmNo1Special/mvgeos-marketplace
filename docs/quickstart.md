@@ -117,24 +117,35 @@ ships nine built-in Spells: `bash`, `edit`, `find`, `grep`, `list_files`,
 mvgeos mvge install coding_mvge
 ```
 
-!!! warning "It asks before fetching, in a real terminal"
-    `coding_mvge` declares four `python_deps`, and installing a Mvge gates them
-    the same way `rune install` does. On a TTY you get a `[y/N]` prompt — answer
-    `y`. With no TTY, a script or CI, nothing is prompted, the fetch is skipped,
-    and the command still exits 0.
+That is the whole step, and it works as written — no flag, no prompt to answer.
 
-    **Answering `n`, or skipping, is harmless here, and the warning it prints is
-    misleading.** The four packages it names — `mvgeos-agent`, `mvgeos-core`,
+!!! note "You may see a prompt, and it is safe to skip"
+    `coding_mvge` declares four `python_deps`, and installing a Mvge gates them
+    the same way `rune install` does. On a TTY you get a `[y/N]` prompt.
+
+    **The four packages it names — `mvgeos-agent`, `mvgeos-core`,
     `mvgeos-provider`, `mvgeos-runes` — are already installed as dependencies of
-    the engine you installed in step 1. Measured on a clean machine, the
-    resolved Spell set is the same nine either way:
+    the engine you installed in step 1.** So answering `n`, or skipping
+    automatically in a script, costs you nothing here. Measured on a clean
+    machine, the resolved Spell set is the same nine either way:
 
     ```text
     with    --confirm-python-deps -> 9  bash edit find grep list_files read read_url search_web write
     without --confirm-python-deps -> 9  bash edit find grep list_files read read_url search_web write
     ```
 
-    So do not read that warning as a broken install.
+    Do not read the skip warning as a broken install. It reads like an error and
+    is not one.
+
+    To fetch them anyway, `mvge install` takes the same flag `rune install` does,
+    added in `v0.6.6`:
+
+    ```bash
+    mvgeos mvge install --confirm-python-deps coding_mvge
+    ```
+
+    This matters for a Mvge whose dependencies are **not** already covered by
+    the engine. `coding_mvge`'s are, so the flag is optional here.
 
 ```text
 Non-interactive session: skipping install of unreviewed python dependencies
