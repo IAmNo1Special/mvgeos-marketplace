@@ -10,6 +10,7 @@ from mvgeos_runes.types import SpellDefinition
 from .connector import MCPConnector, MCPTransportError
 from .discovery import MCPConfigDiscovery, MCPServerInfo
 from .mcp_selector import MCPNLTSelector
+from .paths import missing
 
 
 class MCPSearchSpell(MvgeSpell):
@@ -75,6 +76,17 @@ class MCPSearchSpell(MvgeSpell):
                 "serversFound": 0,
                 "servers": [],
                 "error": f"maximum {max_connections} MCP connections reached",
+            }
+
+        absent = missing(self._discovery.search_roots)
+        if absent:
+            # Nothing was searched, so a zero here carries no information.
+            # Naming the roots turns it into the diagnosis it has to be.
+            listed = ", ".join(str(root) for root in absent)
+            return {
+                "serversFound": 0,
+                "servers": [],
+                "error": f"no extensions directory to search: {listed}",
             }
 
         try:

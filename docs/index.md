@@ -1,58 +1,164 @@
-# MvgeOS Marketplace
+# MvgeOS
 
-The official extension marketplace for MvgeOS — runes, realms, and bridges that plug new capabilities into your agents.
+**An open coding-agent platform. Read it, fork it, self-host it, and run it on
+a model you already pay for.**
 
-## What is a rune?
+MvgeOS is an operating system for AI agents, written in Python. A Mvge — the
+agent — casts Spells against models served by Realms. Conversations persist as
+Tomes. Capabilities extend through Runes.
 
-A rune is a Python extension package for the MvgeOS engine. Each rune ships a `manifest.json` that declares its name, version, entry point, the lifecycle hooks it handles, the spells (tools) it provides, and the CLI commands it adds. The engine discovers runes through `index.json` at the repo root and loads them via the manifest's `entry_point` (`rune.py`), which exposes a `rune_factory` the engine calls with its rune API.
+There is no account to create, no telemetry in the engine, and no model
+baked in. You bring a key for whichever provider you already use.
 
-Standard rune layout:
-
-```
-runes/<name>/
-  rune.py            # entry point (or a 5-line shim over the package below)
-  manifest.json      # name, hooks, spells, commands, deps
-  pyproject.toml     # Python packaging + third-party deps
-  README.md
-  tests/             # rune test suite (runs in marketplace CI)
-  mvgeos_runes_<name>/  # the importable package (bridge-style runes)
+```bash
+uvx --from "git+https://github.com/IAmNo1Special/mvgeos#subdirectory=mvgeos-cli" mvgeos --help
 ```
 
-## Catalog
+```text
+ MvgeOS - a Python-based AI coding agent
+
+╭─ Commands ────────────────────────────────────────────────────────────────────╮
+│ build   Serialise the resolved runtime manifest (read-only).                 │
+│ config  Configuration management                                             │
+│ info    Display the runtime snapshot as rich tables (read-only).             │
+│ mvge    Mvge (agent) management                                              │
+│ rune    Extension rune management                                            │
+│ setup   Install system dependencies for runes                                │
+│ tome    Session tome management                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+```
+
+Three commands and about thirty seconds gets you from nothing to a running Mvge:
+
+```bash
+# 1. the Realm — how MvgeOS reaches a model
+mvgeos rune install openrouter-realm --confirm-python-deps
+
+# 2. the Mvge — carries the Spells
+mvgeos mvge install coding_mvge
+
+# 3. your key
+export OPENROUTER_API_KEY="sk-or-..."
+
+# run a task
+mvgeos --agent-name coding_mvge "summarise the README in this directory"
+```
+
+The [Quickstart](quickstart.md) walks through it with real output.
+
+## What it does
+
+A Mvge reads your directory, decides what it needs, casts the Spell, and shows
+you what it did. `mvgeos info` prints the resolved runtime so you can see the
+Spells and Runes it assembled before you spend anything:
+
+```text
+Agent: coding_mvge
+Model: nvidia/nemotron-3-ultra-550b-a55b:free
+
+                    Spells
+┏━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Name       ┃ Source  ┃ Source Rune ┃ Description                               ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ bash       │ builtin │ -           │ Execute a shell command with working dir…  │
+│ read       │ builtin │ -           │ Read a file from the workspace…           │
+│ write      │ builtin │ -           │ Create or overwrite a file…               │
+│ edit       │ builtin │ -           │ Modify an existing file…                  │
+│ find       │ builtin │ -           │ Locate files by name…                     │
+│ list       │ builtin │ -           │ List directory contents…                  │
+│ grep       │ builtin │ -           │ Search file contents by pattern…          │
+└────────────┴─────────┴─────────────┴───────────────────────────────────────────┘
+```
+
+- **Coding Mvge.** Nine built-in Spells — `bash`, `edit`, `find`, `grep`,
+  `list_files`, `read`, `read_url`, `search_web`, `write` — installed as a
+  package, so you can read exactly what your agent can do. Run
+  `mvgeos info --agent-name coding_mvge` to see the list yourself.
+- **Tomes.** Every conversation is an append-only JSONL file you can read, diff,
+  fork, and export. Not a chat log locked in a database.
+- **Runes.** Mount MCP servers as Spells, trace with OpenTelemetry, wire in
+  Agent Skills, read your `AGENTS.md`, self-modify. Fifteen in the
+  [catalog](#rune-catalog).
+- **Realm-agnostic.** The engine programs against a Realm abstraction, not one
+  vendor's SDK. Your key goes to the provider you chose and nowhere else.
+- **Desktop GUI.** NiceGUI + PyWebView, with live Spell tracking and diff review.
+
+## Start here
+
+| | |
+| --- | --- |
+| [Quickstart](quickstart.md) | Nothing to running Mvge in five minutes |
+| [Concepts](concepts.md) | What Mvge, Spell, Realm, Tome, Rune, and Sigil mean |
+| [Troubleshooting](troubleshooting.md) | Real errors, with the real output |
+| [FAQ](faq.md) | The questions that come up before anything breaks |
+| [Rune catalog](#rune-catalog) | What is available today |
+
+## Honest status
+
+- **`v0.6.7`, pre-1.0.** The internals are held to a high bar — mypy strict,
+  ruff, roughly 2,200 tests. The command surface still moves.
+- **No published package yet.** The install line is long because there is no
+  PyPI distribution to say `uvx mvgeos`. It will get shorter.
+- **Runes run in-process** via `importlib`. Not sandboxed, not
+  process-isolated. Read manifests before installing code you did not write;
+  [approval-rune](runes/approval-rune.md) is a fail-closed gate you can put in
+  front of mutating casts.
+- **No run-level spend cap.** *Mana Budget* is not implemented. Contemplation is
+  a per-request reasoning parameter, not a ceiling.
+
+## Rune catalog
+
+A Rune is a packaged extension that hooks lifecycle Sigils and can register
+Spells, CLI commands, shortcuts, and Realms.
 
 | Rune | What it does |
-|------|--------------|
+| --- | --- |
 | [ADR Bridge](runes/adr-bridge.md) | MADR 3.0 architectural decision records: scaffold, validate, and inject decisions into the prompt |
-| [heal-my-goap](runes/heal-my-goap.md) | Zero-token GOAP planning with LLM-powered self-healing when tools fail or go missing |
-| [MCP Bridge](runes/mcp-bridge.md) | Model Context Protocol client — mounts MCP servers as spells |
+| [Approval Rune](runes/approval-rune.md) | Fail-closed execution gate — pauses every uncovered mutating Spell cast for a human |
+| [heal-my-goap](runes/heal-my-goap.md) | Zero-token GOAP planning with LLM-powered self-healing when Spells fail or go missing |
+| [MCP Bridge](runes/mcp-bridge.md) | Model Context Protocol client — mounts MCP servers as Spells |
 | [OKF Bridge](runes/okf-bridge.md) | Open Knowledge Format (v0.2) knowledge bundles + ADR parsing, injected into context |
-| [OpenRouter Realm](runes/openrouter-realm.md) | Provider realm for the OpenRouter API gateway |
-| [OpenTelemetry Bridge](runes/opentelemetry-bridge.md) | GenAI tracing across sessions, turns, provider calls, and spell casts |
-| [Seeker](runes/seeker.md) | On-demand discovery of spells, skills, and MCP servers (the tool gateway) |
-| [Session Title](runes/session-title.md) | Auto-generates session titles from conversation content |
+| [OpenRouter Realm](runes/openrouter-realm.md) | Provider Realm for the OpenRouter API gateway |
+| [OpenTelemetry Bridge](runes/opentelemetry-bridge.md) | GenAI tracing across sessions, turns, provider calls, and Spell casts |
+| [Pi Codec](runes/pi-codec.md) | Native Pi session codec — resume, append, fork, and validate Pi agent sessions |
+| [Seeker](runes/seeker.md) | On-demand discovery of Spells, Skills, and MCP servers |
+| [Self-Mod Bridge](runes/selfmod-bridge.md) | Self-modification and customization of the running Mvge |
+| [Session Search](runes/session-search.md) | Full-text BM25 search across MvgeOS Tomes and Pi sessions |
+| [Session Title](runes/session-title.md) | Auto-generates Tome titles from conversation content |
+| [Skill Evolution](runes/skill-evolution.md) | Persistent experience consolidation and autonomous Skill evolution |
 | [Skills Bridge](runes/skills-bridge.md) | Agent Skills / Agent Plugins discovery with progressive disclosure |
-| [Steering Bridge](runes/steering-bridge.md) | Repository steering via `AGENTS.md` layered into the system prompt |
+| [Steering Bridge](runes/steering-bridge.md) | Repository steering via `AGENTS.md`, layered into the system prompt |
 
-## Installing runes
+Install any of them with `mvgeos rune install <name>`.
 
-```bash
-mvgeos rune install <name>
+## How a Rune is put together
+
+```text
+runes/<name>/
+├── manifest.json      # name, version, entry point, Sigils, Spells, commands, deps
+├── rune.py            # entry point exposing rune_factory
+├── pyproject.toml     # packaging and third-party deps
+├── README.md
+└── tests/             # runs in marketplace CI
 ```
 
-Python dependencies declared in each rune's `manifest.json` (`python_deps`) are installed with the rune. Runes that need the MvgeOS engine packages (`mvgeos-core`, `mvgeos-agent`, `mvgeos-runes`, …) get them from the engine itself.
+Runes are discovered from standard extension directories — the user's, the
+project's, or a specific Mvge's — and load through the same path that resolves
+their CLI commands, so a command that appears in `mvgeos --help` is a Rune that
+would load.
 
-## Concepts
-
-**Spells** are the tools a rune gives the model. Some runes register a fixed set; others (MCP Bridge, heal-my-goap) register spells dynamically at runtime. Runes pin their own spell set with `set_active_spells` and can widen the shared allowlist as they discover new capabilities.
-
-**Sigils** are lifecycle hooks — `session_start`, `before_mvge_start`, `context_transform`, `before_invocation`, `after_spell_result`, `turn_end`, and more. A rune subscribes to the hooks it needs in its manifest and the engine calls it at the right moment (injecting knowledge into the prompt, reacting to tool results, …).
-
-**Commands** are CLI/chat commands a rune adds, e.g. `mvgeos adr new` or `/mcp list`.
-
-## Building the docs
+## Building these docs
 
 ```bash
-pip install -r docs/requirements.txt
-mkdocs serve   # live preview at http://127.0.0.1:8000
-mkdocs build   # static site in site/
+uv tool install mkdocs --with mkdocs-material --with pymdown-extensions
+mkdocs serve     # preview at http://127.0.0.1:8000
+mkdocs build     # static output in site/
 ```
+
+The site deploys to GitHub Pages from `main` via `.github/workflows/docs.yml`.
+
+## The repository
+
+- Engine and CLI — [github.com/IAmNo1Special/mvgeos](https://github.com/IAmNo1Special/mvgeos)
+- This marketplace — [github.com/IAmNo1Special/mvgeos-marketplace](https://github.com/IAmNo1Special/mvgeos-marketplace)
+- Licence — MIT

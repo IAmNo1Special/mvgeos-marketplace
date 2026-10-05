@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
+from mvgeos_core import extensions_dir
 from mvgeos_provider.registry import RealmRegistry
 from mvgeos_runes.rune_api import RuneAPI
 from mvgeos_runes.types import SigilHook
@@ -48,7 +48,11 @@ def rune_factory(api: RuneAPI) -> None:
         rune_runner=runner,
         rune_api=api,
         config={
-            "search_roots": [Path(".agents/.mvgeos/extensions")],
+            # The user-scope Rune layer, from the engine's own resolver.
+            # Naming a directory here that the engine never writes to is how
+            # mcp_search spent its life returning zero on a system where
+            # every Rune was installed correctly.
+            "search_roots": [extensions_dir()],
             "max_connections": 5,
             "nlt_model": "openrouter/free",
             "nlt_api_key": api_key,
