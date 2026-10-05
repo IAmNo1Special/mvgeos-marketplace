@@ -7,10 +7,10 @@ from mvgeos_core.spells import MvgeSpell, SpellExecutionMode
 from mvgeos_provider.registry import RealmRegistry
 
 from .dci_matcher import (
-    _DEFAULT_SKILL_DIRS,
     DCISkillMatcher,
     SkillSearchError,
 )
+from .paths import missing
 from .skill_selector import SkillNLTSelector
 
 
@@ -47,7 +47,7 @@ class SkillSearchSpell(MvgeSpell):
             execution_mode=SpellExecutionMode.SEQUENTIAL,
         )
         self._provider_registry = provider_registry
-        self._skill_dirs = [p.resolve() for p in (skill_dirs or _DEFAULT_SKILL_DIRS)]
+        self._explicit_skill_dirs = skill_dirs
         self._rg_timeout = rg_timeout
         self._nlt_model = nlt_model
         self._nlt_api_key = nlt_api_key
@@ -69,9 +69,20 @@ class SkillSearchSpell(MvgeSpell):
             max_results = 3
 
         matcher = DCISkillMatcher(
-            skill_dirs=self._skill_dirs,
+            skill_dirs=self._explicit_skill_dirs,
             rg_timeout=self._rg_timeout,
         )
+        absent = missing(matcher.skill_dirs)
+        if absent:
+            # Every root is missing, so there was nothing to search. A bare
+            # zero here would read as "you have no Skills", which is a
+            # different and wrong diagnosis.
+            listed = ", ".join(str(root) for root in absent)
+            return {
+                "skills_found": 0,
+                "skills": [],
+                "error": f"no skills directory to search: {listed}",
+            }
         skill_dirs_available = matcher.discover_skill_dirs()
 
         try:

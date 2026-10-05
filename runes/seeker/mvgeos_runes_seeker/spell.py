@@ -4,9 +4,11 @@ import re as _re
 from pathlib import Path
 from typing import Any
 
+from mvgeos_core import DEFAULT_AGENT_NAME
 from mvgeos_core.spells import MvgeSpell, SpellExecutionMode
 from mvgeos_provider.registry import RealmRegistry
 
+from . import paths
 from .lazy_loader import LazySpellRegistry
 from .nlt_selector import NLTSelector
 from .router import DCIRouter, SpellFileMatch, SpellSearchError
@@ -44,13 +46,26 @@ class ToolSearchSpell(MvgeSpell):
             execution_mode=SpellExecutionMode.SEQUENTIAL,
         )
         self._provider_registry = provider_registry
-        self._spells_root = spells_root or Path(".agents/.mvgeos/spells")
+        self._explicit_spells_root = spells_root
         self._rg_timeout = rg_timeout
         self._nlt_model = nlt_model
         self._nlt_api_key = nlt_api_key
         self._agent_name = agent_name
         self._rune_api = rune_api
         self._spell_registry = LazySpellRegistry()
+
+    @property
+    def spells_root(self) -> Path:
+        """The directory searched for Spell files, resolved per call.
+
+        A Rune's Spells are constructed once, when the Rune loads. Reading
+        the layer here rather than in ``__init__`` is what lets a Spell
+        built before ``$MVGEOS_GLOBAL_DIR`` was set still search the layer
+        it was actually pointed at.
+        """
+        if self._explicit_spells_root is not None:
+            return self._explicit_spells_root
+        return paths.spells_root(self._agent_name or DEFAULT_AGENT_NAME)
 
     async def execute(
         self,
@@ -61,9 +76,23 @@ class ToolSearchSpell(MvgeSpell):
     ) -> dict[str, Any]:
         max_results = params.get("max_results", 5)
 
+        spells_root = self.spells_root
+        absent = paths.missing([spells_root])
+        if absent:
+            # A root that does not exist returns the same empty result as a
+            # root that holds nothing. Reporting it is the difference between
+            # a Summoner who has no Spells and a Summoner whose Spells this
+            # Rune cannot see.
+            listed = ", ".join(str(root) for root in absent)
+            return {
+                "spells_found": 0,
+                "results": [],
+                "error": f"no spells directory to search: {listed}",
+            }
+
         # Stage 1: DCI router
         router = DCIRouter(
-            spells_root=self._spells_root,
+            spells_root=spells_root,
             rg_timeout=self._rg_timeout,
         )
         try:

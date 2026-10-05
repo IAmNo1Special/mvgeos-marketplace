@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from mvgeos_core import skills_dir
+from . import paths
 
 # rg exit codes
 _RG_OK = 0
@@ -16,12 +16,6 @@ _RG_BAD_PATTERN = 2
 
 # Sentinel for rg-not-found detection (avoids fragile string matching)
 _RG_NOT_FOUND = "RG_NOT_FOUND"
-
-# Default skill directories (defined once to avoid drift)
-_DEFAULT_SKILL_DIRS: list[Path] = [
-    Path.home() / ".claude/skills",
-    Path(".agents/.mvgeos/skills"),
-]
 
 logger = logging.getLogger(__name__)
 
@@ -128,11 +122,21 @@ class DCISkillMatcher:
         skill_dirs: list[Path] | None = None,
         rg_timeout: int = 15,
     ) -> None:
-        self._skill_dirs = skill_dirs or list(_DEFAULT_SKILL_DIRS)
+        self._explicit_skill_dirs = skill_dirs
         self._rg_timeout = rg_timeout
 
+    @property
+    def skill_dirs(self) -> list[Path]:
+        """Every skill root searched, resolved per call and unfiltered.
+
+        Unfiltered on purpose: :meth:`discover_skill_dirs` drops the ones
+        that do not exist, and a caller that needs to report which root it
+        could not search needs the ones that were dropped.
+        """
+        return _skill_root_candidates(self._explicit_skill_dirs)
+
     def discover_skill_dirs(self) -> list[Path]:
-        return [d for d in self._skill_dirs if d.exists()]
+        return [d for d in self.skill_dirs if d.is_dir()]
 
     async def _run_rg(self, args: list[str]) -> tuple[list[str], str | None]:
         """Run rg with fixed strings, timeout, and exit-code handling."""
@@ -237,12 +241,13 @@ async def _reap_process_skills(proc: asyncio.subprocess.Process) -> None:
         pass
 
 
-def _get_skill_roots(custom_roots: list[Path] | None = None) -> list[Path]:
-    """Return list of existing skill directories.
+def _skill_root_candidates(custom_roots: list[Path] | None = None) -> list[Path]:
+    """Every skill root Seeker would search, resolved now and unfiltered.
 
-    The user-scope root comes from ``mvgeos_core.skills_dir()``
-    rather than ``~/.agents/skills`` spelled out, so it moves with
-    ``$MVGEOS_GLOBAL_DIR`` and cannot drift from where skills are installed.
+    The user-scope root comes from :func:`paths.skill_roots`, which reads
+    ``mvgeos_core.skills_dir()`` rather than spelling out ``~/.agents/skills``,
+    so it moves with ``$MVGEOS_GLOBAL_DIR`` and cannot drift from where
+    Skills are installed.
 
     ``~/.claude/skills`` stays home-relative on purpose: it is a third-party
     convention, not our layer, and relocating our own directory does not
@@ -250,12 +255,12 @@ def _get_skill_roots(custom_roots: list[Path] | None = None) -> list[Path]:
     """
     if custom_roots:
         return [p.expanduser().resolve() for p in custom_roots]
-    roots = [
-        skills_dir().resolve(),
-        (Path.home() / ".claude" / "skills").resolve(),
-        Path(".agents/skills").resolve(),
-    ]
-    return [r for r in roots if r.is_dir()]
+    return [root.resolve() for root in paths.skill_roots()]
+
+
+def _get_skill_roots(custom_roots: list[Path] | None = None) -> list[Path]:
+    """Return list of existing skill directories."""
+    return [r for r in _skill_root_candidates(custom_roots) if r.is_dir()]
 
 
 DCI_SkillMatcher = DCISkillMatcher

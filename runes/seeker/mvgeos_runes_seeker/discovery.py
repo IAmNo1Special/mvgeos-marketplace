@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from . import paths
+
 
 class MCPTransportError(Exception):
     """Raised when MCP transport fails."""
@@ -29,7 +31,20 @@ class MCPConfigDiscovery:
     """DCI over MCP config files. Searches *.mcp.json in standard locations."""
 
     def __init__(self, search_roots: list[Path] | None = None) -> None:
-        self._search_roots = search_roots or [Path(".agents/.mvgeos/runes")]
+        self._explicit_search_roots = search_roots
+
+    @property
+    def search_roots(self) -> list[Path]:
+        """The Rune directories scanned for ``*.mcp.json``, resolved per call.
+
+        The default is the user-scope Rune layer from
+        :func:`paths.extensions_root`, so a caller that names no root reads
+        the layer the engine installs Runes into -- which is what
+        ``rune_factory`` passes, so the two can no longer disagree.
+        """
+        if self._explicit_search_roots:
+            return [Path(root) for root in self._explicit_search_roots]
+        return [paths.extensions_root()]
 
     async def search(self, query: str) -> list[MCPServerInfo]:
         config_files = self._find_config_files()
@@ -49,7 +64,7 @@ class MCPConfigDiscovery:
 
     def _find_config_files(self) -> list[Path]:
         files = []
-        for root in self._search_roots:
+        for root in self.search_roots:
             if not root.exists():
                 continue
             files.extend(root.rglob("*.mcp.json"))

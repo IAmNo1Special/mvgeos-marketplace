@@ -83,15 +83,20 @@ async def test_seeker_session_start_does_not_touch_global_allowlist() -> None:
 
 
 @pytest.mark.asyncio
-async def test_tool_search_widens_global_allowlist() -> None:
+async def test_tool_search_widens_global_allowlist(tmp_path: Path) -> None:
     from mvgeos_provider.registry import RealmRegistry
     from mvgeos_runes_seeker.router import SpellFileMatch
     from mvgeos_runes_seeker.spell import ToolSearchSpell
 
     rune_api = MagicMock()
     rune_api.widen_global_allowlist = MagicMock()
+    # An explicit, existing root: tool_search reports a missing search root
+    # instead of routing, so a Spell with no reachable root never reaches
+    # the widening this test is about.
+    (tmp_path / "grimoire").mkdir()
     spell = ToolSearchSpell(
         provider_registry=RealmRegistry(),
+        spells_root=tmp_path,
         agent_name="test",
         nlt_api_key="",
         rune_api=rune_api,
