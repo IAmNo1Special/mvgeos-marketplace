@@ -95,7 +95,7 @@ Model: nvidia/nemotron-3-ultra-550b-a55b:free
 
 ## Honest status
 
-- **`v0.6.5`, pre-1.0.** The internals are held to a high bar — mypy strict,
+- **`v0.6.7`, pre-1.0.** The internals are held to a high bar — mypy strict,
   ruff, roughly 2,200 tests. The command surface still moves.
 - **No published package yet.** The install line is long because there is no
   PyPI distribution to say `uvx mvgeos`. It will get shorter.

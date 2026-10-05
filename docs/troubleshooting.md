@@ -39,7 +39,7 @@ uv tool list
 ```
 
 ```text
-mvgeos-cli v0.6.5
+mvgeos-cli v0.6.7
 - mvgeos
 ```
 
@@ -82,7 +82,7 @@ The format check in `validate_api_key` is a prefix check, not a validity check:
 keys must start with `sk-or-` (OpenRouter) or `AIza` (Google). A key with the
 right prefix but no credit still produces this 401.
 
-### `Daily free-model quota exhausted (50/50 requests)`
+### `Daily free-model quota exhausted`
 
 ```text
 $ mvgeos --agent-name coding_mvge "say hi"
@@ -92,6 +92,18 @@ Hint: Add credits to your OpenRouter account, switch to a paid model, or wait fo
 
 **This one is a spent allowance, not a fault.** Nothing is wrong with your
 install, your key, or the tool. Retry will not help until the reset time.
+
+The message may be shorter than the one above. If your model is
+`openrouter/free`, OpenRouter's Free Models Router, it reports the exhaustion
+without the count and without a reset time, because the 402 it returns carries no
+rate-limit headers to read:
+
+```text
+Daily free-model quota exhausted.
+Hint: Add credits to your OpenRouter account, switch to a paid model, or wait for the daily reset.
+```
+
+Same condition, same fix. The tool does not invent a reset time it was not given.
 
 OpenRouter gives every account a **daily allowance of 50 free-model requests**,
 counted across the whole account — not per model, not per app. When it is spent,
@@ -104,11 +116,11 @@ X-RateLimit-Remaining: 0
 X-RateLimit-Reset: 1791244800000     # milliseconds since epoch
 ```
 
-MvgeOS reads those headers, so the message names the exhaustion and the reset
-time instead of guessing. `X-RateLimit-Reset` is a Unix timestamp in
-**milliseconds**. `1791244800000` is `2026-10-06T00:00:00Z` — the allowance
-resets at **00:00 UTC**, so the wait can be anywhere from a minute to most of a
-day. To read it yourself:
+MvgeOS reads those headers on builds that do so, which is why the message can name
+the exhaustion and the reset time instead of guessing. `X-RateLimit-Reset` is a
+Unix timestamp in **milliseconds**. `1791244800000` is `2026-10-06T00:00:00Z` —
+the allowance resets at **00:00 UTC**, so the wait can be anywhere from a minute
+to most of a day. To read it yourself:
 
 ```bash
 python3 -c 'import datetime,sys; print(datetime.datetime.fromtimestamp(int(sys.argv[1])/1000, datetime.UTC))' 1791244800000
@@ -120,13 +132,12 @@ it does not count down, because a countdown is only honest when the window is
 measured in seconds.
 
 !!! warning "Which message you get depends on your version"
-    This message requires an MvgeOS build that reads the quota headers. Builds
-    before it name the same condition differently — see
+    Builds before this one name the same condition differently — see
     [`Upstream provider overloaded`](#upstream-provider-overloaded-provider-returned-error),
-    which is what you get from a released `v0.6.6`. Both mean the same thing;
-    only the wording differs. If you are on `main` via the git install line and
-    you see the overloaded message, read that entry — the advice there is
-    correct for the message you actually received.
+    which is what a released `v0.6.7` prints. Both mean the same thing; only the
+    wording differs. If you installed from the git line and you see the
+    overloaded message, read that entry — the advice there is correct for the
+    message you actually received.
 
 ### `Upstream provider overloaded: Provider returned error`
 
@@ -150,7 +161,7 @@ To tell them apart, read `X-RateLimit-Remaining` on the 429 response. `0` means
 the allowance is gone and retrying is pointless until the reset; anything above
 `0` means you are being throttled per-minute or the provider is busy, and a
 retry is reasonable. Builds that name the exhaustion properly print
-[`Daily free-model quota exhausted`](#daily-free-model-quota-exhausted-5050-requests)
+[`Daily free-model quota exhausted`](#daily-free-model-quota-exhausted)
 instead of this message, so if you got that one, use its entry.
 
 ### The same exhaustion, reported as HTTP 402
@@ -335,7 +346,7 @@ Not an error, and for `mvgeos mvge install` the correct outcome: those are the
 engine packages you already installed in step 1. Re-running with confirmation
 changes nothing measurable — the resolved Spell set is the same nine either way.
 
-Both install commands take the same flag since `v0.6.6`, and it matters only
+Both install commands take the same flag since `v0.6.7`, and it matters only
 when the dependency is *not* already covered by the engine:
 
 ```bash

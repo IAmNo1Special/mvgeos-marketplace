@@ -75,12 +75,11 @@ app on that account, resetting at **00:00 UTC**. A single Mvge turn spends
 several of them, because verifying a result means a second model call.
 
 When the allowance is gone, every free model returns `429 free-models-per-day`.
-Recent builds report it as `Daily free-model quota exhausted (50/50 requests).
-Resets at 00:00 UTC.` — a spent allowance, not a transient fault — because they
-read the quota headers themselves, so the reset time is already in the message.
-Older builds say `Upstream provider overloaded: Provider returned error` for the
-same condition, which reads like a temporary blip and is not. The headers do not
-lie either way:
+Recent builds report it as `Daily free-model quota exhausted` — a spent
+allowance, not a transient fault — and add the count and reset time when the
+provider sent them. Older builds say `Upstream provider overloaded: Provider
+returned error` for the same condition, which reads like a temporary blip and is
+not. The headers do not lie either way:
 
 ```text
 X-RateLimit-Remaining: 0
@@ -183,7 +182,7 @@ evolution Rune.
 
 ### How mature is this?
 
-`v0.6.5`, pre-1.0. Roughly 2,200 tests, mypy strict, ruff. The internals are
+`v0.6.7`, pre-1.0. Roughly 2,200 tests, mypy strict, ruff. The internals are
 held to a high bar and the surface is still moving. Expect the command surface
 to change and expect the docs to lag a release or two behind the code — the
 [Troubleshooting](troubleshooting.md) page is where landed fixes show up first.

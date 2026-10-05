@@ -14,12 +14,12 @@ yet true, or is true only intermittently, it says so; see
 
 ## Which version this page describes
 
-`v0.6.6`, installed as `mvgeos-cli v0.6.6`. There is no `mvgeos --version` yet —
+`v0.6.7`, installed as `mvgeos-cli v0.6.7`. There is no `mvgeos --version` yet —
 the flag does not exist, so this is how you check:
 
 ```console
 $ uv tool list | grep mvgeos-cli
-mvgeos-cli v0.6.6
+mvgeos-cli v0.6.7
 - mvgeos
 ```
 
@@ -31,8 +31,8 @@ instructions against code they do not match.** Whatever you install and these
 instructions are the same tree at the moment you run them.
 
 If a command on this page is missing when you run it, you have something older
-than `v0.6.6`. The newest command here, `mvge install --confirm-python-deps` in
-step 3, landed in `v0.6.6`.
+than `v0.6.7`. The newest command here, `mvge install --confirm-python-deps` in
+step 3, landed in `v0.6.7` — it is not in `v0.6.6`.
 
 This page is not version-pinned yet, and there is a reason: the install is not
 pinned either, so there are no versions to choose between. Once the install
@@ -45,8 +45,9 @@ the version selector appears here.
     account** and resets at 00:00 UTC. If that allowance is spent — yours, or
     shared with anything else on the account — step 5 fails and it is not your
     setup. That is the most common reason this page appears broken on day one,
-    and [here is how to tell](troubleshooting.md#daily-free-model-quota-exhausted-5050-requests).
-    Everything below step 5 still works.
+    and [Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted)
+    has the message your version prints for it. Everything below step 5 still
+    works.
 
 ## Before you start
 
@@ -165,7 +166,7 @@ That is the whole step, and it works as written — no flag, no prompt to answer
     is not one.
 
     To fetch them anyway, `mvge install` takes the same flag `rune install` does,
-    added in `v0.6.6`:
+    added in `v0.6.7`:
 
     ```bash
     mvgeos mvge install --confirm-python-deps coding_mvge
@@ -416,7 +417,7 @@ step 5. What remains true:
   endpoint saturation (`Upstream error from Nvidia: Service temporarily
   overloaded`) and an exhausted account-wide free allowance (`Daily free-model
   quota exhausted`, see
-  [Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted-5050-requests)).
+  [Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted)).
   Treat "install and configure in five minutes" as the promise, and expect step 5
   to need a retry or a different model. A run can also exit non-zero after the
   file it created is already correct.
@@ -428,21 +429,22 @@ step 5. What remains true:
   `nvidia/nemotron-3-*:free` ids have been run end to end. Other Realms and models
   are unverified here.
 
-- A spent free allowance is reported as `Daily free-model quota exhausted
-  (50/50 requests). Resets at 00:00 UTC.` on builds that read the quota headers,
-  naming the reset time instead of suggesting a retry — which is what a limit
-  lasting until 00:00 UTC needs. Earlier builds report the same condition as
-  `Upstream provider overloaded: Provider returned error`, and in interactive
-  mode count 60 seconds down against a window measured in hours. Which wording
-  you get depends on your version; the fix for it is the same either way, and
+- A spent free allowance is reported as `Daily free-model quota exhausted` on
+  builds that read the quota headers, naming the reset time instead of suggesting
+  a retry — which is what a limit lasting until 00:00 UTC needs. The message is
+  shorter when your model is `openrouter/free`, because that response carries no
+  reset time to report. Earlier builds report the same condition as `Upstream
+  provider overloaded: Provider returned error`, and in interactive mode count 60
+  seconds down against a window measured in hours. Which wording you get depends
+  on your version; the fix is the same either way, and
   [Troubleshooting](troubleshooting.md#upstream-provider-overloaded-provider-returned-error)
-  tells the two apart. Endpoint saturation is a separate condition with its own
-  message.
+  covers the older wording. Endpoint saturation is a separate condition with its
+  own message.
 
 - The `read` Spell bug described in step 5 is open (SOM-23). Until it is fixed,
   expect one extra model round-trip whenever a Mvge checks its own work.
 
-- MvgeOS is pre-1.0 (`v0.6.6`). The command surface moves.
+- MvgeOS is pre-1.0 (`v0.6.7`). The command surface moves.
 
 - Rune code runs **in-process** via `importlib`. A Rune is Python that executes
   inside the engine with your permissions. Read manifests before installing
