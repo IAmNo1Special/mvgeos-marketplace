@@ -182,8 +182,10 @@ evolution Rune.
 
 ### How mature is this?
 
-`v0.6.7`, pre-1.0. Roughly 2,200 tests, mypy strict, ruff. The internals are
-held to a high bar and the surface is still moving. Expect the command surface
+Pre-1.0. Roughly 2,200 tests, mypy strict, ruff. The current version is on
+the [Quickstart](quickstart.md#which-version-this-page-describes) — it moves faster
+than this page does, which is why it is named in one place and not here. The
+internals are held to a high bar and the surface is still moving. Expect the command surface
 to change and expect the docs to lag a release or two behind the code — the
 [Troubleshooting](troubleshooting.md) page is where landed fixes show up first.
 
