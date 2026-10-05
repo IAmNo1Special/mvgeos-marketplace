@@ -21,6 +21,22 @@ Seeker declares `"spell_gateway": true` in its manifest, which makes it the engi
 
 `session_start`, `session_shutdown`.
 
+## Prerequisites
+
+`rg` (ripgrep) on `PATH`. It is a system binary, so it is declared as `system_deps` in `manifest.json` and `index.json` rather than installed alongside the Python dependencies, and `mvgeos setup` reports it as present or missing.
+
+`tool_search` shells out to `rg` and has no fallback: without it the Spell returns `rg not found on PATH` instead of raising, so nothing else names the cause. `skill_search` prefers `rg` and falls back to a Python scan when it is absent.
+
+| Platform | Install |
+|---|---|
+| Debian / Ubuntu | `sudo apt-get install ripgrep` |
+| Fedora / RHEL | `sudo dnf install ripgrep` |
+| macOS (Homebrew) | `brew install ripgrep` |
+| Windows (winget) | `winget install BurntSushi.ripgrep.MSVC` |
+| Windows (scoop) | `scoop install ripgrep` |
+
+Check with `rg --version`.
+
 ## Dependencies
 
-`aiohttp`. Requires the `ripgrep` (`rg`) binary on `PATH`.
+`aiohttp`, and the `ripgrep` (`rg`) binary above.

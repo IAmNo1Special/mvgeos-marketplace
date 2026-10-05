@@ -31,6 +31,7 @@ from marketplace_index import (
     artifact_dirs_on_disk,
     artifacts,
     as_repo_paths,
+    load_index,
     pytest_config,
 )
 
@@ -122,6 +123,34 @@ def test_index_key_matches_manifest_name(artifact: Artifact) -> None:
         f"index.json lists {artifact.kind}/{artifact.name} but its manifest "
         f"declares name={manifest_name!r}. The manifest name is authoritative "
         f"for the install directory, so these must match."
+    )
+
+
+@pytest.mark.parametrize("artifact", ALL_ARTIFACTS, ids=_ids())
+def test_index_and_manifest_declare_the_same_system_deps(artifact: Artifact) -> None:
+    """A binary dependency has to be declared in both places that are read.
+
+    ``index.json`` is what the engine fetches to resolve an artifact for
+    install, and ``manifest.json`` is what ``mvgeos setup`` reads when it
+    warns about a missing system dependency -- it maps ``ripgrep`` to ``rg``
+    before checking ``PATH``, so the manifest value is a tool name rather
+    than the program name. A dependency that appears in one of the two and
+    not the other leaves a Rune that installs cleanly and then fails at use
+    with 'rg not found on PATH', which is how seeker's ripgrep requirement
+    shipped with nothing declaring it on this side.
+
+    Nothing else in the build would notice: a system binary cannot be listed
+    in ``pyproject.toml``, so there is no dependency resolution to fail on.
+    """
+    index_entry = load_index()[artifact.kind][artifact.name]
+    indexed = sorted(index_entry.get("system_deps") or [])
+    declared = sorted(artifact.manifest.get("system_deps") or [])
+    assert indexed == declared, (
+        f"{artifact.kind}/{artifact.name}: index.json declares "
+        f"system_deps={indexed or 'none'} but its manifest declares "
+        f"system_deps={declared or 'none'}. Each is read by a different "
+        f"caller, so a mismatch means at least one of them is lying about "
+        f"what the artifact needs to run."
     )
 
 
