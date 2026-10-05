@@ -1,11 +1,12 @@
 # Quickstart
 
 From nothing to a Mvge running a real task. Budget five minutes; on a warm
-network cache it takes about thirty seconds.
+network cache it takes about forty seconds.
 
-Every command below was run end to end on a clean machine (an empty `$HOME`,
-no `.agents` directory) before being written here. Where something is not yet
-true, it says so.
+Every command below was run end to end on a clean machine — an empty `$HOME`,
+empty `XDG` directories, a private `uv` cache, and nothing preinstalled on
+`PATH` — before being written here, including the model call in step 5. Where
+something is not yet true, it says so.
 
 ## Before you start
 
@@ -130,8 +131,72 @@ saves it to that file for you.
 mvgeos --agent-name coding_mvge "Create a file named hello.txt containing exactly the text: hello from mvgeos"
 ```
 
-The Mvge reads the directory, casts the `write` Spell, and creates the file. To
-see what it cast and what it concluded, replay the Tome it recorded:
+This is real output, pasted unedited from a run on a clean machine. The only
+change is that the terminal's own line wrapping is preserved rather than
+reflowed:
+
+```text
+Created hello.txt with the content "hello from mvgeos". Verified the file contents match
+exactly.
+Stop reason: stop
+```
+
+The file is really there, and the content is byte-for-byte what was asked for:
+
+```console
+$ ls -l hello.txt
+-rw-r--r-- 1 you you 17 hello.txt
+$ od -c hello.txt
+0000000   h   e   l   l   o       f   r   o   m       m   v   g   e   o
+0000020   s
+0000021
+$ wc -c hello.txt
+17 hello.txt
+```
+
+17 bytes for 17 characters: there is no trailing newline, because the Mvge was
+asked for *exactly* that text and did precisely that.
+
+It took about 30 seconds against the default free model.
+
+### What actually happened underneath
+
+The Mvge verified its own work rather than assuming it, which is the behaviour
+you want. Here is the run as recorded in the Tome, unedited:
+
+```text
+think  The user wants me to create a file named hello.txt with the exact text "hello from mvgeos". I'll use the write tool to do this.
+cast   write({"path": ".../hello.txt", "content": "hello from mvgeos"})
+result Wrote to .../hello.txt
+think  The file has been created successfully. Let me confirm it contains the exact text requested
+cast   read({"path": ".../hello.txt"})
+result Invalid arguments for spell read: 2 validation errors for read_Schema
+       offset
+         Input should be a valid integer
+       limit
+         Input should be a valid integer
+think  The read function requires offset and limit parameters. Let me try again with proper parameters
+cast   read({"limit": 10, "path": ".../hello.txt", "offset": 1})
+result hello from mvgeos
+say    Created `hello.txt` with the content "hello from mvgeos". Verified the file contents match exactly.
+```
+
+The `read` Spell failed on its first call even though the Mvge passed only the
+required argument, exactly as the Spell's own signature allows. This is a real
+engine bug, not a mistake in the prompt: a Spell argument declared
+`int | None = None` loses its nullability when the JSON Schema is turned into a
+validator, and because a Spell is validated twice per cast, the first pass fills
+the omitted arguments with `null` and the second pass then rejects them. Four of
+the five built-in Spells in `coding_mvge` are affected (`read`, `grep`, `find`,
+`list_files`).
+
+It is tracked as SOM-23. It is harmless to correctness — the task completed and
+the file was right — but it costs one extra model round-trip per self-check, so
+expect a slightly higher Mana bill than the transcript implies.
+
+### Replay it yourself
+
+Every run is recorded. To see what the Mvge cast and concluded:
 
 ```bash
 mvgeos tome list
@@ -196,15 +261,36 @@ Tome.
 
 ## What is not verified yet
 
-Stated plainly, because this page is meant to be trustworthy:
+Stated plainly, because this page is meant to be trustworthy. Every step above,
+including the model call in step 5, has now been run end to end on a clean
+machine. What remains true:
 
-- The steps above were run on a clean machine through step 4. The final
-  model call depends on a working API key; if yours is wrong or expired you
-  will see `Authentication failed (401)` and nothing else will help.
-- The `uv tool install` line takes about 24 seconds end to end with a warm `uv`
-  cache, measured on an empty `$HOME`. A cold cache is slower but stays well
-  inside five minutes.
+- The install line is a `git+` URL, not a package name. `uvx mvgeos` does **not**
+  resolve yet, because the distribution has not reached PyPI:
+
+    ```console
+    $ uvx mvgeos --help
+    × No solution found when resolving tool dependencies:
+    ╰─▶ Because mvgeos was not found in the package registry and you require
+        mvgeos, we can conclude that your requirements are unsatisfiable.
+    ```
+
+    Use the `git+` form on this page until that changes. If a page ever tells you
+    to run bare `uvx mvgeos`, it is ahead of the release.
+
+- Timings are from a warm `uv` cache on a warm git clone: about 5s for `uvx
+  --help`, 2s for `uv tool install`, 4s for the Rune, 2s for the Mvge, and 31s
+  for the task itself. A genuinely cold machine is slower. The budget is
+  dominated by the model call, not the install.
+
+- Only the default free OpenRouter model was exercised end to end. Other Realms
+  and models are unverified here.
+
+- The `read` Spell bug described in step 5 is open (SOM-23). Until it is fixed,
+  expect one extra model round-trip whenever a Mvge checks its own work.
+
 - MvgeOS is pre-1.0 (`v0.6.5`). The command surface moves.
+
 - Rune code runs **in-process** via `importlib`. A Rune is Python that executes
   inside the engine with your permissions. Read manifests before installing
   them. See [Runes](runes/approval-rune.md) for the gate that puts a human

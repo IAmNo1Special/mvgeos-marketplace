@@ -194,6 +194,42 @@ project you want it to touch, or set `MVGEOS_WORKSPACE_ROOT` explicitly.
 the fastest way to see what is actually configured. See
 [Concepts](concepts.md) for the rest of the environment.
 
+### `Input should be a valid integer` on `offset` or `limit`
+
+```text
+Invalid arguments for spell read: 2 validation errors for read_Schema
+offset
+  Input should be a valid integer [type=int_type, input_value=None, input_type=NoneType]
+limit
+  Input should be a valid integer [type=int_type, input_value=None, input_type=NoneType]
+```
+
+Known engine bug, tracked as SOM-23. You will see it whenever a Mvge calls
+`read` (or `grep`, `find`, or `list_files`) with only its required arguments and
+leaves the optional paging arguments out.
+
+The Mvge recovers on its own — it retries with explicit `offset` and `limit` and
+the task completes correctly. You will notice it as one extra model round-trip,
+so a task takes slightly longer and costs slightly more Mana than you would
+expect. If you are watching a run, this is what the message means; it is not a
+sign your key, your Realm, or your prompt is wrong.
+
+Nothing to fix on your side. It goes away when SOM-23 lands.
+
+### `mvgeos` is not found after installing
+
+If you used the `uvx --from "git+..."` form, nothing is installed — `uvx` runs
+from a throwaway environment and leaves nothing on your `PATH`. That is the
+point of that form. Use `uv tool install` if you want a persistent command.
+
+If you *did* use `uv tool install`, check that the tool bin directory is on your
+`PATH`:
+
+```bash
+uv tool dir --bin
+echo $PATH
+```
+
 ## Sessions
 
 ### `mvgeos tome list` is empty after a run that worked
