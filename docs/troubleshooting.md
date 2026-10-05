@@ -377,6 +377,34 @@ which is why `mvgeos info --agent-name coding_mvge` shows `Model:` and a full
 Spell table in the same run. Ignore the row, or delete `~/.agents/extensions/.venv`
 if you want it gone; the next `rune install` recreates it.
 
+### `rg not found on PATH` from a seeker Spell
+
+```text
+{"spells_found": 0, "results": [], "error": "rg not found on PATH"}
+```
+
+[Seeker](runes/seeker.md) searches the Spell corpus by shelling out to `rg`
+(ripgrep). It is a system binary, so it is not installed with the Rune's Python
+dependencies, and `tool_search` has no non-`rg` fallback — the Spell returns
+this error string instead of raising, so nothing names the cause.
+
+Check for the binary, then install it:
+
+```bash
+rg --version
+```
+
+| Platform | Install |
+|---|---|
+| Debian / Ubuntu | `sudo apt-get install ripgrep` |
+| Fedora / RHEL | `sudo dnf install ripgrep` |
+| macOS (Homebrew) | `brew install ripgrep` |
+| Windows (winget) | `winget install BurntSushi.ripgrep.MSVC` |
+| Windows (scoop) | `scoop install ripgrep` |
+
+`mvgeos setup` reports the same dependency, because Seeker declares it as
+`system_deps` in its manifest.
+
 ### A Rune installed but its Spells are missing
 
 Runes are discovered from standard extension directories. Check that the load
