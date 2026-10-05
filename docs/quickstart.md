@@ -118,11 +118,23 @@ mvgeos mvge install coding_mvge
 ```
 
 !!! warning "It asks before fetching, in a real terminal"
-    Unlike `rune install`, `mvge install` has no `--confirm-python-deps` flag.
-    When stdin is a TTY it prompts before fetching its `python_deps`. Answer
-    `y`. Answering `n` skips the fetch and leaves the Mvge without the Spells it
-    needs. When stdin is not a TTY — a script, or CI — it does not prompt, and
-    the fetch is skipped with a warning, so read the output instead of assuming.
+    `coding_mvge` declares four `python_deps`, and installing a Mvge gates them
+    the same way `rune install` does. On a TTY you get a `[y/N]` prompt — answer
+    `y`. With no TTY, a script or CI, nothing is prompted, the fetch is skipped,
+    and the command still exits 0.
+
+    **Answering `n`, or skipping, is harmless here, and the warning it prints is
+    misleading.** The four packages it names — `mvgeos-agent`, `mvgeos-core`,
+    `mvgeos-provider`, `mvgeos-runes` — are already installed as dependencies of
+    the engine you installed in step 1. Measured on a clean machine, the
+    resolved Spell set is the same nine either way:
+
+    ```text
+    with    --confirm-python-deps -> 9  bash edit find grep list_files read read_url search_web write
+    without --confirm-python-deps -> 9  bash edit find grep list_files read read_url search_web write
+    ```
+
+    So do not read that warning as a broken install.
 
 ```text
 Non-interactive session: skipping install of unreviewed python dependencies
@@ -130,9 +142,6 @@ Non-interactive session: skipping install of unreviewed python dependencies
 Re-run with confirm=True to install.
 Successfully installed mvge 'coding_mvge' to ~/.agents/agents/coding_mvge
 ```
-
-The skipped dependencies are the engine packages you already have from step 1,
-so leaving them out is correct here.
 
 ## 4. Authenticate
 
