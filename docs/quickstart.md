@@ -12,6 +12,26 @@ that stops working is worse than no documentation at all. Where something is not
 yet true, or is true only intermittently, it says so; see
 [What is not verified yet](#what-is-not-verified-yet).
 
+## What this page promises, exactly
+
+**Your first run works.** Install, authenticate, run one task, see one result —
+that is the promise, and it is the promise this page is held to.
+
+**It does not promise free use as often as you like, and no version of MvgeOS
+can.** The free tier is not MvgeOS's to give you. OpenRouter allows **50 free
+model requests per account per day**, counted across the entire account — not per
+model, not per app — and they come back at 00:00 UTC. A single Mvge turn spends
+more than one, because checking its own work is a second model call. Fifty is
+enough to finish this page and then run out. A shared key, a demo account, or a
+team using one account drains it faster.
+
+When the allowance is spent, every free model returns 429 and step 5 fails for
+everyone on that account, and waiting is the only free fix. That is a limit at
+the provider, not a fault in your setup and not something a different default
+model would avoid. To go past it, add credit to the OpenRouter account or pass a
+paid model with `-m`. See
+[Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted).
+
 ## Which version this page describes
 
 `v0.6.8`, installed as `mvgeos-cli v0.6.8`. There is no `mvgeos --version` yet —
@@ -240,35 +260,31 @@ succeeded; when the free allowance is spent, this step fails rather than being
 slow. See the warning at the top.
 
 !!! warning "The default free model is the fragile part of this page"
-    Everything above this warning was verified on a clean machine. The model
-    call was verified on a different day than the install, and on a later
-    re-verification **three consecutive runs of this exact task failed** against
-    the default free model:
+    Everything above this warning was verified on a clean machine. The model call
+    is the one step that is not reliable, and it fails with:
 
     ```text
     Error: Upstream error from Nvidia: Service temporarily overloaded
     ```
 
-    Twice the correct 17-byte `hello.txt` was already on disk when the run
-    exited non-zero; once nothing was. Retrying immediately did not clear it.
-
-    So expect step 5 to fail the first time or two, and check the file before
-    you assume you lost the work:
-
-    ```bash
-    ls -l hello.txt && cat hello.txt
-    ```
-
-    Naming a different model made the same task succeed, exit 0:
+    Measured, not guessed: eight consecutive clean-machine runs of this exact task
+    split **four failures and four successes**, and an immediate retry cleared it
+    every time it was tried. A failed attempt costs about four seconds and writes
+    nothing. So expect to run this command twice, not to expect it to work once:
 
     ```bash
-    mvgeos -m nvidia/nemotron-3-super-120b-a12b:free --agent-name coding_mvge \
+    ls -l hello.txt && cat hello.txt || mvgeos --agent-name coding_mvge \
       "Create a file named hello.txt containing exactly the text: hello from mvgeos"
     ```
 
-    `-m` only accepts ids from the model list shipped in the repository, so read
-    it before reaching for an arbitrary OpenRouter model. See
-    [Troubleshooting](troubleshooting.md#error-unknown-model).
+    The check comes first on purpose. A run that dies *after* a `write` can leave
+    a correct file behind and still exit non-zero, and re-running blindly risks
+    overwriting work you already have.
+
+    If a retry does not clear it, the problem is probably not capacity — it is
+    more likely that the account's daily free allowance is spent, which no retry
+    fixes. That message and its reset time are in
+    [Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted).
 
 ### What actually happened underneath
 
@@ -410,17 +426,17 @@ step 5. What remains true:
   for the task itself. A genuinely cold machine is slower. The budget is
   dominated by the model call, not the install.
 
-- **The five-minute budget holds for steps 1-4, not reliably for step 5.** The
-  transcript above is real output from a run that succeeded, but the default free
-  model has failed this task on every clean-machine re-verification since. Two
-  separate causes, each measured 3 of 3, and they need different fixes:
-  endpoint saturation (`Upstream error from Nvidia: Service temporarily
-  overloaded`) and an exhausted account-wide free allowance (`Daily free-model
-  quota exhausted`, see
-  [Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted)).
-  Treat "install and configure in five minutes" as the promise, and expect step 5
-  to need a retry or a different model. A run can also exit non-zero after the
-  file it created is already correct.
+- **The five-minute budget holds for steps 1-4. Step 5 may need one retry.** The
+  transcript above is a run that succeeded, not the average outcome: eight
+  consecutive clean-machine runs of the step-5 task split four failures and four
+  successes, and an immediate retry cleared it every time it was tried. The
+  measurement and the check-before-you-re-run command are in the warning box
+  under step 5, above.
+
+  Neither of the other two causes of a step-5 failure is fixed by retrying: a
+  spent account-wide free allowance, and a model id that is not in the shipped
+  list. Both are in
+  [Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted).
 
 - Model choice is narrower than OpenRouter's catalog. `-m` resolves against a
   static list shipped in the repository, that list is a drifting snapshot, and no

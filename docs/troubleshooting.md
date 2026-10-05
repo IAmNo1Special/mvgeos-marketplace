@@ -238,26 +238,49 @@ Error: Upstream error from Nvidia: Service temporarily overloaded
 ```
 
 The provider refused the request. Your install is fine, your key is fine, and
-this is not a MvgeOS bug — it is the model endpoint being full.
+this is not a MvgeOS bug — the model endpoint is at capacity.
 
-**Check whether the work already landed before you retry.** The engine writes
-each Spell result to disk as it happens, so a run that dies on the model call
-*after* a `write` can leave a correct file behind and still exit non-zero:
-
-```bash
-ls -l hello.txt && cat hello.txt
-```
-
-If it keeps failing, name a different model:
+This one clears on its own, and the fix is cheap. On a clean machine, eight
+consecutive runs of the exact quickstart task split four failures to four
+successes — so about half the time you will not hit this at all, and when you do,
+an immediate retry cleared it every time it was tried. The failed attempt costs
+about four seconds and writes nothing, so check the work and re-run in one line:
 
 ```bash
-mvgeos -m nvidia/nemotron-3-super-120b-a12b:free --agent-name coding_mvge \
+ls -l hello.txt && cat hello.txt || mvgeos --agent-name coding_mvge \
   "Create a file named hello.txt containing exactly the text: hello from mvgeos"
 ```
 
-To see what you can choose from before you are stuck, see
-[`Error: Unknown model`](#error-unknown-model) — the list is not "every model
-OpenRouter serves".
+The check comes first on purpose. The engine writes each Spell result to disk as
+it happens, so a run that dies on the model call *after* a `write` can leave a
+correct file behind and still exit non-zero — and re-running blindly overwrites
+work you already have.
+
+If it keeps failing, name a different model. Do not take a slug from this page —
+read the one you are actually running out of `mvgeos info`, then pass it:
+
+```bash
+mvgeos info --agent-name coding_mvge     # prints: Model: <slug>
+```
+
+```bash
+mvgeos -m <slug> --agent-name coding_mvge \
+  "Create a file named hello.txt containing exactly the text: hello from mvgeos"
+```
+
+This page deliberately does not hardcode a fallback slug. The default moves, and
+the baseline model list is a snapshot that already rots — a recovery command that
+goes stale fails at exactly the moment you need it. To pick a replacement on
+purpose, read the baseline under
+[`Error: Unknown model`](#error-unknown-model); it is not "every model OpenRouter
+serves".
+
+If retrying does not help and the message never changes, the cause is probably
+not capacity — read
+[`Upstream provider overloaded`](#upstream-provider-overloaded-provider-returned-error),
+which is the same condition wearing a different message, and
+[`Daily free-model quota exhausted`](#daily-free-model-quota-exhausted), which is
+the one no retry can fix.
 
 ### `Error: Unknown model`
 

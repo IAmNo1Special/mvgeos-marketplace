@@ -87,7 +87,7 @@ Model: nvidia/nemotron-3-ultra-550b-a55b:free
 
 | | |
 | --- | --- |
-| [Quickstart](quickstart.md) | Nothing to running Mvge in five minutes |
+| [Quickstart](quickstart.md) | Nothing to a running Mvge — and what five minutes does not promise |
 | [Concepts](concepts.md) | What Mvge, Spell, Realm, Tome, Rune, and Sigil mean |
 | [Troubleshooting](troubleshooting.md) | Real errors, with the real output |
 | [FAQ](faq.md) | The questions that come up before anything breaks |
