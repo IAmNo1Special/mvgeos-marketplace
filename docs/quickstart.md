@@ -444,7 +444,9 @@ step 5. What remains true:
 - The `read` Spell bug described in step 5 is open (SOM-23). Until it is fixed,
   expect one extra model round-trip whenever a Mvge checks its own work.
 
-- MvgeOS is pre-1.0 (`v0.6.8`). The command surface moves.
+- MvgeOS is pre-1.0. The command surface moves, and the version moves faster
+  than this page does — see
+  [Which version this page describes](#which-version-this-page-describes).
 
 - Rune code runs **in-process** via `importlib`. A Rune is Python that executes
   inside the engine with your permissions. Read manifests before installing

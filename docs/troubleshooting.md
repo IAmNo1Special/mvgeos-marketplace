@@ -39,7 +39,8 @@ uv tool list
 ```
 
 ```text
-mvgeos-cli v0.6.7
+$ uv tool list | grep mvgeos-cli
+mvgeos-cli v0.6.8      # whatever version you installed
 - mvgeos
 ```
 
@@ -134,10 +135,10 @@ measured in seconds.
 !!! warning "Which message you get depends on your version"
     Builds before this one name the same condition differently — see
     [`Upstream provider overloaded`](#upstream-provider-overloaded-provider-returned-error),
-    which is what a released `v0.6.7` prints. Both mean the same thing; only the
-    wording differs. If you installed from the git line and you see the
-    overloaded message, read that entry — the advice there is correct for the
-    message you actually received.
+    which is what older builds print. Both mean the same thing; only the wording
+    differs. If you installed from the git line and you see the overloaded
+    message, read that entry — the advice there is correct for the message you
+    actually received.
 
 ### `Upstream provider overloaded: Provider returned error`
 
