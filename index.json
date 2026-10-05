@@ -86,6 +86,9 @@
         "session_start",
         "session_shutdown"
       ],
+      "system_deps": [
+        "ripgrep"
+      ],
       "python_deps": [
         "aiohttp"
       ]
