@@ -12,6 +12,15 @@ that stops working is worse than no documentation at all. Where something is not
 yet true, or is true only intermittently, it says so; see
 [What is not verified yet](#what-is-not-verified-yet).
 
+!!! warning "Steps 1-4 always work. Step 5 depends on someone else's free tier."
+    The install is yours and takes seconds. The model call in step 5 goes
+    through OpenRouter's free tier, which allows **50 requests a day per
+    account** and resets at 00:00 UTC. If that allowance is spent — yours, or
+    shared with anything else on the account — step 5 fails and it is not your
+    setup. That is the most common reason this page appears broken on day one,
+    and [here is how to tell](troubleshooting.md#upstream-provider-overloaded-provider-returned-error).
+    Everything below step 5 still works.
+
 ## Before you start
 
 You need three things:
@@ -178,7 +187,9 @@ $ wc -c hello.txt
 17 bytes for 17 characters: there is no trailing newline, because the Mvge was
 asked for *exactly* that text and did precisely that.
 
-It took about 30 seconds against the default free model.
+It took about 30 seconds against a free model. That figure is from a run that
+succeeded; when the free allowance is spent, this step fails rather than being
+slow. See the warning at the top.
 
 !!! warning "The default free model is the fragile part of this page"
     Everything above this warning was verified on a clean machine. The model
@@ -351,21 +362,32 @@ step 5. What remains true:
   for the task itself. A genuinely cold machine is slower. The budget is
   dominated by the model call, not the install.
 
-- **Step 5 is not reliable on the default free model.** It failed on three of
-  three consecutive clean-machine re-verifications with `Upstream error from
-  Nvidia: Service temporarily overloaded`, and a run can exit non-zero after the
-  file it created is already correct. The transcript above is real output from a
-  run that succeeded; treat the model call as the unreliable step, not the
-  install. Budget for a retry, and see
-  [Troubleshooting](troubleshooting.md#upstream-error-from-provider-service-temporarily-overloaded).
+- **The five-minute budget holds for steps 1-4, not reliably for step 5.** The
+  transcript above is real output from a run that succeeded, but the default free
+  model has failed this task on every clean-machine re-verification since. Two
+  separate causes, each measured 3 of 3, and they need different fixes:
+  endpoint saturation (`Upstream error from Nvidia: Service temporarily
+  overloaded`) and an exhausted account-wide free allowance (`429
+  free-models-per-day`, see
+  [Troubleshooting](troubleshooting.md#upstream-provider-overloaded-provider-returned-error)).
+  Treat "install and configure in five minutes" as the promise, and expect step 5
+  to need a retry or a different model. A run can also exit non-zero after the
+  file it created is already correct.
 
 - Model choice is narrower than OpenRouter's catalog. `-m` resolves against a
   static list shipped in the repository, that list is a drifting snapshot, and no
   `mvgeos` subcommand refreshes it. Two real failures are documented under
-  [`Error: Unknown model`](troubleshooting.md#error-unknown-model). Only
-  `nvidia/nemotron-3-ultra-550b-a55b:free` and
-  `nvidia/nemotron-3-super-120b-a12b:free` have been run end to end. Other Realms
-  and models are unverified here.
+  [`Error: Unknown model`](troubleshooting.md#error-unknown-model). Only the two
+  `nvidia/nemotron-3-*:free` ids have been run end to end. Other Realms and models
+  are unverified here.
+
+- When the free allowance is spent, MvgeOS reports it as `Upstream provider
+  overloaded: Provider returned error` — a transient-sounding message for a
+  condition that lasts until 00:00 UTC. It has a correct message for this and
+  does not reach it. In interactive mode it is worse: a live 60-second
+  countdown for a limit that resets up to 24 hours later. Both are tracked as
+  separate defects; [Troubleshooting](troubleshooting.md#upstream-provider-overloaded-provider-returned-error)
+  tells you to ignore the message and read the response headers instead.
 
 - The `read` Spell bug described in step 5 is open (SOM-23). Until it is fixed,
   expect one extra model round-trip whenever a Mvge checks its own work.

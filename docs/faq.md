@@ -52,14 +52,45 @@ Realm for it — that is the point of the abstraction.
 
 ### Which model should I use?
 
-The default is `nvidia/nemotron-3-ultra-550b-a55b:free`, chosen because it costs
-nothing. Pick any other with `-m`:
+MvgeOS ships with a default that costs nothing — a free OpenRouter model chosen
+at runtime, not hardcoded on this page. Check which one you actually got:
+
+```bash
+mvgeos info --agent-name coding_mvge
+```
+
+The `Model:` line is the answer. Override it with `-m`:
 
 ```bash
 mvgeos --agent-name coding_mvge -m "openai/gpt-4o-mini" "your task"
 ```
 
 MvgeOS never proxies your key anywhere except the Realm you installed.
+
+### It says "free" — why did my run fail?
+
+Because free is not unlimited, and the limit is small. OpenRouter allows **50
+free-model requests per day per account**, shared across every model and every
+app on that account, resetting at **00:00 UTC**. A single Mvge turn spends
+several of them, because verifying a result means a second model call.
+
+When the allowance is gone, every free model returns `429 free-models-per-day`
+and MvgeOS currently reports it as `Upstream provider overloaded` — which
+sounds transient and is not. The reset time is in the response headers:
+
+```text
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1791244800000     # Unix milliseconds; 00:00 UTC
+```
+
+Three ways out, in order of how little they cost you: wait for 00:00 UTC, pass a
+different free model with `-m` hoping a different endpoint has headroom, or pass
+a paid one. See
+[Troubleshooting](troubleshooting.md#upstream-provider-overloaded-provider-returned-error)
+for how to read the headers and tell a spent allowance from a busy provider.
+
+This is the single most common reason the quickstart appears broken on day one.
+It is a limit at the provider, not a fault in MvgeOS.
 
 ### What does a run cost?
 
