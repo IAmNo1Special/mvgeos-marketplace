@@ -25,7 +25,7 @@ import pytest
 from mvgeos_core import (
     DEFAULT_AGENT_NAME,
     GLOBAL_DIR_ENV,
-    agent_dir,
+    agent_spells_dir,
     extensions_dir,
     skills_dir,
 )
@@ -33,6 +33,7 @@ from mvgeos_provider.registry import RealmRegistry
 from mvgeos_runes_seeker.dci_matcher import DCISkillMatcher
 from mvgeos_runes_seeker.discovery import MCPConfigDiscovery
 from mvgeos_runes_seeker.mcp_spell import MCPSearchSpell
+from mvgeos_runes_seeker.router import DCIRouter, SpellSearchError
 from mvgeos_runes_seeker.skill_execute import SkillExecuteSpell
 from mvgeos_runes_seeker.skill_spell import SkillSearchSpell
 from mvgeos_runes_seeker.spell import ToolSearchSpell
@@ -61,7 +62,7 @@ def seed_spell(agent_name: str, name: str) -> Path:
     ``tool_search`` searches file contents, then confirms the single hit
     normalises into the filename.
     """
-    spells = agent_dir(agent_name) / "spells" / "grimoire"
+    spells = agent_spells_dir(agent_name) / "grimoire"
     spells.mkdir(parents=True, exist_ok=True)
     path = spells / f"{name}.py"
     spoken = name.replace("_", " ")
@@ -165,16 +166,19 @@ async def test_tool_search_root_is_resolved_at_call_time(
 def test_tool_search_root_agrees_with_the_agents_directory(
     relocated_global: Path,
 ) -> None:
-    """Route through the engine's agent directory rather than re-deriving it.
+    """Route through the engine's Spells resolver rather than re-deriving it.
 
     Asserting the engine's own answer is what makes this a contract on
-    ``mvgeos_core.agent_dir``. A hardcoded literal would let the two drift
-    apart again, which is the defect this file exists to catch.
+    ``mvgeos_core.agent_spells_dir``. A hardcoded literal, or a local
+    composition from ``agent_dir``, would let the two drift apart again --
+    which is the defect this file exists to catch. It did: ``paths`` composed
+    ``agent_dir(name) / "spells"`` while the engine exported the directory it
+    searches, and the two only agreed because they agreed by coincidence.
     """
     seed_spell(DEFAULT_AGENT_NAME, "default_probe")
 
-    assert tool_search(agent_name=None).spells_root == (
-        agent_dir(DEFAULT_AGENT_NAME) / "spells"
+    assert tool_search(agent_name=None).spells_root == agent_spells_dir(
+        DEFAULT_AGENT_NAME
     )
 
 
@@ -301,7 +305,7 @@ async def test_tool_search_reports_a_missing_spells_root(
     result = await tool_search().execute("cast", {"operation": "anything"})
 
     assert result["spells_found"] == 0
-    assert str(agent_dir(AGENT_NAME) / "spells") in result["error"]
+    assert str(agent_spells_dir(AGENT_NAME)) in result["error"]
 
 
 @pytest.mark.asyncio
@@ -337,7 +341,7 @@ async def test_an_existing_but_empty_layer_is_a_real_zero(
     because its selection stage needs a registered Realm -- its root
     resolution is pinned by the missing-root test above.
     """
-    (agent_dir(AGENT_NAME) / "spells").mkdir(parents=True)
+    agent_spells_dir(AGENT_NAME).mkdir(parents=True)
     skills_dir().mkdir(parents=True)
     extensions_dir().mkdir(parents=True)
 
@@ -346,3 +350,26 @@ async def test_an_existing_but_empty_layer_is_a_real_zero(
 
     assert tool_result == {"spells_found": 0, "results": [], "error": None}
     assert mcp_result == {"serversFound": 0, "servers": [], "error": None}
+
+
+@pytest.mark.asyncio
+async def test_the_router_names_a_missing_root_instead_of_blaming_the_regex(
+    tmp_path: Path,
+) -> None:
+    """rg cannot tell a missing path from a bad pattern, so the router must.
+
+    ``rg`` exits 2 on both. ``_run_rg`` reads exit 2 as
+    ``RG_EXIT_BAD_REGEX`` and reports it as such, so a root that was never
+    there produced "rg error (exit code 2)" and pointed the Summoner at
+    their own query. ``tool_search`` guards its root before building the
+    router, which hid this until the router was reached directly.
+    """
+    missing = tmp_path / "no-such-spells"
+
+    router = DCIRouter(spells_root=missing)
+    with pytest.raises(SpellSearchError) as caught:
+        await router.route({"operation": "cast"})
+
+    message = str(caught.value)
+    assert str(missing) in message
+    assert "exit code 2" not in message
