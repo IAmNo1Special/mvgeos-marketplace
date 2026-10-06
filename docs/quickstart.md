@@ -34,12 +34,12 @@ paid model with `-m`. See
 
 ## Which version this page describes
 
-`v0.6.12`, installed as `mvgeos-cli v0.6.12`. There is no `mvgeos --version` yet —
+`v0.6.14`, installed as `mvgeos-cli v0.6.14`. There is no `mvgeos --version` yet —
 the flag does not exist, so this is how you check:
 
 ```console
 $ uv tool list | grep mvgeos-cli
-mvgeos-cli v0.6.12
+mvgeos-cli v0.6.14
 - mvgeos
 ```
 
