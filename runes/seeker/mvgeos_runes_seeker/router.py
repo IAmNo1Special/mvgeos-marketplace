@@ -40,6 +40,15 @@ class DCIRouter:
         if not operation or not operation.strip():
             raise SpellSearchError("empty operation query")
 
+        if not self._root.is_dir():
+            # Checked here because rg cannot tell us. rg exits 2 on a missing
+            # path and on a bad pattern alike, so `_run_rg` reads this as
+            # RG_EXIT_BAD_REGEX and blames the caller's regex for a directory
+            # that was never there. `tool_search` guards the same root before
+            # constructing this router, so this is the check that holds when
+            # the router is reached directly.
+            raise SpellSearchError(f"spells root does not exist: {self._root}")
+
         grimoire_dirs = await self._search_grimoires(grimoire_hint)
         if not grimoire_dirs:
             return await self._search_all_grimoires(operation)

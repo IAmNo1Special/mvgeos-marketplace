@@ -28,25 +28,25 @@ from __future__ import annotations
 from collections.abc import Iterable
 from pathlib import Path
 
-from mvgeos_core import agent_dir, extensions_dir, skills_dir
-
-#: Spells live at ``<global>/agents/<name>/spells``.
-#:
-#: Named rather than inlined because ``mvgeos_core.layers`` has no resolver
-#: for it: ``agent_extensions_dir`` and ``agent_skills_dir`` are both
-#: exported, the spells directory is not. Composing it from the exported
-#: ``agent_dir`` keeps the search path equal to the install path the engine
-#: discovers from (``resolve_config_dir(name) / "spells"``) instead of
-#: introducing a second derivation of a directory the engine owns.
-SPELLS_SUBDIR = "spells"
+from mvgeos_core import agent_spells_dir, extensions_dir, skills_dir
 
 #: The project-relative spelling of our own skills layer.
 PROJECT_SKILLS_DIR = Path(".agents") / "skills"
 
 
 def spells_root(agent_name: str) -> Path:
-    """The agent-scope Spells directory: ``<global>/agents/<name>/spells``."""
-    return agent_dir(agent_name) / SPELLS_SUBDIR
+    """The agent-scope Spells directory: ``<global>/agents/<name>/spells``.
+
+    Routed through ``mvgeos_core.agent_spells_dir``, which the engine added
+    for exactly this Rune's reason: the host spells this path out in its
+    installer and in its own Spell discovery, and a Rune that searches it
+    must not spell out a third copy. This function used to compose the path
+    from ``agent_dir(name) / "spells"`` because the engine exported no
+    resolver for it. It does now, so the local derivation is a second copy
+    of a directory the engine owns, and the comment that justified it had
+    become false.
+    """
+    return agent_spells_dir(agent_name)
 
 
 def extensions_root() -> Path:
