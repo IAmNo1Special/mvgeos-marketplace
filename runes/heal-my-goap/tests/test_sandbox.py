@@ -1,255 +1,100 @@
-"""Tests for sandbox code execution and safety checks."""
+"""The GOAP action surface may not reach the host.
 
-from unittest.mock import MagicMock, patch
+This suite tests one thing: what an LLM-synthesised action can do when it runs.
+The executor itself is the engine's, and the engine tests it -- see
+``mvgeos-agent/tests/unit/sandbox.py`` for the AST visitor, the import policy
+and the subprocess isolation. Re-testing those here is what let a vendored copy
+drift once and need the same security fix twice.
+
+What belongs to this Rune is the privilege set: ``HEAL_MY_GOAP_ALLOWED_MODULES``
+is the whole capability surface of code a model wrote this run, so its contents
+are a policy decision and are pinned here. See ADR 0015.
+"""
 
 import pytest
+from mvgeos_core.sandbox import MvgeSandbox
 
-from mvgeos_runes_heal_my_goap.models import SandboxTimeoutError
-from mvgeos_runes_heal_my_goap.sandbox import (
-    HEAL_MY_GOAP_ALLOWED_MODULES,
-    SandboxExecutor,
-    _sandbox_process_target,
-)
+from mvgeos_runes_heal_my_goap.engine import GoapEngine
+from mvgeos_runes_heal_my_goap.sandbox import HEAL_MY_GOAP_ALLOWED_MODULES
 
 
-def test_sandbox_safe_code_execution() -> None:
-    """Verifies safe Python code execution in sandbox."""
-    executor = SandboxExecutor()
-    code = "x = 10\ny = 20\nresult = x + y\n"
-    local_vars = executor.execute_code(code)
-    assert local_vars.get("result") == 30
+def _executor() -> MvgeSandbox:
+    """The executor ``GoapEngine`` uses when the host injects none."""
+    return MvgeSandbox()
 
 
-def test_sandbox_blocked_imports() -> None:
-    """Verifies AST validation blocks os module import."""
-    executor = SandboxExecutor()
-    code = "import os"
-    with pytest.raises(ValueError, match="Forbidden AST node"):
-        executor.execute_code(code)
+def test_allowlist_grants_no_command_execution() -> None:
+    """``os`` and ``subprocess`` must never reappear in the privilege set.
 
-
-def test_sandbox_blocked_sys() -> None:
-    """Verifies AST validation blocks sys module import."""
-    executor = SandboxExecutor()
-    code = "import sys"
-    with pytest.raises(ValueError, match="Forbidden AST node"):
-        executor.execute_code(code)
-
-
-def test_sandbox_blocked_builtins() -> None:
-    """Verifies AST validation blocks dangerous builtins like eval."""
-    executor = SandboxExecutor()
-    code = "eval('1 + 1')"
-    with pytest.raises(ValueError, match="Forbidden function"):
-        executor.execute_code(code)
-
-
-def test_sandbox_timeout_enforcement() -> None:
-    """Verifies hard timeout enforcement on infinite loop execution."""
-    executor = SandboxExecutor()
-    infinite_loop_code = "while True:\n    pass\n"
-    with pytest.raises(SandboxTimeoutError):
-        executor.execute_code(infinite_loop_code, timeout_seconds=0.5)
-
-
-def test_sandbox_allows_safe_import() -> None:
-    """Verifies AST validation permits safe non-forbidden imports."""
-    executor = SandboxExecutor()
-    executor.validate_ast("import math")
-    executor.validate_ast("from math import sqrt")
-    executor.validate_ast("result = len([1, 2, 3])")
-
-
-def test_sandbox_runtime_error_raises_value_error() -> None:
-    """Verifies runtime execution errors surface as ValueError."""
-    executor = SandboxExecutor()
-    with pytest.raises(ValueError):
-        executor.execute_code("x = 1 / 0")
-
-
-def test_sandbox_process_target_success_and_error() -> None:
-    """Verifies subprocess target reports success and error outcomes."""
-    success_queue = MagicMock()
-    _sandbox_process_target("x = 42", None, success_queue)
-    status, payload = success_queue.put.call_args.args[0]
-    assert status == "success"
-    assert payload == {"x": 42}
-
-    error_queue = MagicMock()
-    _sandbox_process_target("x = 1 / 0", None, error_queue)
-    status, payload = error_queue.put.call_args.args[0]
-    assert status == "error"
-    assert "division by zero" in str(payload)
-
-
-def test_sandbox_execute_sync_with_context() -> None:
-    """Verifies direct sync execution applies context globals."""
-    executor = SandboxExecutor()
-    local_vars = executor._execute_sync("y = base * 2", {"base": 21})
-    assert local_vars == {"y": 42}
-
-
-def test_sandbox_execute_code_empty_queue() -> None:
-    """Verifies execute_code returns empty dict when queue is empty."""
-    executor = SandboxExecutor()
-    fake_ctx = MagicMock()
-    fake_queue = MagicMock()
-    fake_queue.empty.return_value = True
-    fake_process = MagicMock()
-    fake_process.is_alive.return_value = False
-    fake_ctx.Queue.return_value = fake_queue
-    fake_ctx.Process.return_value = fake_process
-
-    with patch(
-        "mvgeos_runes_heal_my_goap.sandbox.multiprocessing.get_context",
-        return_value=fake_ctx,
-    ):
-        result = executor.execute_code("x = 1")
-    assert result == {}
-
-
-def test_sandbox_allowed_modules_execution() -> None:
-    """Verifies allowed_modules enables execution of permitted modules."""
-    executor = SandboxExecutor()
-    code = "import json\nres = json.dumps({'a': 1})"
-    local_vars = executor._execute_sync(code, None, allowed_modules={"json"})
-    assert local_vars.get("res") == '{"a": 1}'
-
-
-def test_sandbox_allowed_modules_sys_strictly_banned() -> None:
-    """Verifies sys module remains banned even if passed in allowed_modules."""
-    executor = SandboxExecutor()
-    code = "import sys"
-    with pytest.raises(ValueError, match="Forbidden AST node"):
-        executor._execute_sync(code, None, allowed_modules={"sys"})
-
-
-def test_sandbox_safe_import_direct_call_rejection() -> None:
-    """Verifies direct invocation of safe_import rejects unallowed modules."""
-    executor = SandboxExecutor()
-    code = "import math"
-    local_vars = executor._execute_sync(code, None, allowed_modules={"math"})
-    assert "math" in local_vars
-
-
-def test_sandbox_safe_import_unallowed_forbidden_module_raises() -> None:
-    """Verifies safe_import raises ValueError for unallowed forbidden module."""
-    executor = SandboxExecutor()
-    msg = "Import of module 'os' is forbidden"
-    with patch.object(executor, "validate_ast"):
-        with pytest.raises(ValueError, match=msg):
-            executor._execute_sync("import os", None, allowed_modules={"json"})
-
-
-def test_sandbox_allowlist_grants_no_command_execution() -> None:
-    """The GOAP action sandbox must not be able to reach a shell.
-
-    This is the escape this Rune shipped: listing os and subprocess handed
-    back command execution, because the visitor only matched bare ``ast.Name``
-    call targets and an allowlist entry exempted the module from inspection.
+    They were listed once, and with the visitor inspecting only bare
+    ``ast.Name`` call targets that granted command execution outright. The
+    engine refuses them now regardless; this pins the ask as well as the grant.
     """
-    executor = SandboxExecutor()
-    for code in (
-        "import os\nos.system('echo x')",
-        "import subprocess\nsubprocess.run(['echo', 'x'])",
-        "import os\nos.popen('echo x')",
-    ):
-        with pytest.raises(ValueError, match="Forbidden"):
-            executor.validate_ast(
-                code, allowed_modules=HEAL_MY_GOAP_ALLOWED_MODULES
-            )
-
-
-def test_sandbox_allowlist_grants_no_credential_read() -> None:
-    """Reading os.environ needs no call, so a Subscript is enough to steal."""
-    executor = SandboxExecutor()
-    code = "import os\nleaked = os.environ['OPENROUTER_API_KEY']"
-    with pytest.raises(ValueError, match="Forbidden"):
-        executor.validate_ast(
-            code, allowed_modules=HEAL_MY_GOAP_ALLOWED_MODULES
-        )
-
-
-def test_sandbox_allowlist_does_not_contain_os_or_subprocess() -> None:
-    """The grant itself is the defect; the visitor fix is the backstop."""
     assert "os" not in HEAL_MY_GOAP_ALLOWED_MODULES
     assert "subprocess" not in HEAL_MY_GOAP_ALLOWED_MODULES
     assert "sys" not in HEAL_MY_GOAP_ALLOWED_MODULES
 
 
-def test_sandbox_allowlist_grants_no_write_or_egress() -> None:
-    """The two irreversible capabilities stay out of the action privilege set.
+def test_allowlist_grants_no_write_or_egress() -> None:
+    """The two irreversible capabilities stay out.
 
-    Command execution and credential theft are closed at the visitor. These
-    two were open by design of the list: a file written outlives the run, and
-    an exfiltration leaves nothing to notice. Neither is recoverable after the
-    fact, which is what separates them from what is already refused.
+    Command execution and credential theft fail loudly inside the run. A file
+    written outlives it, and an exfiltration leaves nothing to notice, so
+    neither is recoverable afterwards. That asymmetry is why these two were
+    removed as policy while the others were removed as a defect.
     """
     assert "pathlib" not in HEAL_MY_GOAP_ALLOWED_MODULES
     assert "urllib" not in HEAL_MY_GOAP_ALLOWED_MODULES
 
 
-def test_sandbox_allowlist_refuses_a_pathlib_write() -> None:
-    """Prove the narrowed list refuses the write, not merely omits the name."""
-    executor = SandboxExecutor()
+def test_allowlist_refuses_a_pathlib_write() -> None:
+    """Prove the refusal by execution, not by inspecting the constant."""
     with pytest.raises(ValueError, match="Forbidden"):
-        executor.validate_ast(
+        _executor().execute_code(
             "import pathlib\npathlib.Path('x').write_text('pwned')",
-            allowed_modules=HEAL_MY_GOAP_ALLOWED_MODULES,
-        )
-
-
-def test_sandbox_allowlist_refuses_urllib_egress() -> None:
-    """Same for network egress."""
-    executor = SandboxExecutor()
-    with pytest.raises(ValueError, match="Forbidden"):
-        executor.validate_ast(
-            "import urllib.request\nurllib.request.urlopen('http://example.invalid')",
-            allowed_modules=HEAL_MY_GOAP_ALLOWED_MODULES,
-        )
-
-
-def test_sandbox_visitor_rejects_forbidden_module_in_allowlist() -> None:
-    """The import policy refuses a forbidden name at the import.
-
-    The shipped allow-list cannot contain one, so this is the backstop for a
-    future edit that adds it back: the import fails outright rather than
-    parsing and failing later at every use.
-    """
-    executor = SandboxExecutor()
-    for code in ("import os", "import subprocess", "from os import path"):
-        with pytest.raises(ValueError, match="Forbidden"):
-            executor.validate_ast(
-                code, allowed_modules={"os", "subprocess", "json"}
-            )
-
-
-def test_sandbox_allowlist_still_permits_planned_action_surface() -> None:
-    """Narrowing must not break the imports the GOAP action surface needs."""
-    executor = SandboxExecutor()
-    code = "import json\nimport re\nhit = re.match('a', 'ab') is not None"
-    executor.validate_ast(code, allowed_modules=HEAL_MY_GOAP_ALLOWED_MODULES)
-
-
-def test_sandbox_action_execution_rejects_escape() -> None:
-    """End to end through execute_code, the escape must fail before it runs."""
-    executor = SandboxExecutor()
-    with pytest.raises(ValueError, match="Forbidden"):
-        executor.execute_code(
-            "import subprocess\nsubprocess.run(['echo', 'x'])",
-            allowed_modules=HEAL_MY_GOAP_ALLOWED_MODULES,
+            allowed_modules=set(HEAL_MY_GOAP_ALLOWED_MODULES),
             timeout_seconds=5.0,
         )
 
 
-def test_sandbox_visitor_rejects_escape_even_when_allowlist_grants_it() -> None:
-    """The visitor is a backstop independent of the shipped allow-list.
+def test_allowlist_refuses_urllib_egress() -> None:
+    """Same for network egress."""
+    with pytest.raises(ValueError, match="Forbidden"):
+        _executor().execute_code(
+            "import urllib.request\n"
+            "urllib.request.urlopen('http://example.invalid')",
+            allowed_modules=set(HEAL_MY_GOAP_ALLOWED_MODULES),
+            timeout_seconds=5.0,
+        )
 
-    heal-my-goap's original allow-list listed os and subprocess. If a future
-    edit lists them again, the import policy alone is not the last line: the
-    visitor must refuse the capability no matter what the allow-list says.
+
+def test_allowlist_refuses_credential_read() -> None:
+    """Reading os.environ needs no call, so a Subscript is enough to steal."""
+    with pytest.raises(ValueError, match="Forbidden"):
+        _executor().execute_code(
+            "import os\nleaked = os.environ['OPENROUTER_API_KEY']",
+            allowed_modules=set(HEAL_MY_GOAP_ALLOWED_MODULES),
+            timeout_seconds=5.0,
+        )
+
+
+def test_allowlist_still_permits_the_planned_action_surface() -> None:
+    """Narrowing must not break what an action actually needs: parse, match."""
+    result = _executor().execute_code(
+        "import json\nimport re\n"
+        "out = json.dumps({'hit': re.match('a', 'ab') is not None})",
+        allowed_modules=set(HEAL_MY_GOAP_ALLOWED_MODULES),
+        timeout_seconds=10.0,
+    )
+    assert result["out"] == '{"hit": true}'
+
+
+def test_visitor_refuses_escape_even_when_allowlist_grants_it() -> None:
+    """The backstop for a future edit that adds a forbidden name back.
+
+    If the privilege set is widened by mistake, the import policy alone is not
+    the last line: every capability must still be refused at use.
     """
-    executor = SandboxExecutor()
     hostile = {"pathlib", "subprocess", "os", "urllib", "json", "re"}
     for code in (
         "import os\nos.system('echo x')",
@@ -259,14 +104,27 @@ def test_sandbox_visitor_rejects_escape_even_when_allowlist_grants_it() -> None:
         "import os\nleaked = os.environ['OPENROUTER_API_KEY']",
     ):
         with pytest.raises(ValueError, match="Forbidden"):
-            executor.validate_ast(code, allowed_modules=hostile)
+            _executor().validate_ast(code, allowed_modules=hostile)
 
 
-def test_sandbox_visitor_still_permits_allowlisted_attribute_calls() -> None:
-    """The backstop must not become a blanket ban on attribute access."""
-    executor = SandboxExecutor()
-    executor.validate_ast(
-        "import json\nimport re\nimport pathlib\n"
-        "p = pathlib.Path('a.json')\nhit = re.match('a', 'ab') is not None",
-        allowed_modules={"pathlib", "json", "re"},
-    )
+def test_import_policy_refuses_forbidden_name_in_allowlist() -> None:
+    """A forbidden name is refused at the import, not tolerated until use."""
+    for code in ("import os", "import subprocess", "from os import path"):
+        with pytest.raises(ValueError, match="Forbidden"):
+            _executor().validate_ast(code, allowed_modules={"os", "subprocess"})
+
+
+def test_engine_defaults_to_the_engine_executor() -> None:
+    """No second implementation may reappear behind this default.
+
+    The Rune used to vendor its own copy of the visitor, the import policy and
+    the isolation. It drifted once. The default must be the engine's, so the
+    standalone path cannot fall behind the hosted one.
+    """
+    assert isinstance(GoapEngine().sandbox, MvgeSandbox)
+
+
+def test_engine_accepts_an_injected_executor() -> None:
+    """The seam is the protocol, so a caller may supply its own."""
+    injected = MvgeSandbox()
+    assert GoapEngine(sandbox=injected).sandbox is injected

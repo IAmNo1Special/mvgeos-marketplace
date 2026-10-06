@@ -5,6 +5,8 @@ import copy
 from collections.abc import Callable
 from typing import Any, cast
 
+from mvgeos_core.sandbox import MvgeSandbox
+
 from mvgeos_runes_heal_my_goap.gap_analyzer import BaseGapAnalyzer, GapAnalyzer
 from mvgeos_runes_heal_my_goap.models import (
     Action,
@@ -16,10 +18,7 @@ from mvgeos_runes_heal_my_goap.models import (
     action_from_tool,
 )
 from mvgeos_runes_heal_my_goap.observer import BaseObserver, DeltaObserver
-from mvgeos_runes_heal_my_goap.sandbox import (
-    BaseSandboxExecutor,
-    SandboxExecutor,
-)
+from mvgeos_runes_heal_my_goap.sandbox import BaseSandboxExecutor
 from mvgeos_runes_heal_my_goap.storage import ActionStorage, BaseActionStorage
 from mvgeos_runes_heal_my_goap.synthesizer import (
     BaseSynthesizer,
@@ -85,7 +84,7 @@ class GoapEngine:
         )
         self.synthesizer: BaseSynthesizer = synthesizer or LLMSynthesizer()
         self.gap_analyzer: BaseGapAnalyzer = gap_analyzer or GapAnalyzer()
-        self.sandbox: BaseSandboxExecutor = sandbox or SandboxExecutor()
+        self.sandbox: BaseSandboxExecutor = sandbox or MvgeSandbox()
         self.observer: BaseObserver = observer or DeltaObserver()
         self.state_refresh_callback = state_refresh_callback
         self.max_heal_attempts = max_heal_attempts

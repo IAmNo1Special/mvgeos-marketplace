@@ -4,11 +4,11 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
+from mvgeos_core.sandbox import MvgeSandbox
 
 from mvgeos_runes_heal_my_goap.engine import GoapEngine
 from mvgeos_runes_heal_my_goap.gap_analyzer import GapAnalyzer
 from mvgeos_runes_heal_my_goap.models import Action, Gap, Goal, WorldState
-from mvgeos_runes_heal_my_goap.sandbox import SandboxExecutor
 from mvgeos_runes_heal_my_goap.storage import ActionStorage
 from mvgeos_runes_heal_my_goap.synthesizer import LLMSynthesizer
 
@@ -66,7 +66,7 @@ def test_storage_corrupted_file_handling(tmp_path: Any) -> None:
 
 def test_sandbox_import_from_forbidden() -> None:
     """Verifies AST safety visitor catches forbidden from-imports."""
-    executor = SandboxExecutor()
+    executor = MvgeSandbox()
     with pytest.raises(ValueError, match="Forbidden AST node"):
         executor.validate_ast("from os import path")
 
