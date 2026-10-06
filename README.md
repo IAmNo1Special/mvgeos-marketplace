@@ -22,6 +22,7 @@ mvgeos mvge install coding_mvge
 | Rune | Version | Description | Path |
 | --- | --- | --- | --- |
 | `openrouter-realm` | `0.1.0` | Official OpenRouter provider realm for MvgeOS | `runes/openrouter-realm` |
+| `opencode-realm` | `0.1.0` | Official OpenCode Zen provider realm for MvgeOS | `runes/opencode-realm` |
 | `heal-my-goap` | `0.1.0` | Zero-token GOAP planning & LLM self-healing Rune | `runes/heal-my-goap` |
 | `seeker` | `0.1.0` | Seeker Protocol - DCI-based discovery | `runes/seeker` |
 | `session-title` | `0.1.0` | Auto-generates session titles with instant fallback and optional LLM upgrade | `runes/session-title` |
@@ -57,6 +58,7 @@ mvgeos-marketplace/
 |       `-- runes/
 `-- runes/              # extensions: installed to ~/.agents/extensions/<name>
     |-- openrouter-realm/
+    |-- opencode-realm/
     |-- heal-my-goap/
     |-- seeker/
     |-- session-title/

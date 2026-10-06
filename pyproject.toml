@@ -29,6 +29,7 @@ testpaths = [
     "tests",
     "runes/approval-rune/tests",
     "runes/openrouter-realm/tests",
+    "runes/opencode-realm/tests",
     "runes/seeker/tests",
     "runes/heal-my-goap/tests",
     "runes/mcp-bridge/tests",
@@ -47,6 +48,7 @@ python_files = "*.py"
 pythonpath = [
     "mvges",
     "runes/openrouter-realm",
+    "runes/opencode-realm",
     "runes/seeker",
     "runes/heal-my-goap",
     "runes/mcp-bridge",
