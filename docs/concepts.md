@@ -114,6 +114,26 @@ that would load.
     [approval-rune](runes/approval-rune.md) is a fail-closed gate that puts a
     human back in front of mutating casts. Neither is on by default.
 
+### What a Rune may import
+
+A Rune may import engine packages: `mvgeos_core`, `mvgeos_runes`,
+`mvgeos_agent`. It may never import another Rune. That absolute boundary is
+what makes each Rune independently installable on its own — engine packages are
+supplied by the host, siblings are not, and a Rune that reaches for a sibling
+does not work once it is installed alone.
+
+`mvgeos_agent` carries one extra rule, about **when** rather than **which**: do
+not import it at module scope. `mvgeos_agent/__init__` imports
+`mvgeos_runes.rune_runner`, which is the loader that loads Rune modules. A Rune
+loaded during that chain sees a half-built `mvgeos_agent` — `Mvge` unbound,
+`__all__` unset — so the import fails and the Rune silently does not load.
+Import `mvgeos_agent` inside the function that uses it, which runs after the
+package is fully loaded. An import under `if TYPE_CHECKING:` is fine, because
+annotations are strings at runtime.
+
+`tests/test_rune_import_boundary.py` enforces both halves: no sibling imports,
+and no module-scope `mvgeos_agent` in a Rune's runtime source.
+
 ## Skill
 
 A **Skill** is a capability pack: a directory with `SKILL.md` — YAML frontmatter
