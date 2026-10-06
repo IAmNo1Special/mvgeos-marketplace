@@ -221,6 +221,28 @@ async def test_request_goes_to_the_zen_chat_completions_endpoint() -> None:
 
 
 @pytest.mark.asyncio
+async def test_a_keyless_request_sends_no_authorization_header() -> None:
+    """Zen's free tier needs no key, so an empty one must not become a header.
+
+    ``Bearer `` with nothing after it is an illegal header value and httpx
+    refuses to put it on the wire, raising before the request is sent. A mock
+    transport accepts it happily, which is why this only surfaced against the
+    live gateway -- and it broke the one Summoner this Realm exists to serve.
+    """
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, content=_sse(*_turn_chunks()))
+
+    realm = OpenCodeRealm(api_key="", client=_client(handler))
+    model = _model(api_key="")
+    await _drain(realm, model, ChannelConfig(model=model))
+
+    assert "Authorization" not in seen[0].headers
+
+
+@pytest.mark.asyncio
 async def test_streams_text_and_reports_mana_usage() -> None:
     """The turn ends in one complete response that carries the text and the Mana.
 

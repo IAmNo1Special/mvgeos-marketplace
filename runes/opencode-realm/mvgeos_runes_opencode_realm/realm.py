@@ -223,10 +223,19 @@ class OpenCodeRealm(SSEStreamingRealm):
         base_url = (model.base_url or self._base_url or ZEN_BASE_URL).rstrip("/")
         api_key = model.api_key or self._api_key
         url = f"{base_url}{CHAT_COMPLETIONS_PATH}"
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
+        headers = {"Content-Type": "application/json"}
+        # The header is added only when there is a credential to put in it.
+        # Zen's free tier is reachable without a key, so an empty one is the
+        # normal case rather than a misconfiguration -- and `Bearer ` with
+        # nothing after it is an illegal header value, which httpx refuses to
+        # put on the wire. The result was that a keyless Summoner, the exact
+        # person this Realm exists to serve, got a LocalProtocolError before
+        # the request left the process.
+        #
+        # A Rune's own headers still win, so a caller that wants to send a
+        # credential another way is not overridden.
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
         if model.headers:
             headers.update(model.headers)
         return url, headers
