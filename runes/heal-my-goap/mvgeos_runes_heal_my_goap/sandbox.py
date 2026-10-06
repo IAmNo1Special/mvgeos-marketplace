@@ -19,21 +19,30 @@ FORBIDDEN_NAMES = {
     "builtins",
 }
 
-#: Modules no allowlist may re-grant.
-ALWAYS_FORBIDDEN_MODULES = frozenset({"sys"})
-
-#: Imports an LLM-synthesized GOAP action may reach. This is the whole
-#: privilege set of untrusted action code, so it is kept to the modules a
-#: planning action actually needs. ``os`` and ``subprocess`` were listed here
-#: and, with the visitor inspecting only bare ``ast.Name`` call targets, that
-#: list granted command execution outright. The visitor now refuses attribute
-#: access rooted at a forbidden module, so keeping these off the list is the
-#: second of two independent barriers, not the only one. Do not widen this
-#: without deciding what the action surface is allowed to do.
+#: Imports an LLM-synthesized GOAP action may reach.
+#:
+#: This list is a budget, not a wish list. Every entry is a capability handed
+#: to code a model wrote this run, from a gap description the model itself
+#: built out of world state it observed. Two entries have already been
+#: removed as policy rather than as defect:
+#:
+#: - ``os`` and ``subprocess`` were listed, and with the visitor inspecting
+#:   only bare ``ast.Name`` call targets that granted command execution
+#:   outright. The visitor now refuses attribute access rooted at a forbidden
+#:   module, and the engine refuses a forbidden module named in an allowlist
+#:   at all, so these are two independent barriers rather than one.
+#: - ``pathlib`` and ``urllib`` granted the two irreversible capabilities:
+#:   a file written outlives the run, and an exfiltration leaves nothing to
+#:   notice. Nothing shipped used either -- the synthesiser's own prompt asks
+#:   the model for ``"code_payload": null``, so the executed-code path is the
+#:   exception rather than the routine.
+#:
+#: What remains is pure computation: parse and match. If an action later needs
+#: to read a file or reach a network, the answer is a host-mediated capability
+#: with an audit record, not a standard-library import added here. Do not widen
+#: this list without deciding what the action surface is allowed to do.
 HEAL_MY_GOAP_ALLOWED_MODULES = frozenset(
     {
-        "pathlib",
-        "urllib",
         "json",
         "re",
     }
@@ -95,11 +104,35 @@ class ASTSafetyVisitor(ast.NodeVisitor):
         """Initializes ASTSafetyVisitor.
 
         Args:
-            allowed_modules: Optional set of allowed module names. An entry
-                never makes a forbidden module usable: the allowlist narrows
-                the import surface, it does not grant the host.
+            allowed_modules: Optional set of allowed module names. When
+                provided, any import not on the list is rejected. When omitted,
+                the denylist applies and the sandbox is best-effort
+                containment. A forbidden module is refused either way: the
+                allowlist narrows the import surface, it does not grant the
+                host.
         """
-        self.allowed_modules = allowed_modules or set()
+        self.allowed_modules = allowed_modules
+
+    def _check_importable(self, module: str, source: str) -> None:
+        """Applies the import policy to one statement.
+
+        Args:
+            module: Module name an import statement targets.
+            source: Human-readable form of the statement, for the message.
+
+        Raises:
+            ValueError: If the module may not be imported.
+        """
+        base_mod = module.split(".")[0]
+        if base_mod in FORBIDDEN_NAMES:
+            raise ValueError(f"Forbidden AST node: {source}")
+        if (
+            self.allowed_modules is not None
+            and base_mod not in self.allowed_modules
+        ):
+            raise ValueError(
+                f"Forbidden import: '{base_mod}' is not in allowed_modules."
+            )
 
     def visit_Import(self, node: ast.Import) -> None:
         """Validates import statements against forbidden names.
@@ -111,12 +144,7 @@ class ASTSafetyVisitor(ast.NodeVisitor):
             ValueError: If an import statement targets a forbidden module.
         """
         for alias in node.names:
-            base_mod = alias.name.split(".")[0]
-            if base_mod in ALWAYS_FORBIDDEN_MODULES or (
-                base_mod in FORBIDDEN_NAMES
-                and base_mod not in self.allowed_modules
-            ):
-                raise ValueError(f"Forbidden AST node: import {alias.name}")
+            self._check_importable(alias.name, f"import {alias.name}")
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
@@ -129,14 +157,9 @@ class ASTSafetyVisitor(ast.NodeVisitor):
             ValueError: If a from-import statement targets a forbidden module.
         """
         if node.module:
-            base_mod = node.module.split(".")[0]
-            if base_mod in ALWAYS_FORBIDDEN_MODULES or (
-                base_mod in FORBIDDEN_NAMES
-                and base_mod not in self.allowed_modules
-            ):
-                raise ValueError(
-                    f"Forbidden AST node: from {node.module} import ..."
-                )
+            self._check_importable(
+                node.module, f"from {node.module} import ..."
+            )
         self.generic_visit(node)
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
@@ -247,12 +270,9 @@ class SandboxExecutor(BaseSandboxExecutor):
 
         def safe_import(name: str, *args: Any, **kwargs: Any) -> Any:
             base_mod = name.split(".")[0]
-            if base_mod in ALWAYS_FORBIDDEN_MODULES:
+            if base_mod in FORBIDDEN_NAMES:
                 raise ValueError(f"Import of module '{name}' is forbidden.")
-            if allowed_modules is not None:
-                if base_mod not in allowed_modules:
-                    raise ValueError(f"Import of module '{name}' is forbidden.")
-            elif base_mod in FORBIDDEN_NAMES:
+            if allowed_modules is not None and base_mod not in allowed_modules:
                 raise ValueError(f"Import of module '{name}' is forbidden.")
             return builtins.__import__(name, *args, **kwargs)
 
