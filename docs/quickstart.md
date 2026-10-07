@@ -26,12 +26,12 @@ more than one, because checking its own work is a second model call. Fifty is
 enough to finish this page and then run out. A shared key, a demo account, or a
 team using one account drains it faster.
 
-When the allowance is spent, every free model returns 429 and step 5 fails for
-everyone on that account, and waiting is the only free fix. That is a limit at
-the provider, not a fault in your setup and not something a different default
-model would avoid. To go past it, add credit to the OpenRouter account or pass a
-paid model with `-m`. See
-[Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted).
+When the allowance is spent, step 5 fails for everyone on that account, and
+waiting is the only free fix. That is a limit at the provider, not a fault in
+your setup and not something a different free model would avoid. To go past it,
+add credit to the OpenRouter account or pass a paid model with `-m`. The status
+code and the wording differ by model, so
+[Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted) has both.
 
 ## Which version this page describes
 
@@ -292,9 +292,14 @@ slow. See the warning below.
     account with allowance left, this step works.
 
     What it cannot survive is an exhausted allowance. That is a limit at the
-    provider and no retry fixes it:
+    provider and no retry fixes it. Which message you get depends on the model,
+    and both are real — measured, not paraphrased:
 
     ```text
+    # with -m openrouter/free
+    Error: Provider returned error
+
+    # with a model whose id names its provider, e.g. nvidia/nemotron-3-*:free
     Daily free-model quota exhausted (50/50 requests). Resets at 00:00 UTC.
     Hint: Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to
     raise your free-model daily limit.
@@ -304,6 +309,18 @@ slow. See the warning below.
     across the whole account, and a single Mvge turn spends more than one
     because checking its own work is a second call. Fifty is enough to finish
     this page and run out.
+
+    `Error: Provider returned error` on its own tells you almost nothing — no
+    cause, no reset time, no provider name. Do not read it as "try again". The
+    router's own response underneath it names the real reason, and you can see
+    it yourself:
+
+    ```bash
+    curl -s https://openrouter.ai/api/v1/chat/completions \
+      -H "Authorization: Bearer $OPENROUTER_API_KEY" -H 'Content-Type: application/json' \
+      -d '{"model":"openrouter/free","messages":[{"role":"user","content":"hi"}]}' \
+      | python3 -m json.tool
+    ```
 
     If a run fails, check which of the two it is before re-running. A capacity
     failure clears on its own; a spent allowance will not, and a re-run just
@@ -513,17 +530,18 @@ step 5. What remains true:
   resolves but reads its credential differently — see the note above. Other
   Realms and models are unverified here.
 
-- A spent free allowance is reported as `Daily free-model quota exhausted` on
-  builds that read the quota headers, naming the reset time instead of suggesting
-  a retry — which is what a limit lasting until 00:00 UTC needs. The message is
-  shorter when your model is `openrouter/free`, because that response carries no
-  reset time to report. Earlier builds report the same condition as `Upstream
-  provider overloaded: Provider returned error`, and in interactive mode count 60
-  seconds down against a window measured in hours. Which wording you get depends
-  on your version; the fix is the same either way, and
-  [Troubleshooting](troubleshooting.md#upstream-provider-overloaded-provider-returned-error)
-  covers the older wording. Endpoint saturation is a separate condition with its
-  own message.
+- A spent free allowance is reported two different ways, and the difference is
+  the model, not the build. A provider-prefixed model such as
+  `nvidia/nemotron-3-*:free` returns the quota headers, so the CLI names the
+  reset time — `Daily free-model quota exhausted (50/50 requests). Resets at
+  00:00 UTC.` — instead of suggesting a retry, which is what a limit lasting
+  until midnight needs. `openrouter/free`, which step 5 uses, returns neither
+  those headers nor that status code: it answers `Error: Provider returned
+  error`, and its own body puts the real reason in `previous_errors` and in a
+  `metadata.raw` field naming the upstream it landed on. Both were measured on
+  the same account on the same day. Endpoint saturation is a separate condition
+  with its own message, in
+  [Troubleshooting](troubleshooting.md#upstream-error-from-provider-service-temporarily-overloaded).
 
 - The `read` Spell bug described in step 5 is open (SOM-23). Until it is fixed,
   expect one extra model round-trip whenever a Mvge checks its own work.
