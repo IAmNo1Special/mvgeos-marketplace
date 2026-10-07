@@ -1,8 +1,9 @@
 # Quickstart
 
 From nothing to a Mvge running a real task. Budget five minutes; on a warm
-network cache it takes about forty seconds — plus however long you spend
-retrying the model call, which is the step that is not reliable yet.
+network cache the whole thing takes about forty seconds. The step that can fail
+is not the install — it is the model call, which spends someone else's daily
+free allowance.
 
 Every command below was run end to end on a clean machine — an empty `$HOME`,
 empty `XDG` directories, a private `uv` cache, and nothing preinstalled on
@@ -59,15 +60,19 @@ pinned either, so there are no versions to choose between. Once the install
 becomes a released package, this page is what gets versioned per release, and
 the version selector appears here.
 
-!!! warning "Steps 1-4 always work. Step 5 depends on someone else's free tier."
+!!! warning "Every step works — if you keep the `-m` in step 5."
     The install is yours and takes seconds. The model call in step 5 goes
     through OpenRouter's free tier, which allows **50 requests a day per
     account** and resets at 00:00 UTC. If that allowance is spent — yours, or
     shared with anything else on the account — step 5 fails and it is not your
     setup. That is the most common reason this page appears broken on day one,
     and [Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted)
-    has the message your version prints for it. Everything below step 5 still
-    works.
+    has the message your version prints for it.
+
+    Dropping the `-m openrouter/free` from step 5 fails for a different reason,
+    and immediately rather than intermittently: MvgeOS's default model is
+    served by a different Realm than the one this page installs. See
+    [step 5](#5-run-one-task).
 
 ## Before you start
 
@@ -77,7 +82,7 @@ You need three things:
 | --- | --- |
 | [`uv`](https://docs.astral.sh/uv/) | MvgeOS installs and runs entirely through `uv` / `uvx`. There is no `pip` path. |
 | Python 3.13+ | Pulled in automatically by `uv`. You do not need to install it yourself. |
-| An API key for a model | MvgeOS does not ship models. You bring a key for the [Realm](concepts.md#mvge-spell-realm) you want to use. The default Realm is OpenRouter. |
+| An API key for a model | MvgeOS does not ship models. You bring a key for the [Realm](concepts.md#mvge-spell-realm) you want to use. This page uses the OpenRouter Realm, and an OpenRouter free-tier key is enough for every command on it. |
 
 You do not need a Python environment, a virtualenv, or a clone of this
 repository.
@@ -226,16 +231,34 @@ saves it to that file for you.
 ## 5. Run one task
 
 ```bash
-mvgeos --agent-name coding_mvge "Create a file named hello.txt containing exactly the text: hello from mvgeos"
+mvgeos --agent-name coding_mvge -m openrouter/free \
+  "Create a file named hello.txt containing exactly the text: hello from mvgeos"
 ```
+
+**The `-m openrouter/free` is required, and omitting it is the most likely way
+to fail this page.** MvgeOS ships a default model, and that default is not
+served by the OpenRouter Realm this page sets up in steps 2 and 4. Measured on
+a clean machine today, ten runs of the command *without* `-m` split:
+
+```text
+0 successes / 10 failures
+Error: API key required. Set OPENCODE_API_KEY, run 'mvgeos setup', or use --api-key
+```
+
+It fails in about a second, every time, before a single Spell runs. The model
+MvgeOS starts on is `opencode/space-bunny-free`, which needs the
+[OpenCode Realm](runes/opencode-realm.md) and an `OPENCODE_API_KEY` — neither of
+which this page installs or asks for. Naming the model explicitly is what makes
+this page self-consistent: it is the same Realm from step 2 and the same
+credential from step 4.
 
 This is real output, pasted unedited from a run on a clean machine. The only
 change is that the terminal's own line wrapping is preserved rather than
 reflowed:
 
 ```text
-Created hello.txt with the content "hello from mvgeos". Verified the file contents match
-exactly.
+Created hello.txt with the exact text "hello from mvgeos" and verified its
+contents.
 Stop reason: stop
 ```
 
@@ -255,25 +278,39 @@ $ wc -c hello.txt
 17 bytes for 17 characters: there is no trailing newline, because the Mvge was
 asked for *exactly* that text and did precisely that.
 
-It took about 30 seconds against a free model. That figure is from a run that
-succeeded; when the free allowance is spent, this step fails rather than being
-slow. See the warning at the top.
+It took 2 to 21 seconds against a free model across ten clean-machine runs. When
+the free allowance is spent, this step fails in about a second rather than being
+slow. See the warning below.
 
-!!! warning "The default free model is the fragile part of this page"
+!!! warning "The free tier is the fragile part of this page"
     Everything above this warning was verified on a clean machine. The model call
-    is the one step that is not reliable, and it fails with:
+    is the one step that depends on someone else's free allowance.
+
+    Measured on a clean machine, ten consecutive runs of the command above with
+    `-m openrouter/free` split **ten successes and zero failures**, in 2 to 21
+    seconds each, with the Rune and Mvge installs adding 2 to 4 seconds. So on an
+    account with allowance left, this step works.
+
+    What it cannot survive is an exhausted allowance. That is a limit at the
+    provider and no retry fixes it:
 
     ```text
-    Error: Upstream error from Nvidia: Service temporarily overloaded
+    Daily free-model quota exhausted (50/50 requests). Resets at 00:00 UTC.
+    Hint: Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to
+    raise your free-model daily limit.
     ```
 
-    Measured, not guessed: eight consecutive clean-machine runs of this exact task
-    split **four failures and four successes**, and an immediate retry cleared it
-    every time it was tried. A failed attempt costs about four seconds and writes
-    nothing. So expect to run this command twice, not to expect it to work once:
+    OpenRouter allows **50 free model requests per account per day**, counted
+    across the whole account, and a single Mvge turn spends more than one
+    because checking its own work is a second call. Fifty is enough to finish
+    this page and run out.
+
+    If a run fails, check which of the two it is before re-running. A capacity
+    failure clears on its own; a spent allowance will not, and a re-run just
+    spends the same allowance:
 
     ```bash
-    ls -l hello.txt && cat hello.txt || mvgeos --agent-name coding_mvge \
+    ls -l hello.txt && cat hello.txt || mvgeos --agent-name coding_mvge -m openrouter/free \
       "Create a file named hello.txt containing exactly the text: hello from mvgeos"
     ```
 
@@ -281,9 +318,7 @@ slow. See the warning at the top.
     a correct file behind and still exit non-zero, and re-running blindly risks
     overwriting work you already have.
 
-    If a retry does not clear it, the problem is probably not capacity — it is
-    more likely that the account's daily free allowance is spent, which no retry
-    fixes. That message and its reset time are in
+    The reset time and the full message set are in
     [Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted).
 
 ### What actually happened underneath
@@ -342,7 +377,7 @@ mvgeos info --agent-name coding_mvge
 
 ```text
 Agent: coding_mvge
-Model: nvidia/nemotron-3-ultra-550b-a55b:free
+Model: opencode/space-bunny-free
 
 Spells
   bash        builtin
@@ -355,6 +390,10 @@ Spells
   search_web  builtin
   write       builtin
 ```
+
+`Model:` is the default MvgeOS starts on, which is **not** the model step 5
+runs. That difference is the whole reason step 5 passes `-m` explicitly; see
+[step 5](#5-run-one-task).
 
 The real table has a Description column several paragraphs long per Spell, and
 is followed by the Rune, Config, Prompt, Skills, and Diagnostics tables. All
@@ -422,28 +461,57 @@ step 5. What remains true:
     to run bare `uvx mvgeos`, it is ahead of the release.
 
 - Timings are from a warm `uv` cache on a warm git clone: about 5s for `uvx
-  --help`, 2s for `uv tool install`, 4s for the Rune, 2s for the Mvge, and 31s
-  for the task itself. A genuinely cold machine is slower. The budget is
+  --help`, 2s for `uv tool install`, 2-4s for the Rune, 2-4s for the Mvge, and
+  2-21s for the task itself. A genuinely cold machine is slower. The budget is
   dominated by the model call, not the install.
 
-- **The five-minute budget holds for steps 1-4. Step 5 may need one retry.** The
-  transcript above is a run that succeeded, not the average outcome: eight
-  consecutive clean-machine runs of the step-5 task split four failures and four
-  successes, and an immediate retry cleared it every time it was tried. The
-  measurement and the check-before-you-re-run command are in the warning box
-  under step 5, above.
+- **The five-minute budget holds for every step on this page.** Measured on a
+  clean machine: ten consecutive runs of the step-5 task with
+  `-m openrouter/free` split ten successes and zero failures, in 2 to 21 seconds
+  each, plus 2 to 4 seconds for the Rune and Mvge installs. Worst observed case
+  for steps 3 through 5 together was 25 seconds.
 
-  Neither of the other two causes of a step-5 failure is fixed by retrying: a
-  spent account-wide free allowance, and a model id that is not in the shipped
-  list. Both are in
-  [Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted).
+  What is *not* covered is a day when the account's free allowance is already
+  spent, which is the one condition no amount of retrying fixes.
+
+- **The default model is not usable from this page's setup.** `mvgeos info`
+  reports `Model: opencode/space-bunny-free`, which is served by the
+  `opencode-realm` Rune and wants an `OPENCODE_API_KEY`. This page installs
+  `openrouter-realm` and writes an OpenRouter key, so a bare run with no `-m`
+  fails immediately with `API key required. Set OPENCODE_API_KEY` — ten runs out
+  of ten. Step 5 names its model to avoid this. It is a gap between what the
+  engine defaults to and what the default Realm can serve, and it is engine work
+  rather than a documentation fix, so it is reported rather than papered over.
+
+- **The Zen free tier is not a substitute for this page's step 5.** Its models
+  carry a `-free` suffix rather than OpenRouter's `:free`, and asked for from
+  outside OpenCode they answer:
+
+  ```text
+  Error from provider (Console): OpenCode's free tier can only be used from within OpenCode
+  ```
+
+  `space-bunny-free` gets further and then returns
+  `FreeUsageLimitError: Rate limit exceeded`. So there is no keyless path to a
+  free model through the opencode Realm from the command line today.
+
+- **A model whose Realm is its provider will not read this page's credential
+  file.** Naming a routed model such as `nvidia/nemotron-3-ultra-550b-a55b:free`
+  resolves its Realm to `nvidia`, so the CLI looks for `NVIDIA_API_KEY` and then
+  `~/.agents/auth/nvidia.json` — and never reads the
+  `~/.agents/auth/openrouter.json` that step 4 tells you to write. It does fall
+  back to the `OPENROUTER_API_KEY` environment variable, so `export` works and
+  the file does not. Use `openrouter/free`, whose Realm is OpenRouter, until
+  this changes.
 
 - Model choice is narrower than OpenRouter's catalog. `-m` resolves against a
   static list shipped in the repository, that list is a drifting snapshot, and no
   `mvgeos` subcommand refreshes it. Two real failures are documented under
-  [`Error: Unknown model`](troubleshooting.md#error-unknown-model). Only the two
-  `nvidia/nemotron-3-*:free` ids have been run end to end. Other Realms and models
-  are unverified here.
+  [`Error: Unknown model`](troubleshooting.md#error-unknown-model). Only
+  `openrouter/free` has been run end to end on this page, because that is the
+  model step 5 names. A routed id such as `nvidia/nemotron-3-ultra-550b-a55b:free`
+  resolves but reads its credential differently — see the note above. Other
+  Realms and models are unverified here.
 
 - A spent free allowance is reported as `Daily free-model quota exhausted` on
   builds that read the quota headers, naming the reset time instead of suggesting
