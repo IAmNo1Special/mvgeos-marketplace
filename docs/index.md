@@ -41,10 +41,14 @@ mvgeos mvge install coding_mvge
 export OPENROUTER_API_KEY="sk-or-..."
 
 # run a task
-mvgeos --agent-name coding_mvge "summarise the README in this directory"
+mvgeos --agent-name coding_mvge -m openrouter/free \
+  "summarise the README in this directory"
 ```
 
-The [Quickstart](quickstart.md) walks through it with real output.
+The `-m openrouter/free` matters: it names a model the OpenRouter Realm you
+installed above actually serves. MvgeOS's built-in default model is served by a
+different Realm and fails immediately without a key of its own. The
+[Quickstart](quickstart.md) walks through it with real output.
 
 ## What it does
 

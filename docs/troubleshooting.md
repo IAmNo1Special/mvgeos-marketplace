@@ -55,6 +55,53 @@ uv tool install mkdocs --with mkdocs-material --with pymdown-extensions
 
 ## Getting a model to answer
 
+### `API key required. Set OPENCODE_API_KEY`
+
+```text
+Error: API key required. Set OPENCODE_API_KEY, run 'mvgeos setup', or use --api-key
+```
+
+**You left the model out and the default is not the one you installed.** This is
+the most common first-run failure, and it arrives in about a second, before any
+Spell runs.
+
+The message names the Realm of MvgeOS's **default** model, which is
+`opencode/space-bunny-free` — served by the `opencode-realm` Rune, not the
+`openrouter-realm` Rune the [Quickstart](quickstart.md) installs. So the CLI
+asks for `OPENCODE_API_KEY` while you have an OpenRouter key saved.
+
+Name a model the Realm you installed can serve:
+
+```bash
+mvgeos --agent-name coding_mvge -m openrouter/free "your task"
+```
+
+Confirm which model you are actually about to use — it prints the default, which
+is the thing that surprised you:
+
+```bash
+mvgeos info --agent-name coding_mvge     # prints: Model: <slug>
+```
+
+There is a second, quieter version of the same trap. Naming a model whose id
+starts with a *provider* rather than a Realm — `nvidia/nemotron-3-*:free`, for
+instance — resolves its Realm to `nvidia`, so the CLI looks for `NVIDIA_API_KEY`
+and then `~/.agents/auth/nvidia.json`. It never reads the
+`~/.agents/auth/openrouter.json` you wrote. The `OPENROUTER_API_KEY`
+environment variable is the one fallback that does reach it, so this works:
+
+```bash
+export OPENROUTER_API_KEY="sk-or-..."      # works
+```
+
+and this does not, even though the file holds the same key:
+
+```bash
+printf '{"api_key": "sk-or-..."}' > ~/.agents/auth/openrouter.json   # ignored for nvidia/... models
+```
+
+Prefer `openrouter/free`, whose Realm is OpenRouter, until the two agree.
+
 ### `Authentication failed (401)`
 
 ```text
@@ -86,7 +133,7 @@ right prefix but no credit still produces this 401.
 ### `Daily free-model quota exhausted`
 
 ```text
-$ mvgeos --agent-name coding_mvge "say hi"
+$ mvgeos --agent-name coding_mvge -m openrouter/free "say hi"
 Daily free-model quota exhausted (50/50 requests). Resets at 00:00 UTC.
 Hint: Add credits to your OpenRouter account, switch to a paid model, or wait for the daily reset.
 ```
@@ -143,7 +190,7 @@ measured in seconds.
 ### `Upstream provider overloaded: Provider returned error`
 
 ```text
-$ mvgeos --agent-name coding_mvge "say hi"
+$ mvgeos --agent-name coding_mvge -m openrouter/free "say hi"
 Upstream provider overloaded: Provider returned error
 ```
 
@@ -240,14 +287,14 @@ Error: Upstream error from Nvidia: Service temporarily overloaded
 The provider refused the request. Your install is fine, your key is fine, and
 this is not a MvgeOS bug — the model endpoint is at capacity.
 
-This one clears on its own, and the fix is cheap. On a clean machine, eight
-consecutive runs of the exact quickstart task split four failures to four
-successes — so about half the time you will not hit this at all, and when you do,
-an immediate retry cleared it every time it was tried. The failed attempt costs
-about four seconds and writes nothing, so check the work and re-run in one line:
+This one clears on its own, and the fix is cheap. On a clean machine, ten
+consecutive runs of the quickstart task split ten successes to zero failures,
+so on its own you are unlikely to hit this at all. When you do, an immediate
+retry is the right move. The failed attempt costs a few seconds and writes
+nothing, so check the work and re-run in one line:
 
 ```bash
-ls -l hello.txt && cat hello.txt || mvgeos --agent-name coding_mvge \
+ls -l hello.txt && cat hello.txt || mvgeos --agent-name coding_mvge -m openrouter/free \
   "Create a file named hello.txt containing exactly the text: hello from mvgeos"
 ```
 
