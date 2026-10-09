@@ -126,11 +126,18 @@ Successfully installed rune 'opencode-realm' to
 default model is `opencode/space-bunny-free`; the slug's prefix is the Realm, so
 a run resolves the `opencode` Realm and nothing else answers it. Installing
 `openrouter-realm` instead gets you a working engine that cannot reach its own
-default model, and the error names the model rather than the cause:
+default model. Reproduced on a clean `$HOME` with the two installs both exiting
+0 and the task then failing:
 
 ```text
-Error: No Realm factory registered for model 'opencode/space-bunny-free'.
+$ uvx mvgeos --agent-name coding_mvge "Create a file named hello.txt containing exactly the text: hello from mvgeos"
+Error: No Realm factory registered for model 'opencode/space-bunny-free'. Run
+'mvgeos rune install opencode-realm' to install it from the central marketplace.
 ```
+
+Current builds name the Rune to install in that message. Older builds named only
+`openrouter-realm`, which is worse than no remedy — so if you followed an older
+page and installed that one, install this one too.
 
 OpenRouter is a fine Realm and is in the catalog — see
 [Use another Realm](#use-another-realm) — it is just not the one the default

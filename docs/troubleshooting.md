@@ -45,17 +45,26 @@ part and you get this error, or a confusing failure deep in a build.
 ### `No Realm factory registered for model 'opencode/space-bunny-free'`
 
 ```text
-Error: No Realm factory registered for model 'opencode/space-bunny-free'.
+Error: No Realm factory registered for model 'opencode/space-bunny-free'. Run
+'mvgeos rune install opencode-realm' to install it from the central marketplace.
 ```
 
 You installed a Realm, but not the one your default model needs. The engine's
-default model is `opencode/space-bunny-free`, and the prefix of that slug is
-the Realm — so `openrouter-realm` does not answer it, and neither does an empty
-install. The message names the model, which is the clue: read the prefix.
+default model is `opencode/space-bunny-free`, and the prefix of that slug is the
+Realm — so `openrouter-realm` does not answer it. Both installs succeed; the
+task command is where this appears, and it is not a network fault.
+
+Current builds name the Rune to install in the message, which is exactly what to
+run:
 
 ```bash
 mvgeos rune install opencode-realm --confirm-python-deps
 ```
+
+Older builds named `openrouter-realm` in that same message, which is worse than
+naming nothing: it installs a working Realm that still cannot serve the default
+model. If you followed one, install `opencode-realm` as well — the two coexist,
+and `-m` picks which one serves a given slug.
 
 The same error with a different model in it means the same thing for that
 model's prefix. The two Realms that ship are `opencode-realm` and
