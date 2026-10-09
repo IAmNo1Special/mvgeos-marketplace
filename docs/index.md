@@ -7,11 +7,12 @@ MvgeOS is an operating system for AI agents, written in Python. A Mvge — the
 agent — casts Spells against models served by Realms. Conversations persist as
 Tomes. Capabilities extend through Runes.
 
-There is no account to create, no telemetry in the engine, and no model
-baked in. You bring a key for whichever provider you already use.
+There is no account to create and no telemetry in the engine. One default model
+*is* baked in, and it runs with no credential at all — so your first task needs
+no key. To use another provider, bring the key for the Realm you want.
 
 ```bash
-uvx --from "git+https://github.com/IAmNo1Special/mvgeos#subdirectory=mvgeos-cli" mvgeos --help
+uvx mvgeos --help
 ```
 
 ```text
@@ -32,19 +33,19 @@ Three commands and about thirty seconds gets you from nothing to a running Mvge:
 
 ```bash
 # 1. the Realm — how MvgeOS reaches a model
-mvgeos rune install openrouter-realm --confirm-python-deps
+uvx mvgeos rune install opencode-realm --confirm-python-deps
 
 # 2. the Mvge — carries the Spells
-mvgeos mvge install coding_mvge
+uvx mvgeos mvge install coding_mvge
 
-# 3. your key
-export OPENROUTER_API_KEY="sk-or-..."
-
-# run a task
-mvgeos --agent-name coding_mvge "summarise the README in this directory"
+# 3. run a task
+uvx mvgeos --agent-name coding_mvge "summarise the README in this directory"
 ```
 
-The [Quickstart](quickstart.md) walks through it with real output.
+There is no credential step, because there is nothing to authenticate. The
+[Quickstart](quickstart.md) walks through it with real output, and
+[Use another Realm](quickstart.md#use-another-realm) covers the case where you
+already pay for a provider.
 
 ## What it does
 
@@ -54,7 +55,7 @@ Spells and Runes it assembled before you spend anything:
 
 ```text
 Agent: coding_mvge
-Model: nvidia/nemotron-3-ultra-550b-a55b:free
+Model: opencode/space-bunny-free
 
                     Spells
 ┏━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -69,6 +70,10 @@ Model: nvidia/nemotron-3-ultra-550b-a55b:free
 │ grep       │ builtin │ -           │ Search file contents by pattern…          │
 └────────────┴─────────┴─────────────┴───────────────────────────────────────────┘
 ```
+
+The `Model:` line is the model you get with no configuration, and its prefix is
+the Realm — `opencode`, which is why step 1 above installs `opencode-realm`.
+Swap the Realm and the model comes with it.
 
 - **Coding Mvge.** Nine built-in Spells — `bash`, `edit`, `find`, `grep`,
   `list_files`, `read`, `read_url`, `search_web`, `write` — installed as a
@@ -99,8 +104,18 @@ Model: nvidia/nemotron-3-ultra-550b-a55b:free
   [Quickstart](quickstart.md#which-version-this-page-describes). The internals are
   held to a high bar — mypy strict, ruff, roughly 2,200 tests. The command
   surface still moves.
-- **No published package yet.** The install line is long because there is no
-  PyPI distribution to say `uvx mvgeos`. It will get shorter.
+- **The default model call can be refused.** Every install and inspect command
+  here was verified on a clean machine. The model call was not, and it is not
+  MvgeOS's to fix: when the default free tier is at capacity the run ends in
+
+  ```text
+  Rate limited by the provider: Realm requested 2209s retry delay (max: 60s). Rate
+  limit exceeded. Please try again later..
+  ```
+
+  Seven consecutive clean-machine attempts returned exactly that today. Read the
+  number it asks for — about 37 minutes — rather than retrying into it. Details
+  in [Troubleshooting](troubleshooting.md#rate-limited-by-the-provider).
 - **Runes run in-process** via `importlib`. Not sandboxed, not
   process-isolated. Read manifests before installing code you did not write;
   [approval-rune](runes/approval-rune.md) is a fail-closed gate you can put in

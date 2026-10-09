@@ -14,35 +14,53 @@ $ uvx mvgeos --help
       mvgeos, we can conclude that your requirements are unsatisfiable.
 ```
 
-The `mvgeos` console script exists on the root distribution, but no release has
-been published to PyPI yet — so the short form has nothing to resolve against
-until one ships. Use the git form:
+**Not the current state.** `mvgeos` is on PyPI and `uvx mvgeos --help` resolves;
+this page's own commands were run that way. If you are reading this error, you
+are either on a version older than the first published release, or your network
+or index is not reaching PyPI. Check which:
 
 ```bash
-uvx --from "git+https://github.com/IAmNo1Special/mvgeos#subdirectory=mvgeos-cli" mvgeos --help
-```
-
-The `mvgeos` **command** comes from the `mvgeos-cli` subdirectory of the
-monorepo, which is why the path ends in `#subdirectory=mvgeos-cli`. If you
-drop that part you get this error, or a confusing failure deep in a build.
-
-To install it properly instead:
-
-```bash
-uv tool install "git+https://github.com/IAmNo1Special/mvgeos#subdirectory=mvgeos-cli"
-```
-
-Confirm what landed:
-
-```bash
+uvx mvgeos --help
 uv tool list
 ```
 
 ```text
-$ uv tool list | grep mvgeos-cli
-mvgeos-cli vX.Y.Z      # whatever version you installed
+$ uv tool list
+mvgeos v0.6.16
 - mvgeos
 ```
+
+The `git+` form still works and is what contributors want, because it gives you
+the default branch rather than the newest release:
+
+```bash
+uvx --from "git+https://github.com/IAmNo1Special/mvgeos#subdirectory=mvgeos-cli" mvgeos --help
+uv tool install "git+https://github.com/IAmNo1Special/mvgeos#subdirectory=mvgeos-cli"
+```
+
+The `mvgeos` **command** lives in the `mvgeos-cli` subdirectory of the
+monorepo, which is why that path ends in `#subdirectory=mvgeos-cli`. Drop that
+part and you get this error, or a confusing failure deep in a build.
+
+### `No Realm factory registered for model 'opencode/space-bunny-free'`
+
+```text
+Error: No Realm factory registered for model 'opencode/space-bunny-free'.
+```
+
+You installed a Realm, but not the one your default model needs. The engine's
+default model is `opencode/space-bunny-free`, and the prefix of that slug is
+the Realm — so `openrouter-realm` does not answer it, and neither does an empty
+install. The message names the model, which is the clue: read the prefix.
+
+```bash
+mvgeos rune install opencode-realm --confirm-python-deps
+```
+
+The same error with a different model in it means the same thing for that
+model's prefix. The two Realms that ship are `opencode-realm` and
+`openrouter-realm`; see
+[Use another Realm](quickstart.md#use-another-realm).
 
 ### `No executables are provided by package mkdocs-material`
 
@@ -221,15 +239,50 @@ marketplace either. Until both are fixed, use a keyed Realm.
 Error: No Realm extension installed.
 ```
 
-The engine has no way to reach a model yet. Install one:
+The engine has no way to reach a model yet. Install the Realm your default model
+needs, which is `opencode-realm`:
 
 ```bash
-mvgeos rune install openrouter-realm --confirm-python-deps
+mvgeos rune install opencode-realm --confirm-python-deps
 ```
 
 Interactively, `mvgeos` offers to install it for you and then retries. That
 prompt is skipped when stdout is not a terminal — in a script or a CI job you
 must run the install yourself first.
+
+### `Rate limited by the provider`
+
+```text
+Rate limited by the provider: Realm requested 2209s retry delay (max: 60s). Rate
+limit exceeded. Please try again later..
+No spells ran before the failure, so nothing was written.
+```
+
+The default model's free tier is at capacity. This is the most common reason a
+first run appears broken, and nothing is wrong with your install.
+
+**Read the number.** `2209s` is about 37 minutes; that is the window the provider
+asked for. A retry loop will not clear it, and hammering the endpoint is the one
+thing guaranteed not to help. Wait for the window it names, then run the command
+again.
+
+The `(max: 60s)` is the engine's own cap — it waits at most a minute and then
+gives up, rather than sitting on the call. That is a choice, not the limit.
+
+A refused run writes nothing; the message says so and the check confirms it. But
+a run that dies *after* a `write` can leave a correct file behind and still exit
+non-zero, so check before you re-run:
+
+```bash
+ls -l hello.txt && cat hello.txt || mvgeos --agent-name coding_mvge \
+  "Create a file named hello.txt containing exactly the text: hello from mvgeos"
+```
+
+The check comes first on purpose. The engine writes each Spell result to disk as
+it happens, so re-running blindly overwrites work you already have.
+
+If you would rather not wait, use a Realm you already pay for — see
+[Use another Realm](quickstart.md#use-another-realm).
 
 ### `Upstream error from <provider>: Service temporarily overloaded`
 
@@ -238,23 +291,18 @@ Error: Upstream error from Nvidia: Service temporarily overloaded
 ```
 
 The provider refused the request. Your install is fine, your key is fine, and
-this is not a MvgeOS bug — the model endpoint is at capacity.
+this is not a MvgeOS bug — the model endpoint is at capacity. Note that `Nvidia`
+names an **OpenRouter**-routed model, so this is the message you get on the
+OpenRouter Realm; on the default Realm the same condition usually arrives as the
+rate-limit message above.
 
-This one clears on its own, and the fix is cheap. On a clean machine, eight
-consecutive runs of the exact quickstart task split four failures to four
-successes — so about half the time you will not hit this at all, and when you do,
-an immediate retry cleared it every time it was tried. The failed attempt costs
-about four seconds and writes nothing, so check the work and re-run in one line:
+This one clears on its own. A refused attempt costs a few seconds and writes
+nothing, so check the work and re-run in one line:
 
 ```bash
 ls -l hello.txt && cat hello.txt || mvgeos --agent-name coding_mvge \
   "Create a file named hello.txt containing exactly the text: hello from mvgeos"
 ```
-
-The check comes first on purpose. The engine writes each Spell result to disk as
-it happens, so a run that dies on the model call *after* a `write` can leave a
-correct file behind and still exit non-zero — and re-running blindly overwrites
-work you already have.
 
 If it keeps failing, name a different model. Do not take a slug from this page —
 read the one you are actually running out of `mvgeos info`, then pass it:
@@ -267,6 +315,11 @@ mvgeos info --agent-name coding_mvge     # prints: Model: <slug>
 mvgeos -m <slug> --agent-name coding_mvge \
   "Create a file named hello.txt containing exactly the text: hello from mvgeos"
 ```
+
+A `-m` slug's prefix is the Realm that must serve it. Passing an
+`nvidia/…` slug with only `opencode-realm` installed gets you
+[`No Realm factory registered`](#no-realm-factory-registered-for-model-opencodespace-bunny-free),
+not a different answer.
 
 This page deliberately does not hardcode a fallback slug. The default moves, and
 the baseline model list is a snapshot that already rots — a recovery command that
