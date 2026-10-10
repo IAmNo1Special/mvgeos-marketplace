@@ -99,9 +99,10 @@ limit exceeded. Please try again later..
 
 **Read the number before you retry.** `2209s` is roughly 37 minutes, and a tight
 retry loop will not shorten it. The refusal is not your install and not your
-configuration. Seven consecutive clean-machine attempts returned exactly this
-today; the engine waits at most 60 seconds itself, which is why it gives up
-rather than sitting there.
+configuration. On the clean-machine check behind the Quickstart, the same command
+was refused seven times and then completed, about 40 minutes after the first
+refusal — the delay counts down and does end. The engine waits at most 60 seconds
+itself, which is why it gives up rather than sitting there.
 
 If you are on the OpenRouter Realm instead, the limit there is a daily allowance
 rather than a busy endpoint: OpenRouter allows **50 free-model requests per day

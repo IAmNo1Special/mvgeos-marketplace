@@ -104,18 +104,21 @@ Swap the Realm and the model comes with it.
   [Quickstart](quickstart.md#which-version-this-page-describes). The internals are
   held to a high bar — mypy strict, ruff, roughly 2,200 tests. The command
   surface still moves.
-- **The default model call can be refused.** Every install and inspect command
-  here was verified on a clean machine. The model call was not, and it is not
-  MvgeOS's to fix: when the default free tier is at capacity the run ends in
+- **The default model call can be refused.** Every command on this site was
+  verified on a clean machine, including the task on the
+  [Quickstart](quickstart.md). It is not MvgeOS's to fix, though: when the
+  default free tier is at capacity the run ends in
 
   ```text
   Rate limited by the provider: Realm requested 2209s retry delay (max: 60s). Rate
   limit exceeded. Please try again later..
   ```
 
-  Seven consecutive clean-machine attempts returned exactly that today. Read the
-  number it asks for — about 37 minutes — rather than retrying into it. Details
-  in [Troubleshooting](troubleshooting.md#rate-limited-by-the-provider).
+  On the check that produced the Quickstart's transcript, this exact command was
+  refused seven times and then completed, about 40 minutes after the first
+  refusal. Read the number it asks for — about 37 minutes — rather than
+  retrying into it. Details in
+  [Troubleshooting](troubleshooting.md#rate-limited-by-the-provider).
 - **Runes run in-process** via `importlib`. Not sandboxed, not
   process-isolated. Read manifests before installing code you did not write;
   [approval-rune](runes/approval-rune.md) is a fail-closed gate you can put in
