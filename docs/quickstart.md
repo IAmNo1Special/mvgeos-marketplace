@@ -385,6 +385,29 @@ list is a drifting snapshot — see
 `mvgeos info --agent-name coding_mvge` to see the slug you would otherwise get,
 and read the shipped list before you name a different one.
 
+!!! warning "Scripting step 3 needs the flag, not a piped `y`"
+    `mvgeos mvge install` takes `--confirm-python-deps`, the same flag
+    `rune install` takes — see step 3. Use it in a script or CI job, where stdin
+    is not a TTY and nothing is prompted:
+
+    ```bash
+    mvgeos mvge install --confirm-python-deps coding_mvge
+    ```
+
+    Without the flag, a non-interactive session skips the fetch and says so
+    rather than failing:
+
+    ```text
+    Non-interactive session: skipping install of unreviewed python dependencies
+    ['mvgeos-agent', 'mvgeos-core', 'mvgeos-provider', 'mvgeos-runes'].
+    ```
+
+    For `coding_mvge` that skip is harmless — the four packages are already
+    installed as dependencies of the engine, and the resolved Spell set is the
+    same nine either way. For a Mvge whose `python_deps` are *not* already
+    covered by the engine, it is the difference between a working Mvge and a
+    Mvge missing its dependencies. Read the output either way; do not assume.
+
 !!! warning "Put `--agent-name` after the subcommand"
     `mvgeos --agent-name coding_mvge info` silently ignores the flag and reports
     `Agent: default-mvge` with no Spells loaded — no error, just the wrong Mvge.
