@@ -121,9 +121,11 @@ class DCISkillMatcher:
         self,
         skill_dirs: list[Path] | None = None,
         rg_timeout: int = 15,
+        project_dir: str | Path | None = None,
     ) -> None:
         self._explicit_skill_dirs = skill_dirs
         self._rg_timeout = rg_timeout
+        self._project_dir = project_dir
 
     @property
     def skill_dirs(self) -> list[Path]:
@@ -133,7 +135,7 @@ class DCISkillMatcher:
         that do not exist, and a caller that needs to report which root it
         could not search needs the ones that were dropped.
         """
-        return _skill_root_candidates(self._explicit_skill_dirs)
+        return _skill_root_candidates(self._explicit_skill_dirs, self._project_dir)
 
     def discover_skill_dirs(self) -> list[Path]:
         return [d for d in self.skill_dirs if d.is_dir()]
@@ -241,7 +243,10 @@ async def _reap_process_skills(proc: asyncio.subprocess.Process) -> None:
         pass
 
 
-def _skill_root_candidates(custom_roots: list[Path] | None = None) -> list[Path]:
+def _skill_root_candidates(
+    custom_roots: list[Path] | None = None,
+    project_dir: str | Path | None = None,
+) -> list[Path]:
     """Every skill root Seeker would search, resolved now and unfiltered.
 
     The user-scope root comes from :func:`paths.skill_roots`, which reads
@@ -252,15 +257,22 @@ def _skill_root_candidates(custom_roots: list[Path] | None = None) -> list[Path]
     ``~/.claude/skills`` stays home-relative on purpose: it is a third-party
     convention, not our layer, and relocating our own directory does not
     relocate it.
+
+    ``project_dir`` names the project whose Skills are in scope. Left
+    ``None``, the project layer is omitted rather than defaulted to the
+    working directory -- see :func:`paths.skill_roots` and ADR 0017.
     """
     if custom_roots:
         return [p.expanduser().resolve() for p in custom_roots]
-    return [root.resolve() for root in paths.skill_roots()]
+    return [root.resolve() for root in paths.skill_roots(project_dir)]
 
 
-def _get_skill_roots(custom_roots: list[Path] | None = None) -> list[Path]:
+def _get_skill_roots(
+    custom_roots: list[Path] | None = None,
+    project_dir: str | Path | None = None,
+) -> list[Path]:
     """Return list of existing skill directories."""
-    return [r for r in _skill_root_candidates(custom_roots) if r.is_dir()]
+    return [r for r in _skill_root_candidates(custom_roots, project_dir) if r.is_dir()]
 
 
 DCI_SkillMatcher = DCISkillMatcher
