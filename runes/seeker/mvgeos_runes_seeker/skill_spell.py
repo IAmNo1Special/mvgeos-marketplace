@@ -28,6 +28,7 @@ class SkillSearchSpell(MvgeSpell):
         nlt_model: str = "openrouter/free",
         nlt_api_key: str = "",
         agent_name: str | None = None,
+        project_dir: str | Path | None = None,
     ) -> None:
         super().__init__(
             name="skill_search",
@@ -52,6 +53,7 @@ class SkillSearchSpell(MvgeSpell):
         self._nlt_model = nlt_model
         self._nlt_api_key = nlt_api_key
         self._agent_name = agent_name
+        self._project_dir = project_dir
 
     async def execute(
         self,
@@ -71,6 +73,7 @@ class SkillSearchSpell(MvgeSpell):
         matcher = DCISkillMatcher(
             skill_dirs=self._explicit_skill_dirs,
             rg_timeout=self._rg_timeout,
+            project_dir=self._project_dir,
         )
         absent = missing(matcher.skill_dirs)
         if absent:

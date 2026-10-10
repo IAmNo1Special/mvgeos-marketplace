@@ -22,6 +22,7 @@ class SkillExecuteSpell(MvgeSpell):
         rg_timeout: int = 15,
         nlt_model: str = "openrouter/free",
         nlt_api_key: str = "",
+        project_dir: str | Path | None = None,
     ) -> None:
         super().__init__(
             name="skill_execute",
@@ -50,6 +51,7 @@ class SkillExecuteSpell(MvgeSpell):
         self._provider_registry = provider_registry
         self._skill_dirs = skill_dirs
         self._agent_name = agent_name
+        self._project_dir = project_dir
         self._rg_timeout = rg_timeout
         self._nlt_model = nlt_model
         self._nlt_api_key = nlt_api_key
@@ -67,7 +69,7 @@ class SkillExecuteSpell(MvgeSpell):
         if not skill_name or not script:
             return {"status": "error", "error": "skill_name and script are required"}
 
-        roots = _get_skill_roots(self._skill_dirs)
+        roots = _get_skill_roots(self._skill_dirs, self._project_dir)
         target_script: Path | None = None
         target_skill_dir: Path | None = None
 

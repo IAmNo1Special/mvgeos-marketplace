@@ -16,11 +16,18 @@ in one line -- the install path and the discovery path resolving
 differently is what allows a Rune to install successfully and then load
 nowhere.
 
-``~/.claude/skills`` and ``.agents/skills`` are listed by
-:func:`skill_roots` and are not this layer. The first is a third-party
-convention; the second is the project-relative spelling of our own layer,
-consulted only when the project actually has one. Neither moves with
-``$MVGEOS_GLOBAL_DIR``, and neither is routed through a global resolver.
+``~/.claude/skills`` is listed by :func:`skill_roots` and is not this
+layer. It is a third-party convention, so relocating our own directory
+does not relocate it and it is not ours to derive.
+
+``.agents/skills`` *is* this layer -- the project one, the sibling of
+``.agents/extensions``. It used to be spelled out here as a relative
+constant, ``Path(".agents") / "skills"``, with no project attached, which
+bound it to the working directory at the moment of the call: launched
+from an unrelated checkout, Seeker searched that checkout's Skills. It is
+routed through ``mvgeos_core.project_skills_dir`` and reached only when a
+caller *names* a project, on the same terms ADR 0017 sets for Runes --
+anchored, never ambient. See ADR 0017.
 """
 
 from __future__ import annotations
@@ -28,10 +35,12 @@ from __future__ import annotations
 from collections.abc import Iterable
 from pathlib import Path
 
-from mvgeos_core import agent_spells_dir, extensions_dir, skills_dir
-
-#: The project-relative spelling of our own skills layer.
-PROJECT_SKILLS_DIR = Path(".agents") / "skills"
+from mvgeos_core import (
+    agent_spells_dir,
+    extensions_dir,
+    project_skills_dir,
+    skills_dir,
+)
 
 
 def spells_root(agent_name: str) -> Path:
@@ -54,18 +63,27 @@ def extensions_root() -> Path:
     return extensions_dir()
 
 
-def skill_roots() -> list[Path]:
+def skill_roots(project_dir: str | Path | None = None) -> list[Path]:
     """Every skills directory Seeker searches, resolved now and unfiltered.
 
-    Order is precedence. The user-scope layer leads because it is ours;
-    the two conventions follow so a project-local Skill can still be found
-    in a checkout that has one.
+    Order is precedence. The user-scope layer leads because it is ours,
+    then the third-party convention, then the project layer.
+
+    ``project_dir`` names the project to search. ``None`` means no project
+    layer at all -- not the current directory. That is the whole point of
+    the parameter being explicit: ``mvgeos_core.layers`` omits the project
+    layer rather than defaulting it, so the ambient working directory
+    cannot leak into a search path. A Skill is instructions the Mvge will
+    follow, so a root bound to an unnamed checkout does not return the
+    wrong answer, it changes what the agent does. See ADR 0017.
     """
-    return [
+    roots = [
         skills_dir(),
         Path.home() / ".claude" / "skills",
-        PROJECT_SKILLS_DIR,
     ]
+    if project_dir is not None:
+        roots.append(project_skills_dir(project_dir))
+    return roots
 
 
 def missing(roots: Iterable[Path]) -> list[Path]:
