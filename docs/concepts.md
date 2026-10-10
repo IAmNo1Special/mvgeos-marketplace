@@ -41,11 +41,19 @@ A **Spell** is a tool the Mvge casts. Spells come from three places:
 - a **Rune** that registers them
 - the **Seeker**, which discovers Spells and Skills on demand at runtime
 
-A **Realm** is how a model gets reached. The engine does not talk to OpenRouter
-or Google directly; it talks to a Realm, and Realms are Runes. `openrouter-realm`
-is the default because OpenRouter is a reasonable default, not because it is
-required. A Realm can be a router that fans out to many upstream providers, or
-a direct provider where the Realm and the provider are the same organisation.
+A **Realm** is how a model gets reached. The engine does not talk to any
+provider's API directly; it talks to a Realm, and Realms are Runes.
+`opencode-realm` is the default, because the engine's default model
+(`opencode/space-bunny-free`) names it in its own prefix and its free tier needs
+no credential. A Realm can be a router that fans out to many upstream providers,
+or a direct provider where the Realm and the provider are the same organisation.
+
+The prefix in a model slug is the Realm, and it is not decoration — it is what
+decides which Rune has to be installed. `-m nvidia/…` served by `openrouter-realm`
+and `-m opencode/…` served by `opencode-realm` are different requirements, and
+the wrong one fails with a message about the model rather than about the missing
+Rune. Two Realms ship today: [opencode-realm](runes/opencode-realm.md) and
+[openrouter-realm](runes/openrouter-realm.md).
 
 !!! note "Realm vs. Provider"
     These are deliberately different words. The **Realm** is the abstraction —

@@ -5,28 +5,32 @@ Questions a new user asks, answered without hedging. Where the honest answer is
 
 ## Getting started
 
+### Do I need an API key to run my first task?
+
+No. The default Realm's free tier is served without a credential, so there is no
+authentication step between installing the Mvge and running a task. You need
+`uv` and nothing else.
+
+A key is what you bring when you want a Realm you already pay for — see
+[Use another Realm](quickstart.md#use-another-realm).
+
 ### `uvx mvgeos` does not work. Why is the install line so long?
 
-Because there is no `mvgeos` package on PyPI yet, so the short form resolves to
-nothing. The CLI lives in the `mvgeos-cli` subdirectory of a monorepo, which is
-why the working form names that subdirectory explicitly:
+It is short now, and that is recent. `uvx mvgeos --help` resolves against PyPI.
+The long `git+` form you may find in older answers names the CLI's subdirectory
+in the monorepo and is what the project used before the first published release:
 
 ```bash
 uvx --from "git+https://github.com/IAmNo1Special/mvgeos#subdirectory=mvgeos-cli" mvgeos --help
-```
-
-or install it once:
-
-```bash
 uv tool install "git+https://github.com/IAmNo1Special/mvgeos#subdirectory=mvgeos-cli"
 ```
 
-The one-liner will get shorter once there is a published distribution. See
+Use the short form unless you are contributing; see
 [Troubleshooting](troubleshooting.md#mvgeos-was-not-found-in-the-package-registry).
 
 ### Do I need Python installed?
 
-No. `uv` fetches Python 3.13 for you. You need `uv` and an API key.
+No. `uv` fetches Python 3.13 for you. You need `uv`, and nothing else.
 
 ### Do I need a clone of the repository?
 
@@ -45,41 +49,71 @@ want — a different Realm or a different Mvge without touching the engine.
 
 ### Do I need an OpenRouter account?
 
-You need a key for whichever Realm you install. OpenRouter is the default
-because it routes to many models behind one key, which makes it the cheapest
-thing to start on. If you already pay for a provider directly, write or find a
-Realm for it — that is the point of the abstraction.
+Not for the first run. The default Realm is OpenCode Zen, whose free tier answers
+with no credential, so the quickstart's three commands need no account at all.
+
+You need a key only for a Realm that asks for one. OpenRouter is the obvious
+candidate if you want one key across many models; if you already pay for a
+provider directly, install that provider's Realm — that is the point of the
+abstraction. See
+[Use another Realm](quickstart.md#use-another-realm).
+
+### Which Realm do I need?
+
+The one whose prefix matches your model's slug, and the default model's prefix is
+`opencode`. Install `opencode-realm`. If you install `openrouter-realm` instead
+and run with the default model, you get a working engine that cannot reach its
+own default:
+
+```text
+Error: No Realm factory registered for model 'opencode/space-bunny-free'.
+```
 
 ### Which model should I use?
 
-MvgeOS ships with a default that costs nothing — a free OpenRouter model chosen
-at runtime, not hardcoded on this page. Check which one you actually got:
+The one you get by default — a free `opencode/space-bunny-free` — unless you
+have a reason. Check which one you actually got:
 
 ```bash
 mvgeos info --agent-name coding_mvge
 ```
 
-The `Model:` line is the answer. Override it with `-m`:
+The `Model:` line is the answer. Override it with `-m`, and remember the prefix
+in the slug names the Realm that has to serve it:
 
 ```bash
-mvgeos --agent-name coding_mvge -m "openai/gpt-4o-mini" "your task"
+mvgeos --agent-name coding_mvge -m "opencode/space-bunny-free" "your task"
 ```
 
 MvgeOS never proxies your key anywhere except the Realm you installed.
 
 ### It says "free" — why did my run fail?
 
-Because free is not unlimited, and the limit is small. OpenRouter allows **50
-free-model requests per day per account**, shared across every model and every
-app on that account, resetting at **00:00 UTC**. A single Mvge turn spends
-several of them, because verifying a result means a second model call.
+Because free is shared, and shared means at capacity. On the default Realm you
+get:
 
-When the allowance is gone, every free model returns `429 free-models-per-day`.
-Recent builds report it as `Daily free-model quota exhausted` — a spent
-allowance, not a transient fault — and add the count and reset time when the
-provider sent them. Older builds say `Upstream provider overloaded: Provider
-returned error` for the same condition, which reads like a temporary blip and is
-not. The headers do not lie either way:
+```text
+Rate limited by the provider: Realm requested 2209s retry delay (max: 60s). Rate
+limit exceeded. Please try again later..
+```
+
+**Read the number before you retry.** `2209s` is roughly 37 minutes, and a tight
+retry loop will not shorten it. The refusal is not your install and not your
+configuration. On the clean-machine check behind the Quickstart, the same command
+was refused seven times and then completed, about 40 minutes after the first
+refusal — the delay counts down and does end. The engine waits at most 60 seconds
+itself, which is why it gives up rather than sitting there.
+
+If you are on the OpenRouter Realm instead, the limit there is a daily allowance
+rather than a busy endpoint: OpenRouter allows **50 free-model requests per day
+per account**, shared across every model and every app on that account, resetting
+at **00:00 UTC**. A single Mvge turn spends several, because verifying a result
+means a second model call. When the allowance is gone, every free model returns
+`429 free-models-per-day`. Recent builds report it as `Daily free-model quota
+exhausted` — a spent allowance, not a transient fault — and add the count and
+reset time when the provider sent them. Older builds say `Upstream provider
+overloaded: Provider returned error` for the same condition, which reads like a
+temporary blip and is not. The headers do not lie either way:
 
 ```text
 X-RateLimit-Remaining: 0

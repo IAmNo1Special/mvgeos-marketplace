@@ -37,8 +37,13 @@ mvgeos mvge install coding_mvge
 
 Install via MvgeOS CLI:
 ```bash
-mvgeos rune install openrouter-realm
+mvgeos rune install opencode-realm
 ```
+
+`opencode-realm` is the one a first run needs: the engine's default model is
+`opencode/space-bunny-free`, and the prefix in that slug is the Realm that must
+serve it. `openrouter-realm` is a full alternative and needs `OPENROUTER_API_KEY`
+— see [Use another Realm](docs/quickstart.md#use-another-realm).
 
 ## Structure
 

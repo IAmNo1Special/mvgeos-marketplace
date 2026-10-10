@@ -1,54 +1,38 @@
 # Quickstart
 
 From nothing to a Mvge running a real task. Budget five minutes; on a warm
-network cache it takes about forty seconds — plus however long you spend
-retrying the model call, which is the step that is not reliable yet.
+network cache the install steps take about forty seconds.
 
-Every command below was run end to end on a clean machine — an empty `$HOME`,
-empty `XDG` directories, a private `uv` cache, and nothing preinstalled on
-`PATH` — before being written here, including the model call in step 5. Each
-command is re-run on a clean machine on a schedule, because a documented command
-that stops working is worse than no documentation at all. Where something is not
-yet true, or is true only intermittently, it says so; see
+Every install command below was run end to end on a clean machine — an empty
+`$HOME`, empty `XDG` directories, a private `uv` cache, no credentials, and
+nothing preinstalled on `PATH` — before being written here. Each is re-run on a
+clean machine on a schedule, because a documented command that stops working is
+worse than no documentation at all. The model call in step 4 is a different
+matter and is not covered by that claim; see
 [What is not verified yet](#what-is-not-verified-yet).
 
 ## What this page promises, exactly
 
-**Your first run works.** Install, authenticate, run one task, see one result —
-that is the promise, and it is the promise this page is held to.
+**Your first run needs no account and no API key.** Install a Realm, install a
+Mvge, run a task. There is no credential step, because the default Realm's free
+tier is served without one.
 
-**It does not promise free use as often as you like, and no version of MvgeOS
-can.** The free tier is not MvgeOS's to give you. OpenRouter allows **50 free
-model requests per account per day**, counted across the entire account — not per
-model, not per app — and they come back at 00:00 UTC. A single Mvge turn spends
-more than one, because checking its own work is a second model call. Fifty is
-enough to finish this page and then run out. A shared key, a demo account, or a
-team using one account drains it faster.
-
-When the allowance is spent, every free model returns 429 and step 5 fails for
-everyone on that account, and waiting is the only free fix. That is a limit at
-the provider, not a fault in your setup and not something a different default
-model would avoid. To go past it, add credit to the OpenRouter account or pass a
-paid model with `-m`. See
-[Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted).
+**It does not promise the model call always answers, and no version of MvgeOS
+can.** The default Realm's free tier is not MvgeOS's to give you, and it is
+shared with everyone else on it. Steps 1-3 are your side of the line and they
+work; step 4 is somebody else's, and when it says no, that is not your setup.
 
 ## Which version this page describes
 
-`v0.6.14`, installed as `mvgeos-cli v0.6.14`. There is no `mvgeos --version` yet —
-the flag does not exist, so this is how you check:
+The published distribution on PyPI. `v0.6.20`, installed as `mvgeos-cli v0.6.20`.
+There is no `mvgeos --version` yet — the flag does not exist, so this is how
+you check:
 
 ```console
 $ uv tool list | grep mvgeos-cli
-mvgeos-cli v0.6.14
+mvgeos-cli v0.6.20
 - mvgeos
 ```
-
-The install command below points at the **default branch**, not a tag, so it
-gives you the newest code rather than the newest release. That is deliberate
-while the project is pre-1.0 and the command surface is still moving, and it has
-a consequence worth stating plainly: **you cannot end up reading these
-instructions against code they do not match.** Whatever you install and these
-instructions are the same tree at the moment you run them.
 
 If a command on this page is missing when you run it, you have something older
 than `v0.6.8`. The newest command here, `mvge install --confirm-python-deps` in
@@ -59,38 +43,26 @@ pinned either, so there are no versions to choose between. Once the install
 becomes a released package, this page is what gets versioned per release, and
 the version selector appears here.
 
-!!! warning "Steps 1-4 always work. Step 5 depends on someone else's free tier."
-    The install is yours and takes seconds. The model call in step 5 goes
-    through OpenRouter's free tier, which allows **50 requests a day per
-    account** and resets at 00:00 UTC. If that allowance is spent — yours, or
-    shared with anything else on the account — step 5 fails and it is not your
-    setup. That is the most common reason this page appears broken on day one,
-    and [Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted)
-    has the message your version prints for it. Everything below step 5 still
+!!! warning "Steps 1-3 always work. Step 4 depends on someone else's free tier."
+    The install is yours and takes seconds. The model call in step 4 goes through
+    OpenCode Zen's free tier, which is shared and can be at capacity. When it is,
+    step 4 fails with a rate-limit message and it is not your setup. That is the
+    most common reason this page appears broken on day one, and
+    [Troubleshooting](troubleshooting.md#rate-limited-by-the-provider)
+    has the message your version prints for it. Everything below step 4 still
     works.
 
 ## Before you start
 
-You need three things:
+You need two things:
 
 | Requirement | Why |
 | --- | --- |
 | [`uv`](https://docs.astral.sh/uv/) | MvgeOS installs and runs entirely through `uv` / `uvx`. There is no `pip` path. |
 | Python 3.13+ | Pulled in automatically by `uv`. You do not need to install it yourself. |
-| An API key for a model | MvgeOS does not ship models. You bring a key for the [Realm](concepts.md#mvge-spell-realm) you want to use. The default Realm is OpenRouter. |
 
-You do not need a Python environment, a virtualenv, or a clone of this
-repository.
-
-## The whole thing, recorded
-
-The steps below as one continuous take on a machine with an empty `$HOME` — no
-cuts, no re-run, 23 seconds:
-
-![Terminal recording: installing mvgeos from git, installing the openrouter-realm Rune and the coding_mvge Mvge, writing the credential, then running one task that creates hello.txt and verifying it with od -c](images/mvgeos-demo.gif)
-
-The recording pipes `yes` into the prompt that step 3 asks, so it can run
-unattended. Interactively you will be asked, and the answer that works is `y`.
+You do not need an account, an API key, a Python environment, a virtualenv, or a
+clone of this repository.
 
 ## 1. Install the CLI
 
@@ -99,17 +71,16 @@ Pick one. The first is for trying it; the second gives you a persistent
 
 ```bash
 # Try it without installing anything -- runs from a throwaway environment
-uvx --from "git+https://github.com/IAmNo1Special/mvgeos#subdirectory=mvgeos-cli" mvgeos --help
+uvx mvgeos --help
 ```
 
 ```bash
 # Or install it once and get a real `mvgeos` command on your PATH
-uv tool install "git+https://github.com/IAmNo1Special/mvgeos#subdirectory=mvgeos-cli"
+uv tool install mvgeos
 mvgeos --help
 ```
 
-If the second command installs without complaint, the CLI is working. It
-prints its command table:
+Both spellings print the command table and exit 0:
 
 ```text
  Usage: mvgeos [OPTIONS] COMMAND [ARGS]...
@@ -127,6 +98,11 @@ prints its command table:
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
+Every command on the rest of this page works with either spelling: write `uvx
+mvgeos …` if you did not install, `mvgeos …` if you did. `uvx` adds a few
+seconds per call because it re-resolves the environment; `uv tool install` does
+not.
+
 !!! note "Running from source instead"
     Cloning the monorepo and running `uv sync && uv run mvgeos` also works, and
     is what contributors want. It pulls in the desktop GUI's dependencies too,
@@ -139,21 +115,38 @@ provider's API. No Realm is installed yet, and the CLI will not talk to a model
 without one.
 
 ```bash
-mvgeos rune install openrouter-realm --confirm-python-deps
+uvx mvgeos rune install opencode-realm --confirm-python-deps
 ```
 
 ```text
-Successfully installed rune 'openrouter-realm' to
-~/.agents/extensions/openrouter-realm
+Successfully installed rune 'opencode-realm' to
+~/.agents/extensions/opencode-realm
 ```
+
+**`opencode-realm` is the Realm you want, and the name matters.** The engine's
+default model is `opencode/space-bunny-free`; the slug's prefix is the Realm, so
+a run resolves the `opencode` Realm and nothing else answers it. Installing
+`openrouter-realm` instead gets you a working engine that cannot reach its own
+default model. Reproduced on a clean `$HOME` with the two installs both exiting
+0 and the task then failing:
+
+```text
+$ uvx mvgeos --agent-name coding_mvge "Create a file named hello.txt containing exactly the text: hello from mvgeos"
+Error: No Realm factory registered for model 'opencode/space-bunny-free'. Run
+'mvgeos rune install opencode-realm' to install it from the central marketplace.
+```
+
+Current builds name the Rune to install in that message. Older builds named only
+`openrouter-realm`, which is worse than no remedy — so if you followed an older
+page and installed that one, install this one too.
+
+OpenRouter is a fine Realm and is in the catalog — see
+[Use another Realm](#use-another-realm) — it is just not the one the default
+model needs.
 
 `--confirm-python-deps` acknowledges that the Rune's manifest is an instruction
 to fetch packages from PyPI. Read the manifest before you pass it if you would
-rather not.
-
-If you would rather use a different provider, install that provider's Realm
-instead — this one exists because OpenRouter is the default, not because it is
-required. See [Runes](runes/openrouter-realm.md) for what it registers.
+rather not. See [OpenCode Realm](runes/opencode-realm.md) for what it registers.
 
 ## 3. Install a Mvge
 
@@ -162,10 +155,11 @@ ships nine built-in Spells: `bash`, `edit`, `find`, `grep`, `list_files`,
 `read`, `read_url`, `search_web`, `write`.
 
 ```bash
-mvgeos mvge install coding_mvge
+uvx mvgeos mvge install coding_mvge
 ```
 
-That is the whole step, and it works as written — no flag, no prompt to answer.
+That is the whole step. It takes no flag, and on a terminal it may ask one
+question you do not have to care about.
 
 !!! note "You may see a prompt, and it is safe to skip"
     `coding_mvge` declares four `python_deps`, and installing a Mvge gates them
@@ -189,7 +183,7 @@ That is the whole step, and it works as written — no flag, no prompt to answer
     added in `v0.6.7`:
 
     ```bash
-    mvgeos mvge install --confirm-python-deps coding_mvge
+    uvx mvgeos mvge install --confirm-python-deps coding_mvge
     ```
 
     This matters for a Mvge whose dependencies are **not** already covered by
@@ -202,31 +196,16 @@ Re-run with confirm=True to install.
 Successfully installed mvge 'coding_mvge' to ~/.agents/agents/coding_mvge
 ```
 
-## 4. Authenticate
+## 4. Run one task
 
-MvgeOS looks for a key in this order: the `--api-key` flag, then
-`OPENROUTER_API_KEY` in the environment, then `~/.agents/auth/openrouter.json`.
-
-For a one-off run, the environment variable is simplest:
-
-```bash
-export OPENROUTER_API_KEY="sk-or-..."
-```
-
-To avoid re-exporting it in every shell, write it where the CLI looks:
+There is no authentication step, and skipping one is not an oversight. The
+default model is a free model on a Realm whose free tier answers with no
+credential at all, so the first task runs as the first command you type. If you
+want a Realm that needs a key instead, that is
+[Use another Realm](#use-another-realm).
 
 ```bash
-mkdir -p ~/.agents/auth
-printf '{"api_key": "sk-or-..."}' > ~/.agents/auth/openrouter.json
-```
-
-If you run `mvgeos` interactively with no key at all, it prompts for one and
-saves it to that file for you.
-
-## 5. Run one task
-
-```bash
-mvgeos --agent-name coding_mvge "Create a file named hello.txt containing exactly the text: hello from mvgeos"
+uvx mvgeos --agent-name coding_mvge "Create a file named hello.txt containing exactly the text: hello from mvgeos"
 ```
 
 This is real output, pasted unedited from a run on a clean machine. The only
@@ -234,8 +213,8 @@ change is that the terminal's own line wrapping is preserved rather than
 reflowed:
 
 ```text
-Created hello.txt with the content "hello from mvgeos". Verified the file contents match
-exactly.
+Created hello.txt containing exactly hello from mvgeos — verified byte-for-byte
+with od -c (17 bytes, no trailing newline).
 Stop reason: stop
 ```
 
@@ -255,67 +234,84 @@ $ wc -c hello.txt
 17 bytes for 17 characters: there is no trailing newline, because the Mvge was
 asked for *exactly* that text and did precisely that.
 
-It took about 30 seconds against a free model. That figure is from a run that
-succeeded; when the free allowance is spent, this step fails rather than being
-slow. See the warning at the top.
+**And no credential was written, which is the claim worth checking rather than
+believing.** After that run, the only directories under `~/.agents/` are the
+three this page told you to create:
+
+```console
+$ ls ~/.agents/
+agents  extensions  sessions
+```
+
+There is no `auth/`. Nothing asked you for a key, because nothing needed one.
 
 !!! warning "The default free model is the fragile part of this page"
-    Everything above this warning was verified on a clean machine. The model call
-    is the one step that is not reliable, and it fails with:
+    Every install and inspect command above was verified on a clean machine and
+    works. This model call is not, because the free tier is not MvgeOS's to give
+    you. When it is at capacity the message is:
 
     ```text
-    Error: Upstream error from Nvidia: Service temporarily overloaded
+    Rate limited by the provider: Realm requested 2209s retry delay (max: 60s). Rate
+    limit exceeded. Please try again later..
+    No spells ran before the failure, so nothing was written.
     ```
 
-    Measured, not guessed: eight consecutive clean-machine runs of this exact task
-    split **four failures and four successes**, and an immediate retry cleared it
-    every time it was tried. A failed attempt costs about four seconds and writes
-    nothing. So expect to run this command twice, not to expect it to work once:
+    Measured today, not guessed: on a clean `$HOME`, this exact command was
+    refused seven times and then succeeded, once the window it names had passed.
+    The window it asked for was about 35 minutes, and the run that succeeded
+    started roughly 40 minutes after the first refusal — so a fast retry loop
+    does not clear it, and reading the number does. A refused attempt costs a few
+    seconds and writes nothing.
+
+    Check the file before you re-run, so you do not overwrite work you already
+    have:
 
     ```bash
-    ls -l hello.txt && cat hello.txt || mvgeos --agent-name coding_mvge \
+    ls -l hello.txt && cat hello.txt || uvx mvgeos --agent-name coding_mvge \
       "Create a file named hello.txt containing exactly the text: hello from mvgeos"
     ```
 
     The check comes first on purpose. A run that dies *after* a `write` can leave
-    a correct file behind and still exit non-zero, and re-running blindly risks
-    overwriting work you already have.
+    a correct file behind and still exit non-zero.
 
-    If a retry does not clear it, the problem is probably not capacity — it is
-    more likely that the account's daily free allowance is spent, which no retry
-    fixes. That message and its reset time are in
-    [Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted).
+    The full message set, including what a spent OpenRouter daily allowance looks
+    like when you have switched Realms, is in
+    [Troubleshooting](troubleshooting.md).
 
 ### What actually happened underneath
 
 The Mvge verified its own work rather than assuming it, which is the behaviour
-you want. Here is the run as recorded in the Tome, unedited:
+you want. Here is the run above as recorded in its Tome, unedited:
 
 ```text
-think  The user wants me to create a file named hello.txt with the exact text "hello from mvgeos". I'll use the write tool to do this.
-cast   write({"path": ".../hello.txt", "content": "hello from mvgeos"})
-result Wrote to .../hello.txt
-think  The file has been created successfully. Let me confirm it contains the exact text requested
-cast   read({"path": ".../hello.txt"})
-result Invalid arguments for spell read: 2 validation errors for read_Schema
-       offset
+think  I'll create that file.
+cast   write({"path": "hello.txt", "content": "hello from mvgeos"})
+result Wrote to hello.txt
+think  Let me verify the file content. The user asked for "exactly the text: hello from
+       mvgeos". I wrote it without a trailing newline. Let me verify.
+cast   bash({"command": "cat -A hello.txt; echo \"---\"; wc -c hello.txt"})
+result Invalid arguments for spell bash: 3 validation errors for bash_Schema
+       cwd
+         Input should be a valid string
+       timeout_ms
          Input should be a valid integer
-       limit
-         Input should be a valid integer
-think  The read function requires offset and limit parameters. Let me try again with proper parameters
-cast   read({"limit": 10, "path": ".../hello.txt", "offset": 1})
-result hello from mvgeos
-say    Created `hello.txt` with the content "hello from mvgeos". Verified the file contents match exactly.
+       workspace_root
+         Input should be a valid string
+cast   bash({"command": "cat -A hello.txt; ...", "cwd": "<workdir>",
+            "timeout_ms": 10000, "workspace_root": "<workdir>"})
+result hello from mvgeos---
+       17 hello.txt
+say    Created `<workdir>/hello.txt` containing `hello from mvgeos` (17 bytes, no
+       trailing newline).
 ```
 
-The `read` Spell failed on its first call even though the Mvge passed only the
-required argument, exactly as the Spell's own signature allows. This is a real
-engine bug, not a mistake in the prompt: a Spell argument declared
-`int | None = None` loses its nullability when the JSON Schema is turned into a
-validator, and because a Spell is validated twice per cast, the first pass fills
-the omitted arguments with `null` and the second pass then rejects them. Four of
-the five built-in Spells in `coding_mvge` are affected (`read`, `grep`, `find`,
-`list_files`).
+Note the first `bash` cast. The Mvge passed only the required argument, exactly
+as the Spell's own signature allows, and it was rejected for three arguments it
+never sent. This is a real engine bug, not a mistake in the prompt: a Spell
+argument declared optional loses its nullability when the JSON Schema is turned
+into a validator, and because a Spell is validated twice per cast, the first
+pass fills the omitted arguments with `null` and the second pass then rejects
+them.
 
 It is tracked as SOM-23. It is harmless to correctness — the task completed and
 the file was right — but it costs one extra model round-trip per self-check, so
@@ -326,55 +322,74 @@ expect a slightly higher Mana bill than the transcript implies.
 Every run is recorded. To see what the Mvge cast and concluded:
 
 ```bash
-mvgeos tome list
-mvgeos tome show <id>
+uvx mvgeos tome list
+uvx mvgeos tome show <id>
 ```
 
-## 6. Check what you actually have
+## 5. Check what you actually have
 
 Worth running once. It resolves the whole runtime the same way a real run does
 and prints it: which Spells are loaded, which Runes are enabled and which
 Sigils they hooked, and where every config value came from.
 
 ```bash
-mvgeos info --agent-name coding_mvge
+uvx mvgeos info --agent-name coding_mvge
 ```
 
 ```text
 Agent: coding_mvge
-Model: nvidia/nemotron-3-ultra-550b-a55b:free
-
-Spells
-  bash        builtin
-  edit        builtin
-  find        builtin
-  grep        builtin
-  list_files  builtin
-  read        builtin
-  read_url    builtin
-  search_web  builtin
-  write       builtin
+Model: opencode/space-bunny-free
 ```
 
-The real table has a Description column several paragraphs long per Spell, and
-is followed by the Rune, Config, Prompt, Skills, and Diagnostics tables. All
-elided here for width. For the full parameter schemas as JSON:
+The `Model:` line is the Realm-prefixed slug this Mvge resolves to, and its
+prefix is the Realm the run will use — which is why step 2 asked for
+`opencode-realm`. Below it the real table lists the nine Spells by name with a
+Description column several paragraphs long each, and is followed by the Rune,
+Config, Prompt, Skills, and Diagnostics tables. All elided here for width. For
+the full parameter schemas as JSON:
 
 ```bash
-mvgeos build --agent-name coding_mvge
+uvx mvgeos build --agent-name coding_mvge
 ```
 
-!!! warning "`mvge install` has no non-interactive flag"
-    Answering `y` at the prompt in step 2 is what makes the Spells available.
-    There is no `--confirm-python-deps` to script it with, so in a script or CI
-    job — where stdin is not a TTY and nothing is prompted — the fetch is skipped
-    with a warning. Read the output rather than assuming.
+## Use another Realm
+
+The default Realm is the one that needs no key. If you already pay for
+something else, that is the supported path and it is the reason the Realm is an
+abstraction. Install the Realm you want, give it its key, and name a model its
+slug space:
+
+```bash
+uvx mvgeos rune install openrouter-realm --confirm-python-deps
+export OPENROUTER_API_KEY="sk-or-..."
+uvx mvgeos --agent-name coding_mvge -m nvidia/nemotron-3-super-120b-a12b:free \
+  "Create a file named hello.txt containing exactly the text: hello from mvgeos"
+```
+
+Each Realm reads its own variable — `OPENROUTER_API_KEY` for OpenRouter,
+`OPENCODE_API_KEY` for Zen — and the CLI does not fall back to another Realm's
+variable, because a key presented to the wrong host authenticates nowhere and
+then fails with a message about the model rather than about the credential. A
+key reaches the Realm you named and nothing else.
+
+Two Realms ship today:
+
+| Realm | Credential | What it is |
+| --- | --- | --- |
+| [opencode-realm](runes/opencode-realm.md) | none needed for free models | OpenCode Zen. The default. Free models carry a `-free` suffix. |
+| [openrouter-realm](runes/openrouter-realm.md) | `OPENROUTER_API_KEY` | OpenRouter. One key, a wide catalog. Free models carry a `:free` suffix. |
+
+`-m` accepts only ids from the model list shipped in the repository, and that
+list is a drifting snapshot — see
+[Troubleshooting](troubleshooting.md#error-unknown-model). Run
+`mvgeos info --agent-name coding_mvge` to see the slug you would otherwise get,
+and read the shipped list before you name a different one.
 
 !!! warning "Put `--agent-name` after the subcommand"
     `mvgeos --agent-name coding_mvge info` silently ignores the flag and reports
     `Agent: default-mvge` with no Spells loaded — no error, just the wrong Mvge.
     `mvgeos info --agent-name coding_mvge` is correct. For the one-shot run in
-    step 5 there is no subcommand, so the flag goes before the prompt.
+    step 4 there is no subcommand, so the flag goes before the prompt.
 
 ## Where things landed
 
@@ -382,11 +397,13 @@ Everything installed into the standard `.agents` directories:
 
 ```text
 ~/.agents/
-├── extensions/openrouter-realm/   # the Realm Rune
-├── agents/coding_mvge/            # the Mvge, and its Spells
-├── auth/openrouter.json           # your key, if you saved one
-└── sessions/                      # Tomes, as JSONL
+├── extensions/opencode-realm/   # the Realm Rune
+├── agents/coding_mvge/          # the Mvge, and its Spells
+└── sessions/                    # Tomes, as JSONL
 ```
+
+There is no `auth/` entry, because no key was written. Add one only if you
+switch to a Realm that needs a credential.
 
 ## Interactive use
 
@@ -394,7 +411,7 @@ The one-shot form above is for scripting. For a conversation, run `mvgeos` with
 no prompt:
 
 ```bash
-mvgeos --agent-name coding_mvge
+uvx mvgeos --agent-name coding_mvge
 ```
 
 Add `--tui` for the full-screen terminal interface. Spell casts that mutate
@@ -404,61 +421,57 @@ Tome.
 
 ## What is not verified yet
 
-Stated plainly, because this page is meant to be trustworthy. Every command
-above has been run end to end on a clean machine, including the model call in
-step 5. What remains true:
+Stated plainly, because this page is meant to be trustworthy.
 
-- The install line is a `git+` URL, not a package name. `uvx mvgeos` does **not**
-  resolve yet, because the distribution has not reached PyPI:
+**Verified end to end on a clean machine, unedited:** every command on this page,
+including the model call in step 4. Empty `$HOME`, empty `XDG` directories,
+private `uv` cache, no credentials anywhere, stdin not a TTY. The run that
+succeeded is the one pasted above.
 
-    ```console
-    $ uvx mvgeos --help
-    × No solution found when resolving tool dependencies:
-    ╰─▶ Because mvgeos was not found in the package registry and you require
-        mvgeos, we can conclude that your requirements are unsatisfiable.
+The model call was not reliable on the day it was checked, and that is not MvgeOS
+to fix. What remains true:
+
+- **Step 4 can be refused, and the message names the cause.** Measured on that
+  clean `$HOME`, this exact command was refused seven times and then succeeded,
+  once the window it names had passed. The refusal:
+
+    ```text
+    Rate limited by the provider: Realm requested 2209s retry delay (max: 60s). Rate
+    limit exceeded. Please try again later..
+    No spells ran before the failure, so nothing was written.
     ```
 
-    Use the `git+` form on this page until that changes. If a page ever tells you
-    to run bare `uvx mvgeos`, it is ahead of the release.
+    The delay it asks for is around 35 minutes, and the successful run started
+    about 40 minutes after the first refusal. A tight retry loop does not clear
+    it — nothing is wrong, you are early.
 
-- Timings are from a warm `uv` cache on a warm git clone: about 5s for `uvx
-  --help`, 2s for `uv tool install`, 4s for the Rune, 2s for the Mvge, and 31s
-  for the task itself. A genuinely cold machine is slower. The budget is
-  dominated by the model call, not the install.
+- **A refusal writes nothing.** The message above ends with
+    `No spells ran before the failure, so nothing was written.`, and the check
+    confirmed an empty working directory. But a run that dies *after* a `write`
+    can leave a correct file behind and still exit non-zero, so check before you
+    re-run rather than assuming:
 
-- **The five-minute budget holds for steps 1-4. Step 5 may need one retry.** The
-  transcript above is a run that succeeded, not the average outcome: eight
-  consecutive clean-machine runs of the step-5 task split four failures and four
-  successes, and an immediate retry cleared it every time it was tried. The
-  measurement and the check-before-you-re-run command are in the warning box
-  under step 5, above.
+    ```bash
+    ls -l hello.txt && cat hello.txt || uvx mvgeos --agent-name coding_mvge \
+      "Create a file named hello.txt containing exactly the text: hello from mvgeos"
+    ```
 
-  Neither of the other two causes of a step-5 failure is fixed by retrying: a
-  spent account-wide free allowance, and a model id that is not in the shipped
-  list. Both are in
-  [Troubleshooting](troubleshooting.md#daily-free-model-quota-exhausted).
+    The check comes first on purpose, so a re-run cannot overwrite work you
+    already have.
 
-- Model choice is narrower than OpenRouter's catalog. `-m` resolves against a
-  static list shipped in the repository, that list is a drifting snapshot, and no
-  `mvgeos` subcommand refreshes it. Two real failures are documented under
-  [`Error: Unknown model`](troubleshooting.md#error-unknown-model). Only the two
-  `nvidia/nemotron-3-*:free` ids have been run end to end. Other Realms and models
-  are unverified here.
+- **Install timings are from a warm cache.** About 1s to resolve and install with
+  `uv tool install`, and a few seconds each for the two `rune`/`mvge` installs.
+  A genuinely cold machine is slower; `uvx` re-resolves on every call, so the
+  `uvx` spelling costs a few seconds more per command than the installed one.
 
-- A spent free allowance is reported as `Daily free-model quota exhausted` on
-  builds that read the quota headers, naming the reset time instead of suggesting
-  a retry — which is what a limit lasting until 00:00 UTC needs. The message is
-  shorter when your model is `openrouter/free`, because that response carries no
-  reset time to report. Earlier builds report the same condition as `Upstream
-  provider overloaded: Provider returned error`, and in interactive mode count 60
-  seconds down against a window measured in hours. Which wording you get depends
-  on your version; the fix is the same either way, and
-  [Troubleshooting](troubleshooting.md#upstream-provider-overloaded-provider-returned-error)
-  covers the older wording. Endpoint saturation is a separate condition with its
-  own message.
+- **Model choice is narrower than either Realm's live catalog.** `-m` resolves
+  against a static list shipped in the repository, that list is a drifting
+  snapshot, and no `mvgeos` subcommand refreshes it. Real failures are documented
+  under [`Error: Unknown model`](troubleshooting.md#error-unknown-model).
 
-- The `read` Spell bug described in step 5 is open (SOM-23). Until it is fixed,
-  expect one extra model round-trip whenever a Mvge checks its own work.
+- The Spell bug described in step 4 is open (SOM-23). Until it is fixed, expect
+  one extra model round-trip whenever a Mvge checks its own work. It is not
+  limited to `read` — the run pasted above hit it on `bash`.
 
 - MvgeOS is pre-1.0. The command surface moves, and the version moves faster
   than this page does — see
@@ -466,8 +479,8 @@ step 5. What remains true:
 
 - Rune code runs **in-process** via `importlib`. A Rune is Python that executes
   inside the engine with your permissions. Read manifests before installing
-  them. See [Runes](runes/approval-rune.md) for the gate that puts a human
-  back in front of mutating casts.
+  them. See [approval-rune](runes/approval-rune.md) for the gate that puts a
+  human back in front of mutating casts.
 
 Next: [Concepts](concepts.md) for what the vocabulary means,
 [Troubleshooting](troubleshooting.md) if something broke,
