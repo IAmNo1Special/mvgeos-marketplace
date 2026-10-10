@@ -275,6 +275,11 @@ asked for. A retry loop will not clear it, and hammering the endpoint is the one
 thing guaranteed not to help. Wait for the window it names, then run the command
 again.
 
+Measured on a clean `$HOME` on 2026-10-09: this exact task was refused seven
+times with the delay counting down — 2209s, 2151s, 2104s, 2057s, 2010s, 1962s,
+1253s — and then completed on the next attempt, about 40 minutes after the first
+refusal. So the message is honest about the wait, and the wait does end.
+
 The `(max: 60s)` is the engine's own cap — it waits at most a minute and then
 gives up, rather than sitting on the call. That is a choice, not the limit.
 
